@@ -1,6 +1,6 @@
 package com.survey_engine.user.config.security;
 
-import com.survey_engine.user.user.UserRepository;
+import com.survey_engine.user.repository.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
