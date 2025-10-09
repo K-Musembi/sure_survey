@@ -1,0 +1,45 @@
+package com.survey.survey.survey.dto;
+
+import com.survey.survey.common.enums.AccessType;
+import com.survey.survey.common.enums.SurveyType;
+import com.survey.survey.config.security.xss.Sanitize;
+import com.survey.survey.question.dto.QuestionRequest;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * Request Data Transfer Object (DTO) for Survey entity
+ * @param name
+ * @param type
+ * @param accessType
+ * @param startDate
+ * @param endDate
+ * @param questions
+ */
+public record SurveyRequest(
+        @NotBlank(message = "Survey name is required")
+        @Size(min = 3, max = 255, message = "Name must be between 3 and 255 characters")
+        @Sanitize
+        String name,
+
+        @NotNull(message = "Survey type is required")
+        SurveyType type,
+
+        @NotNull(message = "Access type is required")
+        AccessType accessType,
+
+        LocalDateTime startDate,
+
+        LocalDateTime endDate,
+
+        @Valid
+        @NotNull(message = "Questions list cannot be null")
+        @Size(min = 1, message = "Survey must have at least one question")
+        List<QuestionRequest> questions
+) {
+}

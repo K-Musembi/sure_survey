@@ -1,0 +1,18 @@
+package com.survey.survey.response.dto;
+
+import com.survey.survey.answer.dto.AnswerRequest;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+
+import java.util.List;
+
+/**
+ * Request DTO for submitting a survey Response.
+ * @param answers A list of answers for the survey questions.
+ */
+public record ResponseRequest(
+        @NotEmpty(message = "A response must contain at least one answer.")
+        @Valid
+        List<AnswerRequest> answers
+) {
+}
