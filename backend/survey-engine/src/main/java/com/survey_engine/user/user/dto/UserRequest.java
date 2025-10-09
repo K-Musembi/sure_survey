@@ -1,4 +1,4 @@
-package com.user_service.user_service.user.dto;
+package com.survey_engine.user.user.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

@@ -1,4 +1,4 @@
-package com.survey.survey.config.security;
+package com.survey_engine.survey.config.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

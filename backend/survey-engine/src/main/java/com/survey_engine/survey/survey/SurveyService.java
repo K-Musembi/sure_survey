@@ -1,11 +1,11 @@
-package com.survey.survey.survey;
+package com.survey_engine.survey.survey;
 
-import com.survey.survey.common.enums.SurveyStatus;
-import com.survey.survey.question.Question;
-import com.survey.survey.question.dto.QuestionRequest;
-import com.survey.survey.question.dto.QuestionResponse;
-import com.survey.survey.survey.dto.SurveyRequest;
-import com.survey.survey.survey.dto.SurveyResponse;
+import com.survey_engine.survey.common.enums.SurveyStatus;
+import com.survey_engine.survey.question.Question;
+import com.survey_engine.survey.question.dto.QuestionRequest;
+import com.survey_engine.survey.question.dto.QuestionResponse;
+import com.survey_engine.survey.survey.dto.SurveyRequest;
+import com.survey_engine.survey.survey.dto.SurveyResponse;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;

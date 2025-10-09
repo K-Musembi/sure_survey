@@ -1,4 +1,4 @@
-package com.user_service.user_service.user;
+package com.survey_engine.user.user;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

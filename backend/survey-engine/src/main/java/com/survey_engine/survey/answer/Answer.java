@@ -1,6 +1,6 @@
-package com.survey.survey.answer;
+package com.survey_engine.survey.answer;
 
-import com.survey.survey.question.Question;
+import com.survey_engine.survey.question.Question;
 import com.survey.survey.response.Response;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

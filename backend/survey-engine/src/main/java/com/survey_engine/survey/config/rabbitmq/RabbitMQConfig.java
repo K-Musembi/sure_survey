@@ -1,4 +1,4 @@
-package com.survey.survey.config.rabbitmq;
+package com.survey_engine.survey.config.rabbitmq;
 
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;

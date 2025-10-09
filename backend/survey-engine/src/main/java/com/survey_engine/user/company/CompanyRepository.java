@@ -1,8 +1,6 @@
-package com.user_service.user_service.company;
+package com.survey_engine.user.company;
 
-import com.user_service.user_service.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;

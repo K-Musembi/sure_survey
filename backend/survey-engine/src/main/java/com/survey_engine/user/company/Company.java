@@ -1,6 +1,6 @@
-package com.user_service.user_service.company;
+package com.survey_engine.user.company;
 
-import com.user_service.user_service.user.User;
+import com.survey_engine.user.user.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -1,4 +1,4 @@
-package com.survey.survey.config.redis;
+package com.survey_engine.survey.config.redis;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

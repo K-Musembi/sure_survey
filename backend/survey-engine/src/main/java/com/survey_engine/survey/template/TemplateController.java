@@ -1,8 +1,8 @@
-package com.survey.survey.template;
+package com.survey_engine.survey.template;
 
-import com.survey.survey.common.enums.SurveyType;
-import com.survey.survey.template.dto.TemplateRequest;
-import com.survey.survey.template.dto.TemplateResponse;
+import com.survey_engine.survey.common.enums.SurveyType;
+import com.survey_engine.survey.template.dto.TemplateRequest;
+import com.survey_engine.survey.template.dto.TemplateResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

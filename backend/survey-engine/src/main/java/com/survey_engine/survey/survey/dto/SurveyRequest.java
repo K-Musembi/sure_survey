@@ -1,9 +1,9 @@
-package com.survey.survey.survey.dto;
+package com.survey_engine.survey.survey.dto;
 
-import com.survey.survey.common.enums.AccessType;
-import com.survey.survey.common.enums.SurveyType;
-import com.survey.survey.config.security.xss.Sanitize;
-import com.survey.survey.question.dto.QuestionRequest;
+import com.survey_engine.survey.common.enums.AccessType;
+import com.survey_engine.survey.common.enums.SurveyType;
+import com.survey_engine.survey.config.security.xss.Sanitize;
+import com.survey_engine.survey.question.dto.QuestionRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

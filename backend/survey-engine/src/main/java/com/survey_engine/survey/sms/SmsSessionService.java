@@ -1,4 +1,4 @@
-package com.survey.survey.sms;
+package com.survey_engine.survey.sms;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;

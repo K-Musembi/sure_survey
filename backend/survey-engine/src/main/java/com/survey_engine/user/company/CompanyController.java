@@ -1,7 +1,7 @@
-package com.user_service.user_service.company;
+package com.survey_engine.user.company;
 
-import com.user_service.user_service.company.dto.CompanyRequest;
-import com.user_service.user_service.company.dto.CompanyResponse;
+import com.survey_engine.user.company.dto.CompanyRequest;
+import com.survey_engine.user.company.dto.CompanyResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

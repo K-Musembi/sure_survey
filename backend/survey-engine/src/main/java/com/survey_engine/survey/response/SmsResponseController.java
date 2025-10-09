@@ -1,9 +1,9 @@
-package com.survey.survey.response;
+package com.survey_engine.survey.response;
 
-import com.survey.survey.answer.dto.AnswerRequest;
-import com.survey.survey.common.enums.SurveyStatus;
-import com.survey.survey.question.Question;
-import com.survey.survey.response.dto.ResponseRequest;
+import com.survey_engine.survey.answer.dto.AnswerRequest;
+import com.survey_engine.survey.common.enums.SurveyStatus;
+import com.survey_engine.survey.question.Question;
+import com.survey_engine.survey.response.dto.ResponseRequest;
 import com.survey.survey.sms.SmsSession;
 import com.survey.survey.sms.SmsSessionService;
 import com.survey.survey.survey.Survey;

@@ -1,7 +1,7 @@
-package com.survey.survey.template_question;
+package com.survey_engine.survey.template_question;
 
-import com.survey.survey.common.enums.QuestionType;
-import com.survey.survey.template.Template;
+import com.survey_engine.survey.common.enums.QuestionType;
+import com.survey_engine.survey.template.Template;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;

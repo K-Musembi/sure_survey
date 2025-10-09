@@ -1,6 +1,6 @@
-package com.survey.survey.answer.dto;
+package com.survey_engine.survey.answer.dto;
 
-import com.survey.survey.config.security.xss.Sanitize;
+import com.survey_engine.survey.config.security.xss.Sanitize;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 

@@ -1,6 +1,6 @@
-package com.survey.survey.template.dto;
+package com.survey_engine.survey.template.dto;
 
-import com.survey.survey.common.enums.SurveyType;
+import com.survey_engine.survey.common.enums.SurveyType;
 import com.survey.survey.template_question.dto.TemplateQuestionResponse;
 
 import java.time.LocalDateTime;

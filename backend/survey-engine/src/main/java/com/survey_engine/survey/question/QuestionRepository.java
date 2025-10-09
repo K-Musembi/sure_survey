@@ -1,4 +1,4 @@
-package com.survey.survey.question;
+package com.survey_engine.survey.question;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

@@ -1,7 +1,7 @@
-package com.survey.survey.response;
+package com.survey_engine.survey.response;
 
-import com.survey.survey.answer.Answer;
-import com.survey.survey.common.enums.ResponseStatus;
+import com.survey_engine.survey.answer.Answer;
+import com.survey_engine.survey.common.enums.ResponseStatus;
 import com.survey.survey.survey.Survey;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

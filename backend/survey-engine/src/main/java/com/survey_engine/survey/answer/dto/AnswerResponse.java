@@ -1,4 +1,4 @@
-package com.survey.survey.answer.dto;
+package com.survey_engine.survey.answer.dto;
 
 /**
  * Response DTO for an Answer.

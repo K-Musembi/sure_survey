@@ -1,8 +1,8 @@
-package com.survey.survey.response;
+package com.survey_engine.survey.response;
 
-import com.survey.survey.config.rabbitmq.RabbitMQConfig;
-import com.survey.survey.response.dto.ResponseResponse;
-import com.survey.survey.response.dto.ResponseSubmissionPayload;
+import com.survey_engine.survey.config.rabbitmq.RabbitMQConfig;
+import com.survey_engine.survey.response.dto.ResponseResponse;
+import com.survey_engine.survey.response.dto.ResponseSubmissionPayload;
 import com.survey.survey.sse.SseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,4 +1,4 @@
-package com.survey.survey.sms;
+package com.survey_engine.survey.sms;
 
 import java.io.Serializable;
 import java.util.Map;

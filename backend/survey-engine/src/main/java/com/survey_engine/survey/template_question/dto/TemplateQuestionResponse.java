@@ -1,6 +1,6 @@
-package com.survey.survey.template_question.dto;
+package com.survey_engine.survey.template_question.dto;
 
-import com.survey.survey.common.enums.QuestionType;
+import com.survey_engine.survey.common.enums.QuestionType;
 
 /**
  * Response DTO for a TemplateQuestion.

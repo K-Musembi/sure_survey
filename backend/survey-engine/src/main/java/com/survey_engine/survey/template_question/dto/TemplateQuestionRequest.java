@@ -1,7 +1,7 @@
-package com.survey.survey.template_question.dto;
+package com.survey_engine.survey.template_question.dto;
 
-import com.survey.survey.common.enums.QuestionType;
-import com.survey.survey.config.security.xss.Sanitize;
+import com.survey_engine.survey.common.enums.QuestionType;
+import com.survey_engine.survey.config.security.xss.Sanitize;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 

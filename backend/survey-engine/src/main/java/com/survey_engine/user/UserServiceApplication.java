@@ -1,4 +1,4 @@
-package com.user_service.user_service;
+package com.survey_engine.user;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

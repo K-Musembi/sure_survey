@@ -1,4 +1,4 @@
-package com.survey.survey.common.enums;
+package com.survey_engine.survey.common.enums;
 
 public enum AccessType {
     PUBLIC,

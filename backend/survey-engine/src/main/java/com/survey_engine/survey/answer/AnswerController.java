@@ -1,6 +1,6 @@
-package com.survey.survey.answer;
+package com.survey_engine.survey.answer;
 
-import com.survey.survey.answer.dto.AnswerResponse;
+import com.survey_engine.survey.answer.dto.AnswerResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

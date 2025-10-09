@@ -1,7 +1,7 @@
-package com.survey.survey.survey;
+package com.survey_engine.survey.survey;
 
-import com.survey.survey.survey.dto.SurveyRequest;
-import com.survey.survey.survey.dto.SurveyResponse;
+import com.survey_engine.survey.survey.dto.SurveyRequest;
+import com.survey_engine.survey.survey.dto.SurveyResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

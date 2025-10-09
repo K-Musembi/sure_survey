@@ -1,10 +1,10 @@
-package com.survey.survey.survey;
+package com.survey_engine.survey.survey;
 
-import com.survey.survey.common.enums.AccessType;
-import com.survey.survey.common.enums.SurveyStatus;
-import com.survey.survey.common.enums.SurveyType;
-import com.survey.survey.question.Question;
-import com.survey.survey.response.Response;
+import com.survey_engine.survey.common.enums.AccessType;
+import com.survey_engine.survey.common.enums.SurveyStatus;
+import com.survey_engine.survey.common.enums.SurveyType;
+import com.survey_engine.survey.question.Question;
+import com.survey_engine.survey.response.Response;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -1,7 +1,7 @@
-package com.survey.survey.response.dto;
+package com.survey_engine.survey.response.dto;
 
-import com.survey.survey.answer.dto.AnswerResponse;
-import com.survey.survey.common.enums.ResponseStatus;
+import com.survey_engine.survey.answer.dto.AnswerResponse;
+import com.survey_engine.survey.common.enums.ResponseStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;

@@ -1,10 +1,10 @@
-package com.user_service.user_service.user.auth;
+package com.survey_engine.user.user.auth;
 
-import com.user_service.user_service.company.Company;
-import com.user_service.user_service.company.CompanyRepository;
+import com.survey_engine.user.company.Company;
+import com.survey_engine.user.company.CompanyRepository;
+import com.survey_engine.user.user.UserRepository;
 import com.user_service.user_service.config.security.JWTService;
-import com.user_service.user_service.user.User;
-import com.user_service.user_service.user.UserRepository;
+import com.survey_engine.user.user.User;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +40,7 @@ public class AuthService {
      * @return AuthResponse DTO
      */
     @Transactional
-    public AuthResponse registerUser(SignUpRequest request) {
+    public AuthResponse registerUser(com.user_service.user_service.user.auth.SignUpRequest request) {
         if (userRepository.findByEmail(request.email()).isPresent()) {
             throw new DataIntegrityViolationException("Email already exists");
         }
@@ -73,7 +73,7 @@ public class AuthService {
      * @return AuthResponse DTO
      */
     @Transactional
-    public AuthResponse authenticateUser(LoginRequest request) {
+    public AuthResponse authenticateUser(com.user_service.user_service.user.auth.LoginRequest request) {
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(

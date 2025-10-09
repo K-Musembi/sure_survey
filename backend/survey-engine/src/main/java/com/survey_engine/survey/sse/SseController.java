@@ -1,6 +1,6 @@
-package com.survey.survey.sse;
+package com.survey_engine.survey.sse;
 
-import com.survey.survey.response.dto.ResponseResponse;
+import com.survey_engine.survey.response.dto.ResponseResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;

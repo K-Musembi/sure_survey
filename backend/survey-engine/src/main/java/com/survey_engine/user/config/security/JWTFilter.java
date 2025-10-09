@@ -1,4 +1,4 @@
-package com.user_service.user_service.config.security;
+package com.survey_engine.user.config.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

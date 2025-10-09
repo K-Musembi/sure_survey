@@ -1,6 +1,6 @@
-package com.survey.survey.question;
+package com.survey_engine.survey.question;
 
-import com.survey.survey.common.enums.QuestionType;
+import com.survey_engine.survey.common.enums.QuestionType;
 import com.survey.survey.survey.Survey;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

@@ -1,4 +1,4 @@
-package com.user_service.user_service.config;
+package com.survey_engine.user.config;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;

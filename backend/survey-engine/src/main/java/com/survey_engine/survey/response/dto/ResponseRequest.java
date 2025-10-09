@@ -1,6 +1,6 @@
-package com.survey.survey.response.dto;
+package com.survey_engine.survey.response.dto;
 
-import com.survey.survey.answer.dto.AnswerRequest;
+import com.survey_engine.survey.answer.dto.AnswerRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 

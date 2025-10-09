@@ -1,9 +1,9 @@
-package com.survey.survey.template_question;
+package com.survey_engine.survey.template_question;
 
-import com.survey.survey.template.Template;
-import com.survey.survey.template.TemplateRepository;
-import com.survey.survey.template_question.dto.TemplateQuestionRequest;
-import com.survey.survey.template_question.dto.TemplateQuestionResponse;
+import com.survey_engine.survey.template.Template;
+import com.survey_engine.survey.template.TemplateRepository;
+import com.survey_engine.survey.template_question.dto.TemplateQuestionRequest;
+import com.survey_engine.survey.template_question.dto.TemplateQuestionResponse;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;

@@ -1,6 +1,6 @@
-package com.survey.survey.answer;
+package com.survey_engine.survey.answer;
 
-import com.survey.survey.answer.dto.AnswerResponse;
+import com.survey_engine.survey.answer.dto.AnswerResponse;
 import com.survey.survey.response.Response;
 import com.survey.survey.response.ResponseRepository;
 import jakarta.persistence.EntityNotFoundException;

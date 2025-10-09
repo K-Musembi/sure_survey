@@ -1,6 +1,6 @@
-package com.survey.survey.question.dto;
+package com.survey_engine.survey.question.dto;
 
-import com.survey.survey.common.enums.QuestionType;
+import com.survey_engine.survey.common.enums.QuestionType;
 
 /**
  * Response Data Transfer Object (DTO) for Question entity

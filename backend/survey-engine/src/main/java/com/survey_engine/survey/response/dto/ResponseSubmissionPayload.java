@@ -1,4 +1,4 @@
-package com.survey.survey.response.dto;
+package com.survey_engine.survey.response.dto;
 
 /**
  * Represents the payload for a survey response submission message.

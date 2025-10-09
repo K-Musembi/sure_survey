@@ -1,4 +1,4 @@
-package com.user_service.user_service.company.dto;
+package com.survey_engine.user.company.dto;
 
 /**
  * Response Data Transfer Object (DTO) for Company entity

@@ -1,4 +1,4 @@
-package com.user_service.user_service.user;
+package com.survey_engine.user.user;
 
 import com.user_service.user_service.user.dto.UserRequest;
 import com.user_service.user_service.user.dto.UserResponse;
@@ -20,14 +20,14 @@ import java.util.List;
 @RequestMapping("/api/v1/users")
 public class UserController {
 
-    private final UserService userService;
+    private final com.user_service.user_service.user.UserService userService;
 
     /**
      * Constructor for user controller class
      * @param userService - user service instance
      */
     @Autowired
-    public UserController(UserService userService) {
+    public UserController(com.user_service.user_service.user.UserService userService) {
         this.userService = userService;
     }
 

@@ -1,4 +1,4 @@
-package com.user_service.user_service.user.auth;
+package com.survey_engine.user.user.auth;
 
 public record AuthResponse(
         String token

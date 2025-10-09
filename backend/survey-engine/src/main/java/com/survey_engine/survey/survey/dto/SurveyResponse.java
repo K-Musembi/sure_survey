@@ -1,9 +1,9 @@
-package com.survey.survey.survey.dto;
+package com.survey_engine.survey.survey.dto;
 
-import com.survey.survey.common.enums.AccessType;
-import com.survey.survey.common.enums.SurveyStatus;
-import com.survey.survey.common.enums.SurveyType;
-import com.survey.survey.question.dto.QuestionResponse;
+import com.survey_engine.survey.common.enums.AccessType;
+import com.survey_engine.survey.common.enums.SurveyStatus;
+import com.survey_engine.survey.common.enums.SurveyType;
+import com.survey_engine.survey.question.dto.QuestionResponse;
 
 import java.time.LocalDateTime;
 import java.util.List;

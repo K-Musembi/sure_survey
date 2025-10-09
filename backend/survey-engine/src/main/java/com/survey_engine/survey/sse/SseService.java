@@ -1,6 +1,6 @@
-package com.survey.survey.sse;
+package com.survey_engine.survey.sse;
 
-import com.survey.survey.response.dto.ResponseResponse;
+import com.survey_engine.survey.response.dto.ResponseResponse;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;

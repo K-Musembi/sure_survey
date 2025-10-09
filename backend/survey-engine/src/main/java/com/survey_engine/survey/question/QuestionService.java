@@ -1,8 +1,8 @@
-package com.survey.survey.question;
+package com.survey_engine.survey.question;
 
-import com.survey.survey.common.enums.SurveyStatus;
-import com.survey.survey.question.dto.QuestionRequest;
-import com.survey.survey.question.dto.QuestionResponse;
+import com.survey_engine.survey.common.enums.SurveyStatus;
+import com.survey_engine.survey.question.dto.QuestionRequest;
+import com.survey_engine.survey.question.dto.QuestionResponse;
 import com.survey.survey.survey.Survey;
 import com.survey.survey.survey.SurveyRepository;
 import jakarta.persistence.EntityNotFoundException;

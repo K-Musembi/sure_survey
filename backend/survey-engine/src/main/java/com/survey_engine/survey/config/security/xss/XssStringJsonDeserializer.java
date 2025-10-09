@@ -1,4 +1,4 @@
-package com.survey.survey.config.security.xss;
+package com.survey_engine.survey.config.security.xss;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
