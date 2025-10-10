@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,6 +26,8 @@ import org.springframework.security.oauth2.server.authorization.config.annotatio
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import java.io.InputStream;
 import java.security.KeyStore;
@@ -48,16 +51,29 @@ public class JwtAuthorization {
     @Bean
     @Order(1)
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
-        // Apply authorization server configuration
-        http.oauth2AuthorizationServer(configurer ->
-            configurer.oidc(Customizer.withDefaults()));
 
-        // For API-based clients, return 401 Unauthorized instead of redirecting to a login page
+        // 1. Initialize the configurer and create a request matcher for the endpoints.
+        OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = new OAuth2AuthorizationServerConfigurer();
+        RequestMatcher endpointsMatcher = authorizationServerConfigurer.getEndpointsMatcher();
+
+        // 2. Apply the configuration using `http.with()` and disable CSRF for the endpoints.
+        http
+                .securityMatcher(endpointsMatcher)
+                .authorizeHttpRequests(authorize ->
+                        authorize.anyRequest().authenticated()
+                )
+                .csrf(csrf -> csrf.ignoringRequestMatchers(endpointsMatcher))
+                .with(authorizationServerConfigurer, Customizer.withDefaults());
+
+        // 3. Configure OIDC (as in the original code)
+        authorizationServerConfigurer.oidc(Customizer.withDefaults());
+
+        // 4. Handle exceptions, returning a 401 for unauthorized API clients.
         http.exceptionHandling(exceptions ->
-                exceptions.authenticationEntryPoint(new org.springframework.security.web.authentication.HttpStatusEntryPoint(org.springframework.http.HttpStatus.UNAUTHORIZED))
+                exceptions.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
         );
 
-        // The authorization server endpoints are also a resource server
+        // 5. Configure the resource server for the authorization server endpoints.
         http.oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
 
         return http.build();
