@@ -1,4 +1,4 @@
-package com.payments.payments.config;
+package com.survey_engine.payments.config;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;

@@ -1,4 +1,4 @@
 /**
  * This package contains security configuration files
  */
-package com.user_service.user_service.config.security;
+package com.survey_engine.user.config.security;

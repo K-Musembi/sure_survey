@@ -1,7 +1,6 @@
 package com.survey_engine.survey.models;
 
 import com.survey_engine.survey.common.enums.ResponseStatus;
-import com.survey.survey.survey.Survey;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;

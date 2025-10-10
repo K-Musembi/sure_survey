@@ -1,6 +1,6 @@
-package com.payments.payments.repository;
+package com.survey_engine.payments.repository;
 
-import com.payments.payments.models.Transaction;
+import com.survey_engine.payments.models.Transaction;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

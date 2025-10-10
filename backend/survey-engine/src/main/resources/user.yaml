@@ -26,6 +26,10 @@ spring:
 jwt:
   secret: ${JWT_SECRET}
   expiration: ${JWT_SHORT_EXPIRATION}
+  keystore:
+    path: keystore.jks
+    password: password
+    alias: oauth-key
 
 logging:
   level:

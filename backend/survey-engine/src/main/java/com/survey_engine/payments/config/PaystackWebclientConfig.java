@@ -1,4 +1,4 @@
-package com.payments.payments.config;
+package com.survey_engine.payments.config;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;

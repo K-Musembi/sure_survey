@@ -1,7 +1,8 @@
 package com.survey_engine.survey.controller;
 
-import com.survey.survey.template_question.dto.TemplateQuestionRequest;
-import com.survey.survey.template_question.dto.TemplateQuestionResponse;
+import com.survey_engine.survey.service.TemplateQuestionService;
+import com.survey_engine.survey.dto.TemplateQuestionRequest;
+import com.survey_engine.survey.dto.TemplateQuestionResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

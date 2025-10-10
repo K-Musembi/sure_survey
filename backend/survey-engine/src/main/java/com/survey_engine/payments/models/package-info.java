@@ -1,4 +1,4 @@
 /**
  * This package contains the entity definitions
  */
-package com.payments.payments.models;
+package com.survey_engine.payments.models;

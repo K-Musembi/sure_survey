@@ -1,14 +1,14 @@
-package com.payments.payments.service;
+package com.survey_engine.payments.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.payments.payments.dto.paystack.PaystackWebhookData;
-import com.payments.payments.dto.paystack.PaystackWebhookEvent;
-import com.payments.payments.models.PaymentEvent;
-import com.payments.payments.models.enums.PaymentStatus;
-import com.payments.payments.models.Transaction;
-import com.payments.payments.models.enums.TransactionType;
-import com.payments.payments.repository.PaymentEventRepository;
-import com.payments.payments.repository.TransactionRepository;
+import com.survey_engine.payments.dto.paystack.PaystackWebhookData;
+import com.survey_engine.payments.dto.paystack.PaystackWebhookEvent;
+import com.survey_engine.payments.models.PaymentEvent;
+import com.survey_engine.payments.models.enums.PaymentStatus;
+import com.survey_engine.payments.models.Transaction;
+import com.survey_engine.payments.models.enums.TransactionType;
+import com.survey_engine.payments.repository.PaymentEventRepository;
+import com.survey_engine.payments.repository.TransactionRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,22 +62,22 @@ public class WebhookService {
      */
     private void handleChargeSuccess(PaystackWebhookData data) {
         String reference = data.reference();
-        PaymentEvent payment = paymentRepository.findByGatewayTransactionId(reference)
+        PaymentEvent paymentEvent = paymentRepository.findByGatewayTransactionId(reference)
                 .orElseThrow(() -> new EntityNotFoundException("PaymentEvent with reference " + reference + " not found."));
 
         // Idempotency Check: Ensure we haven't already processed this.
-        if (payment.getStatus() == PaymentStatus.SUCCEEDED) {
-            log.warn("Webhook for already succeeded payment received. Reference: {}. Ignoring.", reference);
+        if (paymentEvent.getStatus() == PaymentStatus.SUCCEEDED) {
+            log.warn("Webhook for already succeeded paymentEvent received. Reference: {}. Ignoring.", reference);
             return;
         }
 
-        payment.setStatus(PaymentStatus.SUCCEEDED);
-        paymentRepository.save(payment);
-        Transaction transaction = createTransaction(payment, data);
-        log.info("PaymentEvent {} SUCCEEDED. Created transaction {}.", payment.getId(), transaction.getId());
+        paymentEvent.setStatus(PaymentStatus.SUCCEEDED);
+        paymentRepository.save(paymentEvent);
+        Transaction transaction = createTransaction(paymentEvent, data);
+        log.info("PaymentEvent {} SUCCEEDED. Created transaction {}.", paymentEvent.getId(), transaction.getId());
 
         // Publish event to RabbitMQ for the survey service
-        publishPaymentSuccessEvent(payment);
+        publishPaymentSuccessEvent(paymentEvent);
     }
 
     /**
@@ -102,26 +102,26 @@ public class WebhookService {
     }
 
     /**
-     * Publishes a message to RabbitMQ indicating a payment was successful.
+     * Publishes a message to RabbitMQ indicating a paymentEvent was successful.
      *
-     * @param payment The successfully completed payment.
+     * @param paymentEvent The successfully completed paymentEvent.
      */
-    private void publishPaymentSuccessEvent(PaymentEvent payment) {
+    private void publishPaymentSuccessEvent(PaymentEvent paymentEvent) {
         try {
             Map<String, String> eventMessage = Map.of(
-                    "paymentId", payment.getId().toString(),
-                    "surveyId", payment.getSurveyId(),
-                    "userId", payment.getUserId(),
-                    "status", payment.getStatus().toString()
+                    "paymentId", paymentEvent.getId().toString(),
+                    "surveyId", paymentEvent.getSurveyId(),
+                    "userId", paymentEvent.getUserId(),
+                    "status", paymentEvent.getStatus().toString()
             );
             String jsonMessage = objectMapper.writeValueAsString(eventMessage);
 
             rabbitTemplate.convertAndSend(PAYMENT_EXCHANGE, PAYMENT_SUCCEEDED_ROUTING_KEY, jsonMessage);
-            log.info("Published payment success event for surveyId: {}", payment.getSurveyId());
+            log.info("Published paymentEvent success event for surveyId: {}", paymentEvent.getSurveyId());
         } catch (Exception e) {
-            log.error("Failed to publish payment success event for paymentId: {}. Error: {}", payment.getId(), e.getMessage());
+            log.error("Failed to publish paymentEvent success event for paymentId: {}. Error: {}", paymentEvent.getId(), e.getMessage());
             // Re-throw to roll back the database transaction, ensuring data consistency.
-            throw new RuntimeException("Failed to publish payment success event.", e);
+            throw new RuntimeException("Failed to publish paymentEvent success event.", e);
         }
     }
 }

@@ -1,11 +1,11 @@
-package com.payments.payments.controller;
+package com.survey_engine.payments.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.payments.payments.config.PaystackWebclientConfig;
-import com.payments.payments.dto.paystack.PaystackWebhookData;
-import com.payments.payments.dto.paystack.PaystackWebhookEvent;
-import com.payments.payments.service.WebhookService;
+import com.survey_engine.payments.config.PaystackWebclientConfig;
+import com.survey_engine.payments.dto.paystack.PaystackWebhookData;
+import com.survey_engine.payments.dto.paystack.PaystackWebhookEvent;
+import com.survey_engine.payments.service.WebhookService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

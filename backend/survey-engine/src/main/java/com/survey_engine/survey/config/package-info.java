@@ -1,4 +1,4 @@
 /**
  * Configurations for survey microservice application
  */
-package com.survey.survey.config;
+package com.survey_engine.survey.config;

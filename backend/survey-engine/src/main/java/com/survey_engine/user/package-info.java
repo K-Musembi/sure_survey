@@ -2,7 +2,9 @@
  * User module
  */
 
-@ApplicationModule
+@ApplicationModule(
+        allowedDependencies = { "config" }
+)
 
 package com.survey_engine.user;
 

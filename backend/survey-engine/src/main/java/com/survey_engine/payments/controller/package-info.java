@@ -1,4 +1,4 @@
 /**
  * This package contains controller layer files
  */
-package com.payments.payments.controller;
+package com.survey_engine.payments.controller;

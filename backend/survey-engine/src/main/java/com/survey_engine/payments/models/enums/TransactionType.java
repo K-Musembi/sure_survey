@@ -1,7 +1,7 @@
-package com.payments.payments.models.enums;
+package com.survey_engine.payments.models.enums;
 
 /**
- * Enum representing the type of a financial transaction.
+ * Enum representing a financial transaction.
  */
 public enum TransactionType {
     CHARGE,

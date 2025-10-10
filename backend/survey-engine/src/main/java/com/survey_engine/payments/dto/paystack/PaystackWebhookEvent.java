@@ -1,6 +1,6 @@
-package com.payments.payments.dto.paystack;
+package com.survey_engine.payments.dto.paystack;
 
-import com.payments.payments.config.security.xss.Sanitize;
+import com.survey_engine.payments.config.security.xss.Sanitize;
 
 /**
  * Represents the top-level structure of a webhook event sent from PayStack.

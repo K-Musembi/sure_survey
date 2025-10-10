@@ -1,4 +1,4 @@
-package com.payments.payments.dto;
+package com.survey_engine.payments.dto;
 
 import jakarta.validation.constraints.*;
 

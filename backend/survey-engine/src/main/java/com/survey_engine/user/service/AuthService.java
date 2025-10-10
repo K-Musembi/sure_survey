@@ -1,19 +1,15 @@
 package com.survey_engine.user.service;
 
-import com.survey_engine.user.dto.AuthResponse;
+import com.survey_engine.user.dto.SignUpRequest;
+import com.survey_engine.user.dto.UserResponse;
 import com.survey_engine.user.models.Company;
 import com.survey_engine.user.repository.CompanyRepository;
 import com.survey_engine.user.repository.UserRepository;
-import com.user_service.user_service.config.security.JWTService;
 import com.survey_engine.user.models.User;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import org.springframework.stereotype.Service;
@@ -22,8 +18,6 @@ import org.springframework.stereotype.Service;
  * Business logic for authentication service
  * Uses AuthenticationManager to authenticate user
  * Uses generateToken() method from JWTService to generate JWT token
- * @see com.user_service.user_service.config.security.SecurityConfig
- * @see JWTService
  */
 @Service
 @RequiredArgsConstructor
@@ -31,8 +25,6 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JWTService jwtService;
-    private final AuthenticationManager authenticationManager;
     private final CompanyRepository companyRepository;
 
     /**
@@ -41,7 +33,7 @@ public class AuthService {
      * @return AuthResponse DTO
      */
     @Transactional
-    public AuthResponse registerUser(com.user_service.user_service.user.auth.SignUpRequest request) {
+    public UserResponse registerUser(SignUpRequest request) {
         if (userRepository.findByEmail(request.email()).isPresent()) {
             throw new DataIntegrityViolationException("Email already exists");
         }
@@ -51,7 +43,7 @@ public class AuthService {
         user.setEmail(request.email());
         user.setPassword(passwordEncoder.encode(request.password()));
         if (request.role() == null) {
-            user.setRole("Regular");
+            user.setRole("REGULAR");
         } else {
             user.setRole(request.role());
         }
@@ -62,33 +54,13 @@ public class AuthService {
             user.setCompany(company);
         }
 
-        userRepository.save(user);
-        String jwtToken = jwtService.generateToken(user);
-        return new AuthResponse(jwtToken);
-    }
+        User savedUser = userRepository.save(user);
 
-    /**
-     * Authenticates user and generates token
-     * AuthenticationManager is an interface; ite defers to AuthenticationProvider declared in SecurityConfig
-     * @param request AuthRequest DTO
-     * @return AuthResponse DTO
-     */
-    @Transactional
-    public AuthResponse authenticateUser(com.user_service.user_service.user.auth.LoginRequest request) {
-        try {
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            request.email(),
-                            request.password())
-            );
-        } catch (BadCredentialsException e) {
-            throw new BadCredentialsException("Invalid email or password");
-        }
-
-        User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-
-        String jwtToken = jwtService.generateToken(user);
-        return new AuthResponse(jwtToken);
+        return new UserResponse(
+                savedUser.getId(),
+                savedUser.getName(),
+                savedUser.getEmail(),
+                savedUser.getCompany() != null ? savedUser.getCompany().getId() : null
+        );
     }
 }

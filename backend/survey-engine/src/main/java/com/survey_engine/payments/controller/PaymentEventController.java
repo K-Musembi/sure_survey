@@ -1,9 +1,9 @@
-package com.payments.payments.controller;
+package com.survey_engine.payments.controller;
 
-import com.payments.payments.dto.PaymentEventDetails;
-import com.payments.payments.dto.PaymentEventRequest;
-import com.payments.payments.dto.PaymentEventResponse;
-import com.payments.payments.service.PaymentEventService;
+import com.survey_engine.payments.dto.PaymentEventDetails;
+import com.survey_engine.payments.dto.PaymentEventRequest;
+import com.survey_engine.payments.dto.PaymentEventResponse;
+import com.survey_engine.payments.service.PaymentEventService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

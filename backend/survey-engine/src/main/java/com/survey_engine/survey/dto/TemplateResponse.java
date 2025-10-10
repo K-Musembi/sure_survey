@@ -1,7 +1,6 @@
 package com.survey_engine.survey.dto;
 
 import com.survey_engine.survey.common.enums.SurveyType;
-import com.survey.survey.template_question.dto.TemplateQuestionResponse;
 
 import java.time.LocalDateTime;
 import java.util.List;

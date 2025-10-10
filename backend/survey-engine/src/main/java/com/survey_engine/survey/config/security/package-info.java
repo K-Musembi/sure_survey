@@ -1,4 +1,4 @@
 /**
  * Security configurations
  */
-package com.survey.survey.config.security;
+package com.survey_engine.survey.config.security;

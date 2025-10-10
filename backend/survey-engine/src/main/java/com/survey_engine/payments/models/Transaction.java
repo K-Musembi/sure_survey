@@ -1,6 +1,6 @@
-package com.payments.payments.models;
+package com.survey_engine.payments.models;
 
-import com.payments.payments.models.enums.TransactionType;
+import com.survey_engine.payments.models.enums.TransactionType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;

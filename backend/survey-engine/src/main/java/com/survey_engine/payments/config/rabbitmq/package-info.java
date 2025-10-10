@@ -1,4 +1,4 @@
 /**
  * RabbitMQ configuration for asynchronous processing
  */
-package com.payments.payments.config.rabbitmq;
+package com.survey_engine.payments.config.rabbitmq;

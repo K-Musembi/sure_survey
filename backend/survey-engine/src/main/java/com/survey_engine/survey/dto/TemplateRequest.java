@@ -2,7 +2,6 @@ package com.survey_engine.survey.dto;
 
 import com.survey_engine.survey.common.enums.SurveyType;
 import com.survey_engine.survey.config.security.xss.Sanitize;
-import com.survey.survey.template_question.dto.TemplateQuestionRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

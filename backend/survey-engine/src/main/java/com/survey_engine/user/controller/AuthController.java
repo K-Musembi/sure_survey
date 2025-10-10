@@ -1,5 +1,8 @@
 package com.survey_engine.user.controller;
 
+import com.survey_engine.user.dto.SignUpRequest;
+import com.survey_engine.user.dto.UserResponse;
+import com.survey_engine.user.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -14,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * HTTP endpoints for registering new users and authenticating existing users
- * @see com.user_service.user_service.user.auth.AuthService
+ * @see com.survey_engine.user.service.AuthService
  */
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -22,7 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 public class AuthController {
 
-    private final com.user_service.user_service.user.auth.AuthService authService;
+    private final AuthService authService;
 
     /**
      * Method to create user using HTTP POST method
@@ -30,19 +33,8 @@ public class AuthController {
      * @return - An authentication response containing the JWT token.
      */
     @PostMapping("/signup")
-    public ResponseEntity<com.user_service.user_service.user.auth.AuthResponse> registerUser(@Valid @RequestBody com.user_service.user_service.user.auth.SignUpRequest request) {
-        com.user_service.user_service.user.auth.AuthResponse responseObject = authService.registerUser(request);
+    public ResponseEntity<UserResponse> registerUser(@Valid @RequestBody SignUpRequest request) {
+        UserResponse responseObject = authService.registerUser(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseObject);
-    }
-
-    /**
-     * Method to login existing user using HTTP POST method
-     * @param request - The login request details.
-     * @return - An authentication response containing the JWT token.
-     */
-    @PostMapping("/login")
-    public ResponseEntity<com.user_service.user_service.user.auth.AuthResponse> authenticateUser(@Valid @RequestBody com.user_service.user_service.user.auth.LoginRequest request) {
-        com.user_service.user_service.user.auth.AuthResponse responseObject = authService.authenticateUser(request);
-        return ResponseEntity.ok().body(responseObject);
     }
 }

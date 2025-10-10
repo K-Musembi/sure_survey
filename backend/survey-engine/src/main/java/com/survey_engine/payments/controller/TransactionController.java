@@ -1,7 +1,7 @@
-package com.payments.payments.controller;
+package com.survey_engine.payments.controller;
 
-import com.payments.payments.dto.TransactionResponse;
-import com.payments.payments.service.TransactionService;
+import com.survey_engine.payments.dto.TransactionResponse;
+import com.survey_engine.payments.service.TransactionService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

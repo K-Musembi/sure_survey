@@ -1,7 +1,7 @@
-package com.payments.payments.dto.paystack;
+package com.survey_engine.payments.dto.paystack;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.payments.payments.config.security.xss.Sanitize;
+import com.survey_engine.payments.config.security.xss.Sanitize;
 
 /**
  * Represents the 'data' object within a PayStack webhook event, specifically for 'charge.success'.

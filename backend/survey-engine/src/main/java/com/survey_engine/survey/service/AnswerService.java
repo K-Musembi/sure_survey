@@ -1,10 +1,11 @@
 package com.survey_engine.survey.service;
 
 import com.survey_engine.survey.dto.AnswerResponse;
-import com.survey.survey.response.Response;
-import com.survey.survey.response.ResponseRepository;
+import com.survey_engine.survey.models.Response;
+import com.survey_engine.survey.repository.ResponseRepository;
 import com.survey_engine.survey.models.Answer;
 import com.survey_engine.survey.repository.AnswerRepository;
+import com.survey_engine.survey.repository.ResponseRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;

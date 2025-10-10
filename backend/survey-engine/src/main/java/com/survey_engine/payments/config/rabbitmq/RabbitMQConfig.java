@@ -1,4 +1,4 @@
-package com.payments.payments.config.rabbitmq;
+package com.survey_engine.payments.config.rabbitmq;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;

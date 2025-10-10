@@ -1,4 +1,4 @@
-package com.payments.payments.config.security;
+package com.survey_engine.payments.config.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

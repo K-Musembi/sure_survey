@@ -1,4 +1,4 @@
-package com.payments.payments.models.enums;
+package com.survey_engine.payments.models.enums;
 
 /**
  * Enum representing the lifecycle status of a PaymentEvent.

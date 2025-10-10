@@ -1,6 +1,6 @@
-package com.payments.payments.dto;
+package com.survey_engine.payments.dto;
 
-import com.payments.payments.models.enums.TransactionType;
+import com.survey_engine.payments.models.enums.TransactionType;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

@@ -1,4 +1,4 @@
 /**
  * To store fixed-constants
  */
-package com.payments.payments.models.enums;
+package com.survey_engine.payments.models.enums;

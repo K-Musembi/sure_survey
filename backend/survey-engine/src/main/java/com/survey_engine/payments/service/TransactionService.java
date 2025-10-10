@@ -1,8 +1,9 @@
-package com.payments.payments.service;
+package com.survey_engine.payments.service;
 
-import com.payments.payments.dto.TransactionResponse;
-import com.payments.payments.models.Transaction;
-import com.payments.payments.repository.TransactionRepository;
+import com.survey_engine.payments.dto.TransactionResponse;
+import com.survey_engine.payments.models.Transaction;
+import com.survey_engine.payments.repository.TransactionRepository;
+import com.survey_engine.payments.repository.TransactionRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;

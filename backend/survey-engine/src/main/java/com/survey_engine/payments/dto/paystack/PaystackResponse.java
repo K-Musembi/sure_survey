@@ -1,4 +1,4 @@
-package com.payments.payments.dto.paystack;
+package com.survey_engine.payments.dto.paystack;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

@@ -3,7 +3,6 @@ package com.survey_engine.survey.service;
 import com.survey_engine.survey.config.rabbitmq.RabbitMQConfig;
 import com.survey_engine.survey.dto.ResponseResponse;
 import com.survey_engine.survey.dto.ResponseSubmissionPayload;
-import com.survey.survey.sse.SseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;

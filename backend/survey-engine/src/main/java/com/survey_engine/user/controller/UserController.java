@@ -1,7 +1,8 @@
 package com.survey_engine.user.controller;
 
-import com.user_service.user_service.user.dto.UserRequest;
-import com.user_service.user_service.user.dto.UserResponse;
+import com.survey_engine.user.dto.UserRequest;
+import com.survey_engine.user.dto.UserResponse;
+import com.survey_engine.user.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -20,14 +21,14 @@ import java.util.List;
 @RequestMapping("/api/v1/users")
 public class UserController {
 
-    private final com.user_service.user_service.user.UserService userService;
+    private final com.survey_engine.user.service.UserService userService;
 
     /**
      * Constructor for user controller class
      * @param userService - user service instance
      */
     @Autowired
-    public UserController(com.user_service.user_service.user.UserService userService) {
+    public UserController(UserService userService) {
         this.userService = userService;
     }
 

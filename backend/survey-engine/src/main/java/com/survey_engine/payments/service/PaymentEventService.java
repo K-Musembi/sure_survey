@@ -1,13 +1,13 @@
-package com.payments.payments.service;
+package com.survey_engine.payments.service;
 
-import com.payments.payments.dto.PaymentEventDetails;
-import com.payments.payments.dto.PaymentEventRequest;
-import com.payments.payments.dto.PaymentEventResponse;
-import com.payments.payments.dto.paystack.PaystackResponse;
-import com.payments.payments.models.PaymentEvent;
-import com.payments.payments.models.enums.PaymentGateway;
-import com.payments.payments.models.enums.PaymentStatus;
-import com.payments.payments.repository.PaymentEventRepository;
+import com.survey_engine.payments.dto.PaymentEventDetails;
+import com.survey_engine.payments.dto.PaymentEventRequest;
+import com.survey_engine.payments.dto.PaymentEventResponse;
+import com.survey_engine.payments.dto.paystack.PaystackResponse;
+import com.survey_engine.payments.models.PaymentEvent;
+import com.survey_engine.payments.models.enums.PaymentGateway;
+import com.survey_engine.payments.models.enums.PaymentStatus;
+import com.survey_engine.payments.repository.PaymentEventRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

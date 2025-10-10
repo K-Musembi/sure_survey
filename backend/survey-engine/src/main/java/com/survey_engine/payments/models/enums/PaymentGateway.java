@@ -1,4 +1,4 @@
-package com.payments.payments.models.enums;
+package com.survey_engine.payments.models.enums;
 
 /**
  * Enum representing the supported payment gateways.

@@ -1,9 +1,9 @@
-package com.payments.payments.service;
+package com.survey_engine.payments.service;
 
-import com.payments.payments.dto.PaymentEventRequest;
-import com.payments.payments.dto.paystack.PaystackRequest;
-import com.payments.payments.dto.paystack.PaystackResponse;
-import com.payments.payments.dto.paystack.PaystackVerifyResponse;
+import com.survey_engine.payments.dto.PaymentEventRequest;
+import com.survey_engine.payments.dto.paystack.PaystackRequest;
+import com.survey_engine.payments.dto.paystack.PaystackResponse;
+import com.survey_engine.payments.dto.paystack.PaystackVerifyResponse;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;

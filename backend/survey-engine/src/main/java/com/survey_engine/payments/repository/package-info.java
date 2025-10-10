@@ -1,4 +1,4 @@
 /**
  * This package contains repository files
  */
-package com.payments.payments.repository;
+package com.survey_engine.payments.repository;

@@ -2,7 +2,9 @@
  * Payments module
  */
 
-@ApplicationModule
+@ApplicationModule(
+        allowedDependencies = { "config" }
+)
 
 package com.survey_engine.payments;
 

@@ -1,4 +1,4 @@
-package com.payments.payments.dto;
+package com.survey_engine.payments.dto;
 
 /**
  * Response Data Transfer Object (DTO) sent after successfully initializing a payment.
