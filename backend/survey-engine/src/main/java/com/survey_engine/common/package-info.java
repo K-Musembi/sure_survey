@@ -4,6 +4,6 @@
 
 @ApplicationModule
 
-package com.survey_engine.config;
+package com.survey_engine.common;
 
 import org.springframework.modulith.ApplicationModule;

@@ -1,25 +1,24 @@
 package com.survey_engine.payments.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.survey_engine.common.events.PaymentEventSuceeded;
 import com.survey_engine.payments.dto.paystack.PaystackWebhookData;
 import com.survey_engine.payments.dto.paystack.PaystackWebhookEvent;
 import com.survey_engine.payments.models.PaymentEvent;
-import com.survey_engine.payments.models.enums.PaymentStatus;
 import com.survey_engine.payments.models.Transaction;
+import com.survey_engine.payments.models.enums.PaymentStatus;
 import com.survey_engine.payments.models.enums.TransactionType;
 import com.survey_engine.payments.repository.PaymentEventRepository;
 import com.survey_engine.payments.repository.TransactionRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.Map;
 
 /**
  * Service class to handle the business logic for incoming webhooks.
@@ -31,12 +30,8 @@ public class WebhookService {
 
     private final PaymentEventRepository paymentRepository;
     private final TransactionRepository transactionRepository;
-    private final RabbitTemplate rabbitTemplate;
-    private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
-    // Define RabbitMQ constants for clarity
-    private static final String PAYMENT_EXCHANGE = "payment.exchange";
-    private static final String PAYMENT_SUCCEEDED_ROUTING_KEY = "payment.succeeded";
 
     /**
      * Processes a verified webhook event from PayStack.
@@ -76,8 +71,14 @@ public class WebhookService {
         Transaction transaction = createTransaction(paymentEvent, data);
         log.info("PaymentEvent {} SUCCEEDED. Created transaction {}.", paymentEvent.getId(), transaction.getId());
 
-        // Publish event to RabbitMQ for the survey service
-        publishPaymentSuccessEvent(paymentEvent);
+        // Publish an application event for other modules to consume
+        PaymentEventSuceeded eventPayload = new PaymentEventSuceeded(
+                paymentEvent.getId(),
+                paymentEvent.getSurveyId(),
+                paymentEvent.getUserId()
+        );
+        eventPublisher.publishEvent(eventPayload);
+        log.info("Published PaymentEventSuceeded for surveyId: {}", paymentEvent.getSurveyId());
     }
 
     /**
@@ -99,29 +100,5 @@ public class WebhookService {
         transaction.setProcessedAt(LocalDateTime.now());
         transactionRepository.save(transaction);
         return transaction;
-    }
-
-    /**
-     * Publishes a message to RabbitMQ indicating a paymentEvent was successful.
-     *
-     * @param paymentEvent The successfully completed paymentEvent.
-     */
-    private void publishPaymentSuccessEvent(PaymentEvent paymentEvent) {
-        try {
-            Map<String, String> eventMessage = Map.of(
-                    "paymentId", paymentEvent.getId().toString(),
-                    "surveyId", paymentEvent.getSurveyId(),
-                    "userId", paymentEvent.getUserId(),
-                    "status", paymentEvent.getStatus().toString()
-            );
-            String jsonMessage = objectMapper.writeValueAsString(eventMessage);
-
-            rabbitTemplate.convertAndSend(PAYMENT_EXCHANGE, PAYMENT_SUCCEEDED_ROUTING_KEY, jsonMessage);
-            log.info("Published paymentEvent success event for surveyId: {}", paymentEvent.getSurveyId());
-        } catch (Exception e) {
-            log.error("Failed to publish paymentEvent success event for paymentId: {}. Error: {}", paymentEvent.getId(), e.getMessage());
-            // Re-throw to roll back the database transaction, ensuring data consistency.
-            throw new RuntimeException("Failed to publish paymentEvent success event.", e);
-        }
     }
 }

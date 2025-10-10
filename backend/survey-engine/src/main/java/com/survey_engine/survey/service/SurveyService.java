@@ -182,6 +182,37 @@ public class SurveyService {
     }
 
     /**
+     * Activates a survey after a successful payment event.
+     * This method is called by an event listener and is not exposed via the controller.
+     *
+     * @param surveyId The ID of the survey to activate.
+     */
+    @Transactional
+    public void activatePaidSurvey(Long surveyId) {
+        Survey survey = surveyRepository.findById(surveyId)
+                .orElseThrow(() -> new EntityNotFoundException("Survey not found with id: " + surveyId));
+
+        // Business rule: Can only activate a survey from DRAFT status
+        if (survey.getStatus() != SurveyStatus.DRAFT) {
+            // Log a warning but don't throw an exception, as the payment is already processed.
+            // This could happen in a race condition or if the event is delivered twice.
+            logger.warn("Attempted to activate survey {} which is not in DRAFT status. Current status: {}.", surveyId, survey.getStatus());
+            return;
+        }
+
+        // Business rule: Survey must have at least one question to be activated
+        if (survey.getQuestions() == null || survey.getQuestions().isEmpty()) {
+            // Log an error, as this represents inconsistent data. A survey shouldn't be payable without questions.
+            logger.error("Attempted to activate survey {} with no questions.", surveyId);
+            return;
+        }
+
+        survey.setStatus(SurveyStatus.ACTIVE);
+        surveyRepository.save(survey);
+        logger.info("Successfully activated survey {} after payment.", surveyId);
+    }
+
+    /**
      * Method to delete survey
      * @param id - survey id
      * @param userId - user id from JWT

@@ -1,4 +1,4 @@
-package com.survey_engine.user.config.security;
+package com.survey_engine.common.config.security;
 
 
 import com.survey_engine.user.repository.UserRepository;
