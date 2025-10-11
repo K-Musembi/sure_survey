@@ -47,7 +47,7 @@ public class HttpResponseController {
             @AuthenticationPrincipal Jwt jwt) {
         // User can be anonymous (jwt is null) or authenticated
         String userId = (jwt != null) ? jwt.getSubject() : null;
-        responseService.createResponse(surveyId, request, userId);
+        responseService.createResponse(surveyId, request, userId, null);
         return ResponseEntity.accepted().build();
     }
 

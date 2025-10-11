@@ -1,12 +1,12 @@
 package com.survey_engine.survey.controller;
 
-import com.survey_engine.survey.dto.AnswerRequest;
 import com.survey_engine.survey.common.enums.SurveyStatus;
-import com.survey_engine.survey.models.Question;
+import com.survey_engine.survey.dto.AnswerRequest;
 import com.survey_engine.survey.dto.ResponseRequest;
+import com.survey_engine.survey.models.Question;
 import com.survey_engine.survey.models.SmsSession;
 import com.survey_engine.survey.repository.SurveyRepository;
-import com.survey_engine.survey.service.SmsSessionService;
+import com.survey_engine.survey.service.SmsResponseSession;
 import com.survey_engine.survey.models.Survey;
 import com.survey_engine.survey.service.ResponseService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,12 +24,12 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/v1/sms")
 public class SmsResponseController {
 
-    private final SmsSessionService sessionService;
+    private final SmsResponseSession sessionService;
     private final SurveyRepository surveyRepository;
     private final ResponseService responseService;
 
     @Autowired
-    public SmsResponseController(SmsSessionService sessionService, SurveyRepository surveyRepository, ResponseService responseService) {
+    public SmsResponseController(SmsResponseSession sessionService, SurveyRepository surveyRepository, ResponseService responseService) {
         this.sessionService = sessionService;
         this.surveyRepository = surveyRepository;
         this.responseService = responseService;
@@ -115,7 +115,7 @@ public class SmsResponseController {
                     .collect(Collectors.toList());
 
             ResponseRequest finalRequest = new ResponseRequest(answerRequests);
-            responseService.createResponse(session.surveyId(), finalRequest, null); // userId is null for SMS
+            responseService.createResponse(session.surveyId(), finalRequest, null, session.sessionId()); // userId is null for SMS
 
             sessionService.deleteSession(session.sessionId());
             return "Thank you for completing the survey!";

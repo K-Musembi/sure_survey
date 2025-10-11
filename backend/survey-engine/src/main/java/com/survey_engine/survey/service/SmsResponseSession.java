@@ -13,7 +13,7 @@ import java.util.Optional;
  * This service abstracts the Redis operations for creating, retrieving, and deleting session state.
  */
 @Service
-public class SmsSessionService {
+public class SmsResponseSession {
 
     private static final String SESSION_KEY_PREFIX = "sms:session:";
     private static final Duration SESSION_TTL = Duration.ofHours(24);
@@ -21,17 +21,17 @@ public class SmsSessionService {
     private final RedisTemplate<String, Object> redisTemplate;
 
     /**
-     * Constructor for SmsSessionService.
+     * Constructor for SmsResponseSession.
      * @param redisTemplate The configured RedisTemplate for data access.
      */
     @Autowired
-    public SmsSessionService(RedisTemplate<String, Object> redisTemplate) {
+    public SmsResponseSession(RedisTemplate<String, Object> redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
 
     /**
      * Generates the Redis key for a given session ID.
-     * @param sessionId The user's phone number.
+     * @param sessionId The participant's phone number.
      * @return The namespaced Redis key.
      */
     private String getKey(String sessionId) {
@@ -39,7 +39,7 @@ public class SmsSessionService {
     }
 
     /**
-     * Saves or updates a user's survey session in Redis with a configured Time-To-Live (TTL).
+     * Saves or updates a participant's survey session in Redis with a configured Time-To-Live (TTL).
      * @param session The session object to save.
      */
     public void saveSession(SmsSession session) {
@@ -47,8 +47,8 @@ public class SmsSessionService {
     }
 
     /**
-     * Retrieves a user's survey session from Redis.
-     * @param sessionId The user's phone number.
+     * Retrieves a participant's survey session from Redis.
+     * @param sessionId The participant's phone number.
      * @return An Optional containing the SmsSession if found, otherwise an empty Optional.
      */
     public Optional<SmsSession> getSession(String sessionId) {
@@ -57,8 +57,8 @@ public class SmsSessionService {
     }
 
     /**
-     * Deletes a user's survey session from Redis, typically after completion or timeout.
-     * @param sessionId The user's phone number.
+     * Deletes a participant's survey session from Redis, typically after completion or timeout.
+     * @param sessionId The participant's phone number.
      */
     public void deleteSession(String sessionId) {
         redisTemplate.delete(getKey(sessionId));

@@ -9,6 +9,8 @@ import com.survey_engine.survey.repository.SurveyRepository;
 import com.survey_engine.survey.dto.SurveyRequest;
 import com.survey_engine.survey.dto.SurveyResponse;
 import jakarta.persistence.EntityNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
@@ -24,6 +26,8 @@ import java.util.stream.Collectors;
  */
 @Service
 public class SurveyService {
+
+    private static final Logger logger = LoggerFactory.getLogger(SpringEventListener.class);
 
     private final SurveyRepository surveyRepository;
 

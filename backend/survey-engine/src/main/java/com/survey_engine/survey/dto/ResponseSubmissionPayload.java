@@ -11,6 +11,7 @@ package com.survey_engine.survey.dto;
 public record ResponseSubmissionPayload(
         Long surveyId,
         ResponseRequest request,
-        String userId
+        String userId,
+        String sessionId
 ) {
 }

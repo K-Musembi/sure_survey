@@ -1,5 +1,7 @@
 package com.survey_engine.survey.service;
 
+import com.survey_engine.common.events.ResponseNeedsParticipant;
+import com.survey_engine.common.events.SurveyCompletedEvent;
 import com.survey_engine.survey.models.Answer;
 import com.survey_engine.survey.dto.AnswerResponse;
 import com.survey_engine.survey.common.enums.AccessType;
@@ -18,6 +20,7 @@ import com.survey_engine.survey.repository.SurveyRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,31 +40,18 @@ public class ResponseService {
     private final SurveyRepository surveyRepository;
     private final RabbitTemplate rabbitTemplate;
     private final QuestionRepository questionRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
-    /**
-     * Constructor for ResponseService.
-     *
-     * @param responseRepository An instance of ResponseRepository.
-     * @param surveyRepository   An instance of SurveyRepository.
-     * @param rabbitTemplate     An instance of RabbitTemplate for messaging.
-     * @param questionRepository An instance of QuestionRepository
-     */
     @Autowired
-    public ResponseService(ResponseRepository responseRepository, SurveyRepository surveyRepository, RabbitTemplate rabbitTemplate, QuestionRepository questionRepository) {
+    public ResponseService(ResponseRepository responseRepository, SurveyRepository surveyRepository, RabbitTemplate rabbitTemplate, QuestionRepository questionRepository, ApplicationEventPublisher eventPublisher) {
         this.responseRepository = responseRepository;
         this.surveyRepository = surveyRepository;
         this.rabbitTemplate = rabbitTemplate;
         this.questionRepository = questionRepository;
+        this.eventPublisher = eventPublisher;
     }
 
-    /**
-     * Validates and sends a survey response to the message queue for asynchronous processing.
-     *
-     * @param surveyId The ID of the survey being responded to.
-     * @param request  The DTO containing the answers.
-     * @param userId   The ID of the user submitting the response (can be null for anonymous).
-     */
-    public void createResponse(Long surveyId, ResponseRequest request, String userId) {
+    public void createResponse(Long surveyId, ResponseRequest request, String userId, String sessionId) {
         Survey survey = surveyRepository.findById(surveyId)
                 .orElseThrow(() -> new EntityNotFoundException("Survey not found with id: " + surveyId));
 
@@ -71,16 +61,10 @@ public class ResponseService {
         if (survey.getAccessType() == AccessType.PRIVATE && userId == null) {
             throw new AccessDeniedException("This survey is private and requires authentication to respond.");
         }
-        ResponseSubmissionPayload payload = new ResponseSubmissionPayload(surveyId, request, userId);
+        ResponseSubmissionPayload payload = new ResponseSubmissionPayload(surveyId, request, userId, sessionId);
         rabbitTemplate.convertAndSend(RabbitMQConfig.SURVEY_EXCHANGE, RabbitMQConfig.RESPONSE_ROUTING_KEY, payload);
     }
 
-    /**
-     * Processes and persists a survey response submission from the message queue.
-     * This method is called asynchronously.
-     * @param payload The survey submission data from the queue.
-     * @return A DTO of the created response.
-     */
     @Transactional
     public ResponseResponse handleResponseSubmission(ResponseSubmissionPayload payload) {
         Survey survey = surveyRepository.findById(payload.surveyId())
@@ -89,6 +73,7 @@ public class ResponseService {
         Response response = new Response();
         response.setSurvey(survey);
         response.setUserId(payload.userId());
+        response.setSessionId(payload.sessionId()); // Set the session ID
         response.setStatus(ResponseStatus.COMPLETE);
         response.setSubmissionDate(LocalDateTime.now());
 
@@ -105,6 +90,25 @@ public class ResponseService {
 
         response.getAnswers().addAll(answers);
         Response savedResponse = responseRepository.save(response);
+
+        // Decide which event to publish
+        if (savedResponse.getUserId() != null) {
+            // Authenticated user, publish completion event directly
+            SurveyCompletedEvent event = new SurveyCompletedEvent(
+                    savedResponse.getSurvey().getId(),
+                    savedResponse.getId(),
+                    savedResponse.getUserId()
+            );
+            eventPublisher.publishEvent(event);
+        } else if (savedResponse.getSessionId() != null) {
+            // Anonymous (SMS) user, publish enrichment event
+            ResponseNeedsParticipant event = new ResponseNeedsParticipant(
+                    savedResponse.getId(),
+                    savedResponse.getSessionId() // This is the phone number
+            );
+            eventPublisher.publishEvent(event);
+        }
+
         return mapToResponseResponse(savedResponse);
     }
 
