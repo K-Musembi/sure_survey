@@ -13,9 +13,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
-
  * Controller for retrieving Loyalty Transaction history.
-
  */
 
 @RestController

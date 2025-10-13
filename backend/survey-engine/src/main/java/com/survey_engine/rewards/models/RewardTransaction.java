@@ -14,7 +14,9 @@ import java.util.UUID;
  * This entity tracks the status of sending a reward to a specific participant.
  */
 @Entity
-@Table(name = "reward_transactions")
+@Table(name = "reward_transactions", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"reward_id", "participant_id"})
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

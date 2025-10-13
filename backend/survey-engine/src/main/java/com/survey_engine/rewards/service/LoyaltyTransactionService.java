@@ -36,9 +36,7 @@ public class LoyaltyTransactionService {
             return;
         }
 
-        // Use the injected service to find or create the account
         LoyaltyAccount account = loyaltyAccountService.findOrCreateAccount(userId);
-
         account.setBalance(account.getBalance().add(amount));
         loyaltyAccountRepository.save(account);
 
@@ -54,6 +52,34 @@ public class LoyaltyTransactionService {
 
         loyaltyTransactionRepository.save(transaction);
         log.info("Successfully credited {} points to user {}. New balance: {}", amount, userId, account.getBalance());
+    }
+
+    @Transactional
+    public void debitPoints(String userId, BigDecimal amount, String description) {
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            log.warn("Attempted to debit non-positive amount {} for user {}. Skipping.", amount, userId);
+            throw new IllegalArgumentException("Debit amount must be positive.");
+        }
+
+        LoyaltyAccount account = loyaltyAccountRepository.findByUserId(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Loyalty account not found for user: " + userId));
+
+        if (account.getBalance().compareTo(amount) < 0) {
+            throw new IllegalStateException("Insufficient balance to debit " + amount + " points from user: " + userId);
+        }
+
+        account.setBalance(account.getBalance().subtract(amount));
+        loyaltyAccountRepository.save(account);
+
+        LoyaltyTransaction transaction = new LoyaltyTransaction();
+        transaction.setLoyaltyAccount(account);
+        transaction.setAmount(amount);
+        transaction.setType(LoyaltyTransactionType.DEBIT);
+        transaction.setDescription(description);
+        transaction.setRewardTransaction(null);
+
+        loyaltyTransactionRepository.save(transaction);
+        log.info("Successfully debited {} points from user {}. New balance: {}", amount, userId, account.getBalance());
     }
 
     @Transactional(readOnly = true)
