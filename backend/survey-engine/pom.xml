@@ -164,7 +164,7 @@
         <dependency>
             <groupId>com.github.AfricasTalkingLtd.africastalking-java</groupId>
             <artifactId>core</artifactId>
-            <version>3.5.3</version>
+            <version>3.4.11</version>
         </dependency>
     </dependencies>
 	<dependencyManagement>

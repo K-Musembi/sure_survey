@@ -9,7 +9,7 @@ import java.time.Duration;
 import java.util.Optional;
 
 /**
- * Service to manage the lifecycle of an SMS survey session in Redis.
+ * Service to manage the lifecycle of an SMS survey response session in Redis.
  * This service abstracts the Redis operations for creating, retrieving, and deleting session state.
  */
 @Service

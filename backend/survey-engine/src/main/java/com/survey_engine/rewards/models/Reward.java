@@ -11,6 +11,10 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * The central entity representing the reward configuration for a survey.
+ * It defines the type, value, and rules of the reward campaign.
+ */
 @Entity
 @Table(name = "rewards")
 @Data
@@ -32,8 +36,11 @@ public class Reward {
     @Column(name = "reward_type", nullable = false)
     private RewardType rewardType;
 
-    @Column(name = "amount", precision = 10, scale = 2)
-    private BigDecimal amount;
+    @Column(name = "total_amount", precision = 10, scale = 2)
+    private BigDecimal total_amount;
+
+    @Column(name = "amount_per_recipient", precision = 10, scale = 2, nullable = false)
+    private BigDecimal amountPerRecipient;
 
     @Column(name = "currency", length = 3)
     private String currency;

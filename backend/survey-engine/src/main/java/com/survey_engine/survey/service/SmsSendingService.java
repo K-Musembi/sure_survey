@@ -33,7 +33,7 @@ public class SmsSendingService {
                 if ("Success".equals(recipient.status)) {
                     log.info("Successfully sent SMS to {}. MessageId: {}, Cost: {}", recipient.number, recipient.messageId, recipient.cost);
                 } else {
-                    log.error("Failed to send SMS to {}. Status: {}, Reason: {}", recipient.number, recipient.status, recipient.failureReason);
+                    log.error("Failed to send SMS to {}. Status: {}, Reason: {}", recipient.number, recipient.status, recipient.status);
                 }
             });
         } catch (Exception e) {

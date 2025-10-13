@@ -10,6 +10,10 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * An audit log of all changes to a loyalty account.
+ * Each time points are credited or debited, a new transaction is recorded.
+ */
 @Entity
 @Table(name = "loyalty_transactions")
 @Data

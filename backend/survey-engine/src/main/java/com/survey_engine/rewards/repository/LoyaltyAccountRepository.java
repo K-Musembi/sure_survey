@@ -7,7 +7,16 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Spring Data JPA repository for the {@link LoyaltyAccount} entity.
+ */
 @Repository
 public interface LoyaltyAccountRepository extends JpaRepository<LoyaltyAccount, UUID> {
+    /**
+     * Finds a LoyaltyAccount by the associated user's ID.
+     *
+     * @param userId The unique identifier of the user.
+     * @return An Optional containing the found LoyaltyAccount, or empty if not found.
+     */
     Optional<LoyaltyAccount> findByUserId(String userId);
 }

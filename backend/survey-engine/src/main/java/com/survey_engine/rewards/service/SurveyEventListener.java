@@ -23,7 +23,7 @@ public class SurveyEventListener {
 
     private final RewardRepository rewardRepository;
     private final RewardTransactionRepository rewardTransactionRepository;
-    private final LoyaltyService loyaltyService;
+    private final LoyaltyTransactionService loyaltyTransactionService;
 
     @EventListener
     @Transactional
@@ -60,7 +60,7 @@ public class SurveyEventListener {
 
         try {
             String description = String.format("Loyalty points for completing survey %s", event.surveyId());
-            loyaltyService.creditPoints(event.responderId(), reward.getAmount(), description, savedTransaction.getId());
+            loyaltyTransactionService.creditPoints(event.responderId(), reward.getAmountPerRecipient(), description, savedTransaction.getId());
 
             // Update transaction to success
             savedTransaction.setStatus(RewardTransactionStatus.SUCCESS);

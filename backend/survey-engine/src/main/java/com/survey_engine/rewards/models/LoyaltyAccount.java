@@ -9,6 +9,10 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Represents a user's loyalty points balance.
+ * Each user has at most one loyalty account.
+ */
 @Entity
 @Table(name = "loyalty_accounts")
 @Data

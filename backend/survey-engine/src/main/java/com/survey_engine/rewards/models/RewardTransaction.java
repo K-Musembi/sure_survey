@@ -9,6 +9,10 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Records each individual reward fulfillment attempt.
+ * This entity tracks the status of sending a reward to a specific participant.
+ */
 @Entity
 @Table(name = "reward_transactions")
 @Data
