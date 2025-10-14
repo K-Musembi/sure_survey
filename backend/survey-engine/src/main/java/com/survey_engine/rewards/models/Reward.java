@@ -45,7 +45,7 @@ public class Reward {
     @Column(name = "currency", length = 3)
     private String currency;
 
-    @Column(name = "provider")
+    @Column(name = "reward_provider")
     private String provider;
 
     @Column(name = "max_recipients")

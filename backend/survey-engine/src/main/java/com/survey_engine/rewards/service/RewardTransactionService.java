@@ -54,7 +54,7 @@ public class RewardTransactionService {
      *
      * @param transactionId The ID of the transaction to update.
      * @param status The new status (e.g., SUCCESS, FAILED).
-     * @param providerTransactionId The ID from the external provider, if successful.
+     * @param providerTransactionId The ID from the external reward_provider, if successful.
      * @param failureReason The reason for failure, if applicable.
      * @return The updated RewardTransaction entity.
      */

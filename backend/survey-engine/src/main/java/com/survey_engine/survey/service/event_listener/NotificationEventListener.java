@@ -1,6 +1,7 @@
-package com.survey_engine.survey.service;
+package com.survey_engine.survey.service.event_listener;
 
-import com.survey_engine.common.events.SmsNotificationRequested;
+import com.survey_engine.common.events.SmsNotificationEvent;
+import com.survey_engine.survey.service.SmsSendingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -22,8 +23,8 @@ public class NotificationEventListener {
      * @param event The event containing the recipient and message details.
      */
     @EventListener
-    public void handleSmsNotificationRequest(SmsNotificationRequested event) {
-        log.info("Received SmsNotificationRequested for recipient: {}", event.to());
+    public void handleSmsNotificationRequest(SmsNotificationEvent event) {
+        log.info("Received SmsNotificationEvent for recipient: {}", event.to());
         try {
             smsSendingService.sendSms(event.to(), event.message());
         } catch (Exception e) {

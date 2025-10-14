@@ -1,8 +1,8 @@
-package com.survey_engine.rewards.service.provider;
+package com.survey_engine.rewards.service.reward_provider;
 
 import com.africastalking.AirtimeService;
 import com.africastalking.airtime.AirtimeResponse;
-import com.survey_engine.common.events.SmsNotificationRequested;
+import com.survey_engine.common.events.SmsNotificationEvent;
 import com.survey_engine.rewards.models.Reward;
 import com.survey_engine.rewards.models.RewardTransaction;
 import com.survey_engine.rewards.models.enums.RewardStatus;
@@ -20,7 +20,6 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -63,7 +62,7 @@ public class AfricasTalkingAirtimeProvider implements RewardProvider {
         );
 
         // 2. Prepare the data for the async operation.
-        Map<String, String> recipients = new HashMap<>();
+        HashMap<String, String> recipients = new HashMap<>();
         String amountWithCurrency = reward.getCurrency() + " " + reward.getAmountPerRecipient().toPlainString();
         recipients.put(responderId, amountWithCurrency);
 
@@ -112,7 +111,7 @@ public class AfricasTalkingAirtimeProvider implements RewardProvider {
 
                 String amount = response.getResponses().get(0).getAmount();
                 String successMessage = String.format("You have received %s of airtime for completing our survey. Thank you!", amount);
-                eventPublisher.publishEvent(new SmsNotificationRequested(phoneNumber, successMessage));
+                eventPublisher.publishEvent(new SmsNotificationEvent(phoneNumber, successMessage));
 
             } else {
                 // FAILURE CASE
@@ -121,7 +120,7 @@ public class AfricasTalkingAirtimeProvider implements RewardProvider {
                 rewardTransactionService.updateTransactionStatus(transactionId, RewardTransactionStatus.FAILED, null, reason);
 
                 String failureMessage = "We were unable to process your airtime reward at this time. Please contact support for assistance.";
-                eventPublisher.publishEvent(new SmsNotificationRequested(phoneNumber, failureMessage));
+                eventPublisher.publishEvent(new SmsNotificationEvent(phoneNumber, failureMessage));
             }
         } catch (Exception e) {
             log.error("Critical error during disbursement outcome processing for transactionId: {}. Manual intervention may be required.", transactionId, e);

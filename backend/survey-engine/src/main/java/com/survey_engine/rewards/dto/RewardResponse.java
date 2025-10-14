@@ -16,7 +16,7 @@ import java.util.UUID;
  * @param rewardType The type of reward.
  * @param amountPerRecipient The value of the reward for each recipient.
  * @param currency The currency of the reward.
- * @param provider The fulfillment provider.
+ * @param provider The fulfillment reward_provider.
  * @param maxRecipients The maximum number of recipients.
  * @param remainingRewards The number of rewards still available.
  * @param status The current status of the reward campaign (e.g., ACTIVE, DEPLETED).

@@ -1,6 +1,6 @@
 package com.survey_engine.common.events;
 
-public record ResponseNeedsParticipant(
+public record ResponseParticipantEvent(
         Long responseId,
         String phoneNumber) {
 }

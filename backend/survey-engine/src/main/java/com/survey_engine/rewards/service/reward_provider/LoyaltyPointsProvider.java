@@ -1,4 +1,4 @@
-package com.survey_engine.rewards.service.provider;
+package com.survey_engine.rewards.service.reward_provider;
 
 import com.survey_engine.rewards.models.Reward;
 import com.survey_engine.rewards.models.RewardTransaction;

@@ -40,7 +40,7 @@ public class SmsSendingController {
 
         smsSendingService.sendSms(smsRequest.to(), smsRequest.message());
 
-        // Return 202 Accepted as the SMS is sent asynchronously by the provider.
+        // Return 202 Accepted as the SMS is sent asynchronously by the reward_provider.
         return ResponseEntity.accepted().build();
     }
 }

@@ -6,7 +6,7 @@ import com.survey_engine.survey.dto.ResponseRequest;
 import com.survey_engine.survey.models.Question;
 import com.survey_engine.survey.models.SmsSession;
 import com.survey_engine.survey.repository.SurveyRepository;
-import com.survey_engine.survey.service.SmsResponseSession;
+import com.survey_engine.survey.service.SmsResponseRedisSession;
 import com.survey_engine.survey.models.Survey;
 import com.survey_engine.survey.service.ResponseService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,12 +24,12 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/v1/sms")
 public class SmsResponseController {
 
-    private final SmsResponseSession sessionService;
+    private final SmsResponseRedisSession sessionService;
     private final SurveyRepository surveyRepository;
     private final ResponseService responseService;
 
     @Autowired
-    public SmsResponseController(SmsResponseSession sessionService, SurveyRepository surveyRepository, ResponseService responseService) {
+    public SmsResponseController(SmsResponseRedisSession sessionService, SurveyRepository surveyRepository, ResponseService responseService) {
         this.sessionService = sessionService;
         this.surveyRepository = surveyRepository;
         this.responseService = responseService;

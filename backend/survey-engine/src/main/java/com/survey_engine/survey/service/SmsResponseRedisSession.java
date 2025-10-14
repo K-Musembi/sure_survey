@@ -13,7 +13,7 @@ import java.util.Optional;
  * This service abstracts the Redis operations for creating, retrieving, and deleting session state.
  */
 @Service
-public class SmsResponseSession {
+public class SmsResponseRedisSession {
 
     private static final String SESSION_KEY_PREFIX = "sms:session:";
     private static final Duration SESSION_TTL = Duration.ofHours(24);
@@ -21,11 +21,11 @@ public class SmsResponseSession {
     private final RedisTemplate<String, Object> redisTemplate;
 
     /**
-     * Constructor for SmsResponseSession.
+     * Constructor for SmsResponseRedisSession.
      * @param redisTemplate The configured RedisTemplate for data access.
      */
     @Autowired
-    public SmsResponseSession(RedisTemplate<String, Object> redisTemplate) {
+    public SmsResponseRedisSession(RedisTemplate<String, Object> redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
 

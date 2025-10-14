@@ -5,6 +5,7 @@ import com.survey_engine.rewards.models.RewardTransaction;
 import com.survey_engine.rewards.models.enums.RewardStatus;
 import com.survey_engine.rewards.repository.RewardRepository;
 import com.survey_engine.rewards.repository.RewardTransactionRepository;
+import com.survey_engine.rewards.service.event_listener.RewardFulfillmentListener;
 import com.survey_engine.survey.repository.ResponseRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +27,7 @@ public class RewardRedemptionService {
     private final RewardRepository rewardRepository;
     private final ResponseRepository responseRepository;
     private final RewardTransactionRepository rewardTransactionRepository;
-    private final RewardFulfillmentService rewardFulfillmentService;
+    private final RewardFulfillmentListener rewardFulfillmentListener;
 
     /**
      * Allows an authenticated user to claim a reward for a survey they have completed.
@@ -66,10 +67,10 @@ public class RewardRedemptionService {
         }
 
         // 5. If all checks pass, delegate to the fulfillment service
-        log.info("All checks passed. Delegating to RewardFulfillmentService for surveyId: {}, userId: {}, phoneNumber: {}",
+        log.info("All checks passed. Delegating to RewardFulfillmentListener for surveyId: {}, userId: {}, phoneNumber: {}",
                 surveyId, userId, phoneNumber);
         
         // The fulfillment service needs the reward object and the recipient identifier (phone number)
-        rewardFulfillmentService.disburse(reward, phoneNumber);
+        rewardFulfillmentListener.handleRewardDistributionRequest().disburse(reward, phoneNumber);
     }
 }

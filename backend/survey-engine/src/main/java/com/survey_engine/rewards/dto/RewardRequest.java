@@ -14,7 +14,7 @@ import java.math.BigDecimal;
  * @param rewardType The type of reward being offered (e.g., AIRTIME, LOYALTY_POINTS).
  * @param amountPerRecipient The value of the reward for each individual recipient.
  * @param currency The currency code for monetary rewards (e.g., KES, USD).
- * @param provider The external provider for fulfilling the reward (e.g., Africa's Talking).
+ * @param provider The external reward_provider for fulfilling the reward (e.g., Africa's Talking).
  * @param maxRecipients The total number of participants who can receive this reward.
  */
 public record RewardRequest(

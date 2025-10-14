@@ -1,6 +1,6 @@
 package com.survey_engine.payments.service;
 
-import com.survey_engine.common.events.PaymentEventSuceeded;
+import com.survey_engine.common.events.PaymentSuccessEvent;
 import com.survey_engine.payments.dto.paystack.PaystackWebhookData;
 import com.survey_engine.payments.dto.paystack.PaystackWebhookEvent;
 import com.survey_engine.payments.models.PaymentEvent;
@@ -72,13 +72,13 @@ public class WebhookService {
         log.info("PaymentEvent {} SUCCEEDED. Created transaction {}.", paymentEvent.getId(), transaction.getId());
 
         // Publish an application event for other modules to consume
-        PaymentEventSuceeded eventPayload = new PaymentEventSuceeded(
+        PaymentSuccessEvent eventPayload = new PaymentSuccessEvent(
                 paymentEvent.getId(),
                 paymentEvent.getSurveyId(),
                 paymentEvent.getUserId()
         );
         eventPublisher.publishEvent(eventPayload);
-        log.info("Published PaymentEventSuceeded for surveyId: {}", paymentEvent.getSurveyId());
+        log.info("Published PaymentSuccessEvent for surveyId: {}", paymentEvent.getSurveyId());
     }
 
     /**

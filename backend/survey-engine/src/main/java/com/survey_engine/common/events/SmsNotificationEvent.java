@@ -9,7 +9,7 @@ import jakarta.validation.constraints.NotBlank;
  * @param to The recipient's phone number.
  * @param message The content of the SMS message.
  */
-public record SmsNotificationRequested(
+public record SmsNotificationEvent(
         @NotBlank String to,
         @NotBlank String message
 ) {

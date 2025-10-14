@@ -1,6 +1,6 @@
-package com.survey_engine.rewards.service;
+package com.survey_engine.rewards.service.event_listener;
 
-import com.survey_engine.common.events.RewardDistributionRequested;
+import com.survey_engine.common.events.RewardDistributionEvent;
 import com.survey_engine.common.events.SurveyCompletedEvent;
 import com.survey_engine.rewards.models.Reward;
 import com.survey_engine.rewards.models.enums.RewardStatus;
@@ -29,7 +29,7 @@ public class SurveyEventListener {
     /**
      * Handles the {@link SurveyCompletedEvent} from the survey module.
      * It checks if a reward is configured and active for the completed survey,
-     * and if so, publishes a {@link RewardDistributionRequested} event to trigger
+     * and if so, publishes a {@link RewardDistributionEvent} event to trigger
      * the fulfillment process.
      *
      * @param event The event fired when a survey response is successfully completed.
@@ -55,13 +55,13 @@ public class SurveyEventListener {
         }
 
         // Publish a new, specific event for the rewards module to handle fulfillment.
-        RewardDistributionRequested distributionEvent = new RewardDistributionRequested(
+        RewardDistributionEvent distributionEvent = new RewardDistributionEvent(
                 reward.getId(),
                 event.responderId()
         );
         eventPublisher.publishEvent(distributionEvent);
 
-        log.info("Published RewardDistributionRequested for rewardId: {} and responderId: {}",
+        log.info("Published RewardDistributionEvent for rewardId: {} and responderId: {}",
                 reward.getId(), event.responderId());
     }
 }

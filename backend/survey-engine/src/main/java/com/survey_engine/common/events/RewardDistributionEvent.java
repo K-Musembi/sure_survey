@@ -7,11 +7,11 @@ import java.util.UUID;
  * for a reward distribution attempt. This event decouples the survey completion
  * from the actual reward fulfillment logic.
  *
- * @param rewardId The unique identifier of the {@link com.survey_engine.rewards.models.Reward} configuration.
+ * @param rewardId The unique identifier of the reward entity
  * @param responderId The unique identifier of the participant who completed the survey.
  *                    This could be a user UUID or a phone number for SMS participants.
  */
-public record RewardDistributionRequested(
+public record RewardDistributionEvent(
         UUID rewardId,
         String responderId
 ) {

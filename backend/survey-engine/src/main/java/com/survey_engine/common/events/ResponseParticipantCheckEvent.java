@@ -1,6 +1,6 @@
 package com.survey_engine.common.events;
 
-public record ResponseParticipantCheck(
+public record ResponseParticipantCheckEvent(
         Long responseId,
         String participantId) {
 }

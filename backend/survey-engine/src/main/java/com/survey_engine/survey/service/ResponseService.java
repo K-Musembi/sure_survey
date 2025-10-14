@@ -1,6 +1,6 @@
 package com.survey_engine.survey.service;
 
-import com.survey_engine.common.events.ResponseNeedsParticipant;
+import com.survey_engine.common.events.ResponseParticipantEvent;
 import com.survey_engine.common.events.SurveyCompletedEvent;
 import com.survey_engine.survey.models.Answer;
 import com.survey_engine.survey.dto.AnswerResponse;
@@ -18,8 +18,8 @@ import com.survey_engine.survey.dto.ResponseSubmissionPayload;
 import com.survey_engine.survey.models.Survey;
 import com.survey_engine.survey.repository.SurveyRepository;
 import jakarta.persistence.EntityNotFoundException;
+import lombok.AllArgsConstructor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
  * Defines business logic for submitting and managing survey responses.
  */
 @Service
+@AllArgsConstructor
 public class ResponseService {
 
     private final ResponseRepository responseRepository;
@@ -42,16 +43,14 @@ public class ResponseService {
     private final QuestionRepository questionRepository;
     private final ApplicationEventPublisher eventPublisher;
 
-    @Autowired
-    public ResponseService(ResponseRepository responseRepository, SurveyRepository surveyRepository, RabbitTemplate rabbitTemplate, QuestionRepository questionRepository, ApplicationEventPublisher eventPublisher) {
-        this.responseRepository = responseRepository;
-        this.surveyRepository = surveyRepository;
-        this.rabbitTemplate = rabbitTemplate;
-        this.questionRepository = questionRepository;
-        this.eventPublisher = eventPublisher;
-    }
-
-    public void createResponse(Long surveyId, ResponseRequest request, String userId, String sessionId) {
+    /**
+     * Create survey response instance
+     * @param surveyId - id of survey
+     * @param responseRequest - ResponseRequest DTO
+     * @param userId - id os user
+     * @param sessionId - session id
+     */
+    public void createResponse(Long surveyId, ResponseRequest responseRequest, String userId, String sessionId) {
         Survey survey = surveyRepository.findById(surveyId)
                 .orElseThrow(() -> new EntityNotFoundException("Survey not found with id: " + surveyId));
 
@@ -61,7 +60,7 @@ public class ResponseService {
         if (survey.getAccessType() == AccessType.PRIVATE && userId == null) {
             throw new AccessDeniedException("This survey is private and requires authentication to respond.");
         }
-        ResponseSubmissionPayload payload = new ResponseSubmissionPayload(surveyId, request, userId, sessionId);
+        ResponseSubmissionPayload payload = new ResponseSubmissionPayload(surveyId, responseRequest, userId, sessionId);
         rabbitTemplate.convertAndSend(RabbitMQConfig.SURVEY_EXCHANGE, RabbitMQConfig.RESPONSE_ROUTING_KEY, payload);
     }
 
@@ -102,7 +101,7 @@ public class ResponseService {
             eventPublisher.publishEvent(event);
         } else if (savedResponse.getSessionId() != null) {
             // Anonymous (SMS) user, publish enrichment event
-            ResponseNeedsParticipant event = new ResponseNeedsParticipant(
+            ResponseParticipantEvent event = new ResponseParticipantEvent(
                     savedResponse.getId(),
                     savedResponse.getSessionId() // This is the phone number
             );

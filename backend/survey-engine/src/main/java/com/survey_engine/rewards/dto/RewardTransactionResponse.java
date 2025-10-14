@@ -13,7 +13,7 @@ import java.util.UUID;
  * @param participantId The ID of the participant who was meant to receive the reward.
  * @param recipientIdentifier The delivery identifier (e.g., phone number).
  * @param status The final status of the transaction (e.g., PENDING, SUCCESS, FAILED).
- * @param providerTransactionId The transaction ID from the external fulfillment provider.
+ * @param providerTransactionId The transaction ID from the external fulfillment reward_provider.
  * @param failureReason A message detailing why a transaction failed, if applicable.
  * @param createdAt Timestamp of when the transaction was initiated.
  * @param updatedAt Timestamp of the last update.

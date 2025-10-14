@@ -1,6 +1,6 @@
-package com.survey_engine.survey.service;
+package com.survey_engine.survey.service.event_listener;
 
-import com.survey_engine.common.events.ResponseParticipantCheck;
+import com.survey_engine.common.events.ResponseParticipantCheckEvent;
 import com.survey_engine.common.events.SurveyCompletedEvent;
 import com.survey_engine.survey.models.Response;
 import com.survey_engine.survey.repository.ResponseRepository;
@@ -21,7 +21,7 @@ public class ParticipantFoundListener {
 
     @EventListener
     @Transactional
-    public void handleParticipantFound(ResponseParticipantCheck event) {
+    public void handleParticipantFound(ResponseParticipantCheckEvent event) {
         log.info("Received participant check result for responseId: {}. ParticipantId: {}", event.responseId(), event.participantId());
 
         if (event.participantId() == null) {

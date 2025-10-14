@@ -13,7 +13,7 @@ import java.util.UUID;
  * @param surveyId  The identifier for the survey that was paid for.
  * @param userId    The identifier for the user who made the payment.
  */
-public record PaymentEventSuceeded(
+public record PaymentSuccessEvent(
         UUID paymentId,
         String surveyId,
         String userId

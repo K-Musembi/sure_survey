@@ -1,20 +1,20 @@
-package com.survey_engine.rewards.service.provider;
+package com.survey_engine.rewards.service.reward_provider;
 
 import com.survey_engine.rewards.models.Reward;
 import com.survey_engine.rewards.models.enums.RewardType;
 
 /**
- * Defines the contract for a reward fulfillment provider.
+ * Defines the contract for a reward fulfillment reward_provider.
  * Each implementation is responsible for handling the disbursement of a specific type of reward.
  * This follows the Strategy design pattern.
  */
 public interface RewardProvider {
 
     /**
-     * Checks if this provider can handle the given reward type.
+     * Checks if this reward_provider can handle the given reward type.
      *
      * @param rewardType The {@link RewardType} to check.
-     * @return {@code true} if the provider supports the type, {@code false} otherwise.
+     * @return {@code true} if the reward_provider supports the type, {@code false} otherwise.
      */
     boolean supports(RewardType rewardType);
 
