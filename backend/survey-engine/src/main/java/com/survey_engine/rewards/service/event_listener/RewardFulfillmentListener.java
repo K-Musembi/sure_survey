@@ -37,7 +37,15 @@ public class RewardFulfillmentListener {
         Reward reward = rewardRepository.findById(event.rewardId())
                 .orElseThrow(() -> new EntityNotFoundException("Reward not found with id: " + event.rewardId()));
 
-        // Find a reward_provider that supports this reward type
+        disburseReward(reward, event.responderId());
+    }
+
+    /**
+     * Find corresponding RewardProvider and disburse reward
+     * @param reward - The type of reward to disburse
+     * @param phoneNumber - The participants phone number (session id)
+     */
+    public void disburseReward(Reward reward, String phoneNumber) {
         RewardProvider provider = rewardProviders.stream()
                 .filter(p -> p.supports(reward.getRewardType()))
                 .findFirst()
@@ -51,6 +59,6 @@ public class RewardFulfillmentListener {
         }
 
         log.info("Found reward_provider {} for reward type {}", provider.getClass().getSimpleName(), reward.getRewardType());
-        provider.disburse(reward, event.responderId());
+        provider.disburse(reward, phoneNumber);
     }
 }

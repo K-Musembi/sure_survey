@@ -6,6 +6,7 @@ import com.survey_engine.rewards.models.enums.RewardStatus;
 import com.survey_engine.rewards.repository.RewardRepository;
 import com.survey_engine.rewards.repository.RewardTransactionRepository;
 import com.survey_engine.rewards.service.event_listener.RewardFulfillmentListener;
+import com.survey_engine.survey.SurveyApi;
 import com.survey_engine.survey.repository.ResponseRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -71,6 +72,6 @@ public class RewardRedemptionService {
                 surveyId, userId, phoneNumber);
         
         // The fulfillment service needs the reward object and the recipient identifier (phone number)
-        rewardFulfillmentListener.handleRewardDistributionRequest().disburse(reward, phoneNumber);
+        rewardFulfillmentListener.disburseReward(reward, phoneNumber);
     }
 }
