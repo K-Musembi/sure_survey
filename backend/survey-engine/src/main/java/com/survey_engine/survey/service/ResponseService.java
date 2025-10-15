@@ -1,6 +1,5 @@
 package com.survey_engine.survey.service;
 
-import com.survey_engine.common.events.ResponseParticipantEvent;
 import com.survey_engine.common.events.SurveyCompletedEvent;
 import com.survey_engine.survey.models.Answer;
 import com.survey_engine.survey.dto.AnswerResponse;
@@ -17,6 +16,7 @@ import com.survey_engine.survey.dto.ResponseResponse;
 import com.survey_engine.survey.dto.ResponseSubmissionPayload;
 import com.survey_engine.survey.models.Survey;
 import com.survey_engine.survey.repository.SurveyRepository;
+import com.survey_engine.user.UserApi;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -42,6 +43,7 @@ public class ResponseService {
     private final RabbitTemplate rabbitTemplate;
     private final QuestionRepository questionRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final UserApi userApi;
 
     /**
      * Create survey response instance
@@ -90,20 +92,24 @@ public class ResponseService {
         response.getAnswers().addAll(answers);
         Response savedResponse = responseRepository.save(response);
 
-        // Decide which event to publish
-        if (savedResponse.getUserId() != null) {
-            // Authenticated user, publish completion event directly
+        String finalUserId = savedResponse.getUserId();
+
+        // If it's an SMS response, try to find a matching participant synchronously
+        if (finalUserId == null && savedResponse.getSessionId() != null) {
+            Optional<String> participantIdOpt = userApi.findParticipantIdByPhoneNumber(savedResponse.getSessionId());
+            if (participantIdOpt.isPresent()) {
+                finalUserId = participantIdOpt.get();
+                savedResponse.setUserId(finalUserId);
+                savedResponse = responseRepository.save(savedResponse); // Save the enriched response
+            }
+        }
+
+        // Publish the completion event if we have a user ID (either original or enriched)
+        if (finalUserId != null) {
             SurveyCompletedEvent event = new SurveyCompletedEvent(
                     savedResponse.getSurvey().getId(),
                     savedResponse.getId(),
-                    savedResponse.getUserId()
-            );
-            eventPublisher.publishEvent(event);
-        } else if (savedResponse.getSessionId() != null) {
-            // Anonymous (SMS) user, publish enrichment event
-            ResponseParticipantEvent event = new ResponseParticipantEvent(
-                    savedResponse.getId(),
-                    savedResponse.getSessionId() // This is the phone number
+                    finalUserId
             );
             eventPublisher.publishEvent(event);
         }

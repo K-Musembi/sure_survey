@@ -7,7 +7,6 @@ import com.survey_engine.rewards.repository.RewardRepository;
 import com.survey_engine.rewards.repository.RewardTransactionRepository;
 import com.survey_engine.rewards.service.event_listener.RewardFulfillmentListener;
 import com.survey_engine.survey.SurveyApi;
-import com.survey_engine.survey.repository.ResponseRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,9 +25,9 @@ import java.util.List;
 public class RewardRedemptionService {
 
     private final RewardRepository rewardRepository;
-    private final ResponseRepository responseRepository;
     private final RewardTransactionRepository rewardTransactionRepository;
     private final RewardFulfillmentListener rewardFulfillmentListener;
+    private final SurveyApi surveyApi;
 
     /**
      * Allows an authenticated user to claim a reward for a survey they have completed.
@@ -51,7 +50,7 @@ public class RewardRedemptionService {
         }
 
         // 3. Verify the user actually completed this survey
-        boolean userCompletedSurvey = responseRepository.findBySurveyId(surveyId).stream()
+        boolean userCompletedSurvey = surveyApi.getResponseRepository().findBySurveyId(surveyId).stream()
                 .anyMatch(response -> userId.equals(response.getUserId()));
 
         if (!userCompletedSurvey) {

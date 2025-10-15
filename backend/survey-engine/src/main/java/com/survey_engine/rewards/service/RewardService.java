@@ -78,8 +78,7 @@ public class RewardService {
      */
     @Transactional(readOnly = true)
     public List<RewardResponse> findRewardsByUserId(String userId) {
-        return rewardRepository.findAll().stream()
-                .filter(reward -> reward.getUserId().equals(userId))
+        return rewardRepository.findByUserId(userId).stream()
                 .map(this::mapToRewardResponse)
                 .collect(Collectors.toList());
     }

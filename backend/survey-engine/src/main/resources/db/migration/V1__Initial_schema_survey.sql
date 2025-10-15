@@ -1,5 +1,3 @@
--- V1__Initial_schema_payments.sql
-
 -- Create surveys table
 CREATE TABLE surveys (
     id BIGSERIAL PRIMARY KEY,

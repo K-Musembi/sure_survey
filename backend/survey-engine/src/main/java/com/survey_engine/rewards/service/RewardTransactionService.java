@@ -96,7 +96,7 @@ public class RewardTransactionService {
                 .collect(Collectors.toList());
     }
 
-    private RewardTransactionResponse mapToResponse(com.survey_engine.rewards.models.RewardTransaction transaction) {
+    private RewardTransactionResponse mapToResponse(RewardTransaction transaction) {
         return new RewardTransactionResponse(
                 transaction.getId(),
                 transaction.getReward().getId(),
