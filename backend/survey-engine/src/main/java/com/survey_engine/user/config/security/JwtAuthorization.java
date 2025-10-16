@@ -88,14 +88,11 @@ public class JwtAuthorization {
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
                 .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                // NOTE: The password grant type is deprecated in OAuth 2.1
-                // and should be replaced with a more secure flow like PKCE in the future.
-                .authorizationGrantType(new AuthorizationGrantType("password"))
                 .redirectUri("http://127.0.0.1:8080/login/oauth2/code/client-oidc")
                 .scope(OidcScopes.OPENID)
                 .scope("read")
                 .scope("write")
-                .clientSettings(ClientSettings.builder().requireAuthorizationConsent(false).build())
+                .clientSettings(ClientSettings.builder().requireProofKey(true).requireAuthorizationConsent(false).build())
                 .build();
 
         return new InMemoryRegisteredClientRepository(registeredClient);

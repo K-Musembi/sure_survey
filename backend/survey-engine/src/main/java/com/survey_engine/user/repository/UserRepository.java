@@ -2,6 +2,7 @@ package com.survey_engine.user.repository;
 
 import com.survey_engine.user.models.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
@@ -10,6 +11,7 @@ import java.util.Optional;
  * Repository interface for User entity.
  * Provides CRUD operations and custom queries for users.
  */
+@Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByEmail(String email);
