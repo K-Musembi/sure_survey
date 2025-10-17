@@ -98,7 +98,7 @@ public class AfricasTalkingAirtimeProvider implements RewardProvider {
             }
 
             // Use the correct nested class: AirtimeResponse.Response
-            com.africastalking.airtime.AirtimeResponse.Recipient entry = response.responses.get(0);
+            AirtimeResponse.AirtimeEntry entry = response.responses.get(0);
 
             // Per AT docs, "Sent" is a valid success status for when the request is queued.
             if (entry.status.equalsIgnoreCase("Sent") || entry.status.equalsIgnoreCase("Success")) {
