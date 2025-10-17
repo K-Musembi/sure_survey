@@ -18,21 +18,14 @@ public class Participant {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "first_name")
-    private String firstName;
-
-    @Column(name = "last_name")
-    private String lastName;
+    @Column(name = "full_name")
+    private String fullName;
 
     @Column(name = "phone_number", unique = true)
     private String phoneNumber;
 
     @Column(name = "email", unique = true)
     private String email;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "company_id", nullable = false)
-    private Company company;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

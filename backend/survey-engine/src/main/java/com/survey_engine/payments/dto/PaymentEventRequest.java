@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 
 /**
  * Request Data Transfer Object (DTO) for initiating a payment.
- * The userId will be extracted from the JWT token, not passed in the body.
+ * The participantId will be extracted from the JWT token, not passed in the body.
  *
  * @param amount         The amount to be charged.
  * @param currency       The three-letter ISO currency code.

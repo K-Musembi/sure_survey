@@ -11,7 +11,7 @@ import java.util.List;
  * @param surveyId The ID of the survey that was responded to.
  * @param status The status of the response (e.g., COMPLETED).
  * @param submissionDate The date and time the response was submitted.
- * @param userId The ID of the user who submitted the response.
+ * @param participantId The ID of the user who submitted the response.
  * @param answers The list of answers included in the response.
  */
 public record ResponseResponse(
@@ -19,7 +19,7 @@ public record ResponseResponse(
         Long surveyId,
         ResponseStatus status,
         LocalDateTime submissionDate,
-        String userId,
+        String participantId,
         List<AnswerResponse> answers
 ) {
 }

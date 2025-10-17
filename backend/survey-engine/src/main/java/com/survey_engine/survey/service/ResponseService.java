@@ -27,7 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -73,7 +72,7 @@ public class ResponseService {
 
         Response response = new Response();
         response.setSurvey(survey);
-        response.setUserId(payload.userId());
+        response.setParticipantId(payload.participantId());
         response.setSessionId(payload.sessionId()); // Set the session ID
         response.setStatus(ResponseStatus.COMPLETE);
         response.setSubmissionDate(LocalDateTime.now());
@@ -92,24 +91,29 @@ public class ResponseService {
         response.getAnswers().addAll(answers);
         Response savedResponse = responseRepository.save(response);
 
-        String finalUserId = savedResponse.getUserId();
+        String responderId = null;
 
-        // If it's an SMS response, try to find a matching participant synchronously
-        if (finalUserId == null && savedResponse.getSessionId() != null) {
-            Optional<String> participantIdOpt = userApi.findParticipantIdByPhoneNumber(savedResponse.getSessionId());
-            if (participantIdOpt.isPresent()) {
-                finalUserId = participantIdOpt.get();
-                savedResponse.setUserId(finalUserId);
-                savedResponse = responseRepository.save(savedResponse); // Save the enriched response
-            }
+        // If it's an SMS response, the responderId is the phone number.
+        // We also try to link it to a participant if one exists for data consistency.
+        if (savedResponse.getSessionId() != null) {
+            responderId = savedResponse.getSessionId();
+            userApi.findParticipantIdByPhoneNumber(responderId).ifPresent(participantId -> {
+                savedResponse.setParticipantId(participantId);
+                responseRepository.save(savedResponse);
+            });
+        }
+        // If it's a web response from a user who opted into rewards, the participantId (participantId) is the responderId.
+        else if (savedResponse.getParticipantId() != null) {
+            responderId = savedResponse.getParticipantId();
         }
 
-        // Publish the completion event if we have a user ID (either original or enriched)
-        if (finalUserId != null) {
+        // Publish the completion event if we have a responderId.
+        // This occurs for all SMS responses and for web responses where the user opted-in for a reward.
+        if (responderId != null) {
             SurveyCompletedEvent event = new SurveyCompletedEvent(
                     savedResponse.getSurvey().getId(),
                     savedResponse.getId(),
-                    finalUserId
+                    responderId
             );
             eventPublisher.publishEvent(event);
         }
@@ -202,7 +206,7 @@ public class ResponseService {
                 response.getSurvey().getId(),
                 response.getStatus(),
                 response.getSubmissionDate(),
-                response.getUserId(),
+                response.getParticipantId(),
                 answerResponses
         );
     }

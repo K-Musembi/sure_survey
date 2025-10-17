@@ -6,12 +6,12 @@ package com.survey_engine.survey.dto;
  *
  * @param surveyId The ID of the survey being responded to.
  * @param request The original request DTO containing the answers.
- * @param userId The ID of the user submitting the response (can be null).
+ * @param participantId The ID of the user submitting the response (can be null).
  */
 public record ResponseSubmissionPayload(
         Long surveyId,
         ResponseRequest request,
-        String userId,
+        String participantId,
         String sessionId
 ) {
 }

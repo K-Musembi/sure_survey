@@ -9,14 +9,14 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 @Service
-public class SpringEventListener {
+public class PaymentEventListener {
 
-    private static final Logger logger = LoggerFactory.getLogger(SpringEventListener.class);
+    private static final Logger logger = LoggerFactory.getLogger(PaymentEventListener.class);
 
     private final SurveyService surveyService;
 
     @Autowired
-    public SpringEventListener(SurveyService surveyService) {
+    public PaymentEventListener(SurveyService surveyService) {
         this.surveyService = surveyService;
     }
 

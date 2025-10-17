@@ -32,8 +32,8 @@ public class Response {
     @Column(name = "submission_date", nullable = false)
     private LocalDateTime submissionDate;
 
-    @Column(name = "user_id")
-    private String userId;
+    @Column(name = "participant_id")
+    private String participantId;
 
     @Column(name = "session_id")
     private String sessionId;

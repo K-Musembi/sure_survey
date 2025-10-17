@@ -1,6 +1,7 @@
 package com.survey_engine.rewards.service.reward_provider;
 
 import com.africastalking.AirtimeService;
+import com.africastalking.Callback;
 import com.africastalking.airtime.AirtimeResponse;
 import com.survey_engine.common.events.SmsNotificationEvent;
 import com.survey_engine.rewards.models.Reward;
@@ -16,16 +17,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
-import java.util.HashMap;
 import java.util.UUID;
 
 /**
  * A {@link RewardProvider} for disbursing AIRTIME and DATA_BUNDLE rewards
  * using the Africa's Talking API.
- * The external network call is executed asynchronously.
+ * The external network call is executed asynchronously using the SDK's native callback.
  */
 @Component
 @RequiredArgsConstructor
@@ -43,9 +41,7 @@ public class AfricasTalkingAirtimeProvider implements RewardProvider {
     }
 
     /**
-     * Asynchronously handles the disbursement of airtime.
-     * It creates a pending transaction and then schedules the blocking network call
-     * on a separate thread pool, ensuring the caller (event listener) is not blocked.
+     * Asynchronously handles the disbursement of airtime using the SDK's callback mechanism.
      *
      * @param reward The {@link Reward} configuration object.
      * @param responderId The recipient's phone number.
@@ -54,36 +50,32 @@ public class AfricasTalkingAirtimeProvider implements RewardProvider {
     public void disburse(Reward reward, String responderId) {
         log.info("Queueing disbursement of {} for rewardId: {} to responderId: {}", reward.getRewardType(), reward.getId(), responderId);
 
-        // 1. Create the pending transaction in a synchronous, transactional method.
-        RewardTransaction transaction = rewardTransactionService.createPendingTransaction(
+        final RewardTransaction transaction = rewardTransactionService.createPendingTransaction(
                 reward.getId(),
                 responderId, // participantId can be the phone number here
                 responderId
         );
 
-        // 2. Prepare the data for the async operation.
-        HashMap<String, String> recipients = new HashMap<>();
-        String amountWithCurrency = reward.getCurrency() + " " + reward.getAmountPerRecipient().toPlainString();
-        recipients.put(responderId, amountWithCurrency);
+        Callback<AirtimeResponse> callback = new Callback<>() {
+            @Override
+            public void onSuccess(AirtimeResponse response) {
+                processDisbursementOutcome(transaction.getId(), reward.getId(), responderId, response, null);
+            }
 
-        // 3. Execute the blocking network call asynchronously.
-        Mono.fromCallable(() -> airtimeService.send(recipients)) // Wrap the blocking call
-                .subscribeOn(Schedulers.boundedElastic()) // Schedule it on a dedicated thread pool for blocking tasks
-                .doOnSuccess(response -> {
-                    // On success, process the outcome in a new transaction.
-                    processDisbursementOutcome(transaction.getId(), reward.getId(), responderId, response, null);
-                })
-                .doOnError(error -> {
-                    // On failure, process the outcome in a new transaction.
-                    log.error("Asynchronous airtime disbursement failed for transactionId: {}", transaction.getId(), error);
-                    processDisbursementOutcome(transaction.getId(), reward.getId(), responderId, null, error);
-                })
-                .subscribe(); // Fire and forget.
+            @Override
+            public void onFailure(Throwable error) {
+                log.error("Asynchronous airtime disbursement failed for transactionId: {}", transaction.getId(), error);
+                processDisbursementOutcome(transaction.getId(), reward.getId(), responderId, null, error);
+            }
+        };
+
+        // The send method is asynchronous and handles exceptions in the onFailure callback.
+        airtimeService.send(responderId, reward.getCurrency(), reward.getAmountPerRecipient().floatValue(), callback);
     }
 
     /**
      * Processes the result of the airtime disbursement API call in a new transaction.
-     * This method is called back by the reactive pipeline.
+     * This method is called back by the SDK's async callback.
      *
      * @param transactionId The ID of the pending transaction.
      * @param rewardId The ID of the reward campaign.
@@ -94,10 +86,24 @@ public class AfricasTalkingAirtimeProvider implements RewardProvider {
     @Transactional
     public void processDisbursementOutcome(UUID transactionId, UUID rewardId, String phoneNumber, AirtimeResponse response, Throwable error) {
         try {
-            if (error == null && response != null && response.getErrorMessage().equalsIgnoreCase("none")) {
-                // SUCCESS CASE
+            if (error != null || response == null || !response.errorMessage.equalsIgnoreCase("none")) {
+                String reason = (error != null) ? error.getMessage() : (response != null ? response.errorMessage : "Unknown failure");
+                handleFailure(transactionId, phoneNumber, reason);
+                return;
+            }
+
+            if (response.responses.isEmpty()) {
+                handleFailure(transactionId, phoneNumber, "No response entry from provider.");
+                return;
+            }
+
+            // Use the correct nested class: AirtimeResponse.Response
+            com.africastalking.airtime.AirtimeResponse.Recipient entry = response.responses.get(0);
+
+            // Per AT docs, "Sent" is a valid success status for when the request is queued.
+            if (entry.status.equalsIgnoreCase("Sent") || entry.status.equalsIgnoreCase("Success")) {
                 log.info("Successfully disbursed airtime for transactionId: {}", transactionId);
-                rewardTransactionService.updateTransactionStatus(transactionId, RewardTransactionStatus.SUCCESS, null, null);
+                rewardTransactionService.updateTransactionStatus(transactionId, RewardTransactionStatus.SUCCESS, entry.requestId, null);
 
                 Reward reward = rewardRepository.findById(rewardId)
                         .orElseThrow(() -> new EntityNotFoundException("Reward not found with id: " + rewardId));
@@ -109,22 +115,27 @@ public class AfricasTalkingAirtimeProvider implements RewardProvider {
                 }
                 rewardRepository.save(reward);
 
-                String amount = response.getResponses().get(0).getAmount();
-                String successMessage = String.format("You have received %s of airtime for completing our survey. Thank you!", amount);
+                String successMessage = String.format("You have received %s of airtime for completing our survey. Thank you!", entry.amount);
                 eventPublisher.publishEvent(new SmsNotificationEvent(phoneNumber, successMessage));
 
             } else {
-                // FAILURE CASE
-                String reason = (error != null) ? error.getMessage() : (response != null ? response.getErrorMessage() : "Unknown failure");
-                log.error("Failed to disburse airtime for transactionId: {}. Reason: {}", transactionId, reason);
-                rewardTransactionService.updateTransactionStatus(transactionId, RewardTransactionStatus.FAILED, null, reason);
-
-                String failureMessage = "We were unable to process your airtime reward at this time. Please contact support for assistance.";
-                eventPublisher.publishEvent(new SmsNotificationEvent(phoneNumber, failureMessage));
+                handleFailure(transactionId, phoneNumber, entry.errorMessage);
             }
         } catch (Exception e) {
             log.error("Critical error during disbursement outcome processing for transactionId: {}. Manual intervention may be required.", transactionId, e);
-            // If this block fails, the transaction might be stuck in PENDING.
+            try {
+                handleFailure(transactionId, phoneNumber, "Internal processing error: " + e.getMessage());
+            } catch (Exception finalEx) {
+                log.error("Failed to even mark transaction {} as failed. CRITICAL.", transactionId, finalEx);
+            }
         }
+    }
+
+    private void handleFailure(UUID transactionId, String phoneNumber, String reason) {
+        log.error("Failed to disburse airtime for transactionId: {}. Reason: {}", transactionId, reason);
+        rewardTransactionService.updateTransactionStatus(transactionId, RewardTransactionStatus.FAILED, null, reason);
+
+        String failureMessage = "We were unable to process your airtime reward at this time. Please contact support for assistance.";
+        eventPublisher.publishEvent(new SmsNotificationEvent(phoneNumber, failureMessage));
     }
 }

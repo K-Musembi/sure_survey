@@ -115,7 +115,7 @@ public class SmsResponseController {
                     .collect(Collectors.toList());
 
             ResponseRequest finalRequest = new ResponseRequest(answerRequests);
-            responseService.createResponse(session.surveyId(), finalRequest, null, session.sessionId()); // userId is null for SMS
+            responseService.createResponse(session.surveyId(), finalRequest, null, session.sessionId()); // participantId is null for SMS
 
             sessionService.deleteSession(session.sessionId());
             return "Thank you for completing the survey!";
