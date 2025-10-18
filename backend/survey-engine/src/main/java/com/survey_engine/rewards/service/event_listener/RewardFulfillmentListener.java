@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Service responsible for orchestrating the fulfillment of rewards.
@@ -43,13 +44,13 @@ public class RewardFulfillmentListener {
 
         // For loyalty points, the responderId is the participantId, which is what the provider needs.
         if (reward.getRewardType() == RewardType.LOYALTY_POINTS) {
-            disburseReward(reward, event.responderId());
+            disburseReward(reward.getId(), event.responderId(), reward.getRewardType());
             return;
         }
 
         // For other types like Airtime, we need to resolve the responderId to a phone number.
         resolvePhoneNumber(event.responderId()).ifPresentOrElse(
-            phoneNumber -> disburseReward(reward, phoneNumber),
+            phoneNumber -> disburseReward(reward.getId(), phoneNumber, reward.getRewardType()),
             () -> log.error("Could not resolve phone number for responderId: {}. Cannot disburse rewardId: {}", event.responderId(), reward.getId())
         );
     }
@@ -63,20 +64,20 @@ public class RewardFulfillmentListener {
         return userApi.findPhoneNumberByParticipantId(responderId);
     }
 
-    private void disburseReward(Reward reward, String recipientIdentifier) {
+    private void disburseReward(UUID rewardId, String recipientIdentifier, RewardType rewardType) {
         RewardProvider provider = rewardProviders.stream()
-                .filter(p -> p.supports(reward.getRewardType()))
+                .filter(p -> p.supports(rewardType))
                 .findFirst()
                 .orElse(null);
 
         if (provider == null) {
             log.error("No RewardProvider found for reward type: {}. Cannot disburse rewardId: {}",
-                    reward.getRewardType(), reward.getId());
+                    rewardType, rewardId);
             return;
         }
 
         log.info("Found provider {} for reward type {}. Disbursing to {}",
-                provider.getClass().getSimpleName(), reward.getRewardType(), recipientIdentifier);
-        provider.disburse(reward, recipientIdentifier);
+                provider.getClass().getSimpleName(), rewardType, recipientIdentifier);
+        provider.disburse(rewardId, recipientIdentifier);
     }
 }

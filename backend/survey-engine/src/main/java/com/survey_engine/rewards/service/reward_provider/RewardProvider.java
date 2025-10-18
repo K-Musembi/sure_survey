@@ -1,7 +1,8 @@
 package com.survey_engine.rewards.service.reward_provider;
 
-import com.survey_engine.rewards.models.Reward;
 import com.survey_engine.rewards.models.enums.RewardType;
+
+import java.util.UUID;
 
 /**
  * Defines the contract for a reward fulfillment reward_provider.
@@ -24,8 +25,8 @@ public interface RewardProvider {
      * creating transaction records, calling external services if necessary,
      * and updating the state of the reward and transaction entities.
      *
-     * @param reward The {@link Reward} configuration object.
+     * @param rewardId The ID of the {@link com.survey_engine.rewards.models.Reward} configuration object.
      * @param responderId The identifier of the recipient (e.g., user ID, phone number).
      */
-    void disburse(Reward reward, String responderId);
+    void disburse(UUID rewardId, String responderId);
 }

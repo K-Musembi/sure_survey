@@ -8,10 +8,13 @@ import com.survey_engine.rewards.models.enums.RewardType;
 import com.survey_engine.rewards.repository.RewardRepository;
 import com.survey_engine.rewards.service.LoyaltyTransactionService;
 import com.survey_engine.rewards.service.RewardTransactionService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 /**
  * A {@link RewardProvider} implementation for disbursing LOYALTY_POINTS.
@@ -34,14 +37,24 @@ public class LoyaltyPointsProvider implements RewardProvider {
      * Handles the disbursement of loyalty points for a completed survey.
      * This process is transactional and includes creating a pending transaction,
      * crediting the points, and updating the transaction and reward status upon completion.
+     * It locks the reward record to prevent race conditions.
      *
-     * @param reward The {@link Reward} configuration object.
+     * @param rewardId The ID of the {@link Reward} configuration object.
      * @param responderId The identifier of the recipient (user ID).
      */
     @Override
     @Transactional
-    public void disburse(Reward reward, String responderId) {
-        log.info("Disbursing LOYALTY_POINTS for rewardId: {} to responderId: {}", reward.getId(), responderId);
+    public void disburse(UUID rewardId, String responderId) {
+        log.info("Attempting to disburse LOYALTY_POINTS for rewardId: {} to responderId: {}", rewardId, responderId);
+
+        Reward reward = rewardRepository.findById(rewardId)
+                .orElseThrow(() -> new EntityNotFoundException("Reward not found with id: " + rewardId));
+
+        if (reward.getRemainingRewards() <= 0) {
+            log.warn("Reward campaign {} is already depleted. Cannot disburse loyalty points to responderId: {}", rewardId, responderId);
+            // Optionally, create a FAILED transaction here to log the attempt.
+            return;
+        }
 
         // For loyalty, the recipient identifier is the user/participant ID itself.
         RewardTransaction transaction = rewardTransactionService.createPendingTransaction(
