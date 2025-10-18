@@ -4,7 +4,7 @@ import com.survey_engine.survey.config.rabbitmq.RabbitMQConfig;
 import com.survey_engine.survey.dto.ResponseResponse;
 import com.survey_engine.survey.dto.ResponseSubmissionPayload;
 import com.survey_engine.survey.service.ResponseService;
-import com.survey_engine.survey.service.SseService;
+import com.survey_engine.survey.service.sse.SseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -43,7 +43,7 @@ public class RabbitMqListener {
     public void processResponseAndNotify(ResponseSubmissionPayload payload) {
         logger.info("Received response submission for survey {}", payload.surveyId());
         try {
-            ResponseResponse responseDto = responseService.handleResponseSubmission(payload);
+            ResponseResponse responseDto = responseService.handleResponseSubmissionAndRewardPublishing(payload);
             logger.info("Successfully processed and saved response with ID {}", responseDto.id());
 
             sseService.publishResponse(responseDto);

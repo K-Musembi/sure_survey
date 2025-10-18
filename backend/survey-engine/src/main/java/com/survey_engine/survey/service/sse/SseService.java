@@ -1,4 +1,4 @@
-package com.survey_engine.survey.service;
+package com.survey_engine.survey.service.sse;
 
 import com.survey_engine.survey.dto.ResponseResponse;
 import org.springframework.stereotype.Service;

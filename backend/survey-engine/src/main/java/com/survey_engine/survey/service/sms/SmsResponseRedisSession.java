@@ -1,4 +1,4 @@
-package com.survey_engine.survey.service;
+package com.survey_engine.survey.service.sms;
 
 import com.survey_engine.survey.models.SmsSession;
 import org.springframework.beans.factory.annotation.Autowired;

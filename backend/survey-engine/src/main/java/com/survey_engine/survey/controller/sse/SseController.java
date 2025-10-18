@@ -1,7 +1,7 @@
-package com.survey_engine.survey.controller;
+package com.survey_engine.survey.controller.sse;
 
 import com.survey_engine.survey.dto.ResponseResponse;
-import com.survey_engine.survey.service.SseService;
+import com.survey_engine.survey.service.sse.SseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;

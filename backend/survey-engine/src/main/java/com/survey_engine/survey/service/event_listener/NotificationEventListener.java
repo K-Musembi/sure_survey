@@ -1,7 +1,7 @@
 package com.survey_engine.survey.service.event_listener;
 
 import com.survey_engine.common.events.SmsNotificationEvent;
-import com.survey_engine.survey.service.SmsSendingService;
+import com.survey_engine.survey.service.sms.SmsSendingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;

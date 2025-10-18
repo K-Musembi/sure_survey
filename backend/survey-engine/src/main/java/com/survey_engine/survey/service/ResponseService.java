@@ -1,25 +1,23 @@
 package com.survey_engine.survey.service;
 
 import com.survey_engine.common.events.SurveyCompletedEvent;
+import com.survey_engine.survey.dto.ResponseRequest;
+import com.survey_engine.survey.dto.ResponseResponse;
 import com.survey_engine.survey.models.Answer;
 import com.survey_engine.survey.dto.AnswerResponse;
 import com.survey_engine.survey.common.enums.AccessType;
 import com.survey_engine.survey.common.enums.ResponseStatus;
 import com.survey_engine.survey.common.enums.SurveyStatus;
-import com.survey_engine.survey.config.rabbitmq.RabbitMQConfig;
+import com.survey_engine.survey.dto.ResponseSubmissionPayload;
 import com.survey_engine.survey.models.Question;
 import com.survey_engine.survey.models.Response;
+import com.survey_engine.survey.models.Survey;
 import com.survey_engine.survey.repository.QuestionRepository;
 import com.survey_engine.survey.repository.ResponseRepository;
-import com.survey_engine.survey.dto.ResponseRequest;
-import com.survey_engine.survey.dto.ResponseResponse;
-import com.survey_engine.survey.dto.ResponseSubmissionPayload;
-import com.survey_engine.survey.models.Survey;
 import com.survey_engine.survey.repository.SurveyRepository;
 import com.survey_engine.user.UserApi;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -39,7 +37,7 @@ public class ResponseService {
 
     private final ResponseRepository responseRepository;
     private final SurveyRepository surveyRepository;
-    private final RabbitTemplate rabbitTemplate;
+    private final ResponseRabbitMqPublisher responseRabbitMqPublisher;
     private final QuestionRepository questionRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final UserApi userApi;
@@ -62,11 +60,11 @@ public class ResponseService {
             throw new AccessDeniedException("This survey is private and requires authentication to respond.");
         }
         ResponseSubmissionPayload payload = new ResponseSubmissionPayload(surveyId, responseRequest, userId, sessionId);
-        rabbitTemplate.convertAndSend(RabbitMQConfig.SURVEY_EXCHANGE, RabbitMQConfig.RESPONSE_ROUTING_KEY, payload);
+        responseRabbitMqPublisher.publishResponse(payload);
     }
 
     @Transactional
-    public ResponseResponse handleResponseSubmission(ResponseSubmissionPayload payload) {
+    public ResponseResponse handleResponseSubmissionAndRewardPublishing(ResponseSubmissionPayload payload) {
         Survey survey = surveyRepository.findById(payload.surveyId())
                 .orElseThrow(() -> new EntityNotFoundException("Survey not found with id: " + payload.surveyId()));
 

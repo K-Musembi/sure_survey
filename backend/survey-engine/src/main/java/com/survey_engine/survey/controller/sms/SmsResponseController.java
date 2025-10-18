@@ -1,4 +1,4 @@
-package com.survey_engine.survey.controller;
+package com.survey_engine.survey.controller.sms;
 
 import com.survey_engine.survey.common.enums.SurveyStatus;
 import com.survey_engine.survey.dto.AnswerRequest;
@@ -6,7 +6,7 @@ import com.survey_engine.survey.dto.ResponseRequest;
 import com.survey_engine.survey.models.Question;
 import com.survey_engine.survey.models.SmsSession;
 import com.survey_engine.survey.repository.SurveyRepository;
-import com.survey_engine.survey.service.SmsResponseRedisSession;
+import com.survey_engine.survey.service.sms.SmsResponseRedisSession;
 import com.survey_engine.survey.models.Survey;
 import com.survey_engine.survey.service.ResponseService;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,4 +1,4 @@
-package com.survey_engine.survey.service;
+package com.survey_engine.survey.service.sms;
 
 import com.africastalking.SmsService;
 import com.africastalking.sms.Recipient;
