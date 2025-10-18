@@ -56,20 +56,20 @@ public class UserController {
     }
 
     /**
-     * Method to retrieve users by company id
-     * @param companyId - company id
+     * Method to retrieve users by tenant id
+     * @param tenantId - tenant id
      * @return - HTTP response
      */
-    @GetMapping("/company")
-    public ResponseEntity<List<UserResponse>> getUsersByCompanyId(@RequestParam Long companyId) {
-        List<UserResponse> responseObject = userService.findUsersByCompanyId(companyId);
+    @GetMapping("/tenant")
+    public ResponseEntity<List<UserResponse>> getUsersByTenantId(@RequestParam Long tenantId) {
+        List<UserResponse> responseObject = userService.findUsersByTenantId(tenantId);
         return ResponseEntity.status(HttpStatus.OK).body(responseObject);
     }
 
     /**
      * Method to update user
      * @param id - user id
-     * @param userRequest - request DTO
+     * @param userRequest - request DTO containing user details, including tenantId
      * @return - HTTP response
      */
     @PutMapping("/{id}")

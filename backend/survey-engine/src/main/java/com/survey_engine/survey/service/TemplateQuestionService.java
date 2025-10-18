@@ -64,18 +64,20 @@ public class TemplateQuestionService {
 
     /**
      * Updates an existing template question. (Admin only)
+     * @param templateId The ID of the template.
      * @param questionId The ID of the question to update.
      * @param request The DTO with updated data.
      * @param roles The roles of the user making the request.
      * @return A DTO for the updated question.
      */
     @Transactional
-    public TemplateQuestionResponse updateTemplateQuestion(Long questionId, TemplateQuestionRequest request, List<String> roles) {
+    public TemplateQuestionResponse updateTemplateQuestion(Long templateId, Long questionId, TemplateQuestionRequest request, List<String> roles) {
         if (roles == null || !roles.contains("ADMIN")) {
             throw new AccessDeniedException("Only admins can update template questions.");
         }
         TemplateQuestion question = templateQuestionRepository.findById(questionId)
-                .orElseThrow(() -> new EntityNotFoundException("TemplateQuestion not found with id: " + questionId));
+                .filter(q -> q.getTemplate().getId().equals(templateId))
+                .orElseThrow(() -> new EntityNotFoundException("TemplateQuestion not found with id: " + questionId + " for template: " + templateId));
 
         question.setQuestionText(request.questionText());
         question.setQuestionType(request.questionType());
@@ -88,18 +90,19 @@ public class TemplateQuestionService {
 
     /**
      * Deletes a template question. (Admin only)
+     * @param templateId The ID of the template.
      * @param questionId The ID of the question to delete.
      * @param roles The roles of the user making the request.
      */
     @Transactional
-    public void deleteTemplateQuestion(Long questionId, List<String> roles) {
+    public void deleteTemplateQuestion(Long templateId, Long questionId, List<String> roles) {
         if (roles == null || !roles.contains("ADMIN")) {
             throw new AccessDeniedException("Only admins can delete template questions.");
         }
-        if (!templateQuestionRepository.existsById(questionId)) {
-            throw new EntityNotFoundException("TemplateQuestion not found with id: " + questionId);
-        }
-        templateQuestionRepository.deleteById(questionId);
+        TemplateQuestion question = templateQuestionRepository.findById(questionId)
+                .filter(q -> q.getTemplate().getId().equals(templateId))
+                .orElseThrow(() -> new EntityNotFoundException("TemplateQuestion not found with id: " + questionId + " for template: " + templateId));
+        templateQuestionRepository.delete(question);
     }
 
     /**
@@ -119,14 +122,16 @@ public class TemplateQuestionService {
 
     /**
      * Retrieves a single template question by its ID.
+     * @param templateId The ID of the template.
      * @param questionId The ID of the question.
      * @return A question DTO.
      */
     @Transactional(readOnly = true)
-    public TemplateQuestionResponse getQuestionById(Long questionId) {
+    public TemplateQuestionResponse getQuestionById(Long templateId, Long questionId) {
         return templateQuestionRepository.findById(questionId)
+                .filter(q -> q.getTemplate().getId().equals(templateId))
                 .map(this::mapToResponse)
-                .orElseThrow(() -> new EntityNotFoundException("TemplateQuestion not found with id: " + questionId));
+                .orElseThrow(() -> new EntityNotFoundException("TemplateQuestion not found with id: " + questionId + " for template: " + templateId));
     }
 
     /**

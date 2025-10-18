@@ -1,26 +1,28 @@
 package com.survey_engine.rewards.models;
 
+import com.survey_engine.common.models.BaseEntity;
 import com.survey_engine.rewards.models.enums.RewardStatus;
 import com.survey_engine.rewards.models.enums.RewardType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
  * The central entity representing the reward configuration for a survey.
  * It defines the type, value, and rules of the reward campaign.
  */
+@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "rewards")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Reward {
+public class Reward extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -57,20 +59,4 @@ public class Reward {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private RewardStatus status;
-
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

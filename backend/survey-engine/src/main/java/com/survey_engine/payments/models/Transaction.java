@@ -1,13 +1,14 @@
 package com.survey_engine.payments.models;
 
+import com.survey_engine.common.models.BaseEntity;
 import com.survey_engine.payments.models.enums.TransactionType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -15,12 +16,13 @@ import java.util.UUID;
  * This entity records the actual, successful financial events related to a payment.
  * It's useful for financial reporting and reconciliation.
  */
+@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "transactions")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Transaction {
+public class Transaction extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -51,15 +53,4 @@ public class Transaction {
      */
     @Column(name = "gateway_transaction_id", nullable = false, unique = true)
     private String gatewayTransactionId;
-
-    /**
-     * When the transaction was confirmed.
-     */
-    @Column(name = "processed_at", nullable = false)
-    private LocalDateTime processedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        processedAt = LocalDateTime.now();
-    }
 }

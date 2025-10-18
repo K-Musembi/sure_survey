@@ -12,9 +12,21 @@ import java.util.UUID;
 
 @Repository
 public interface RewardRepository extends JpaRepository<Reward, UUID> {
-    Optional<Reward> findBySurveyId(String surveyId);
+    /**
+     * Finds a Reward entity by its survey ID and tenant ID.
+     * @param surveyId The ID of the survey.
+     * @param tenantId The ID of the tenant.
+     * @return An Optional containing the found Reward or empty if not found.
+     */
+    Optional<Reward> findBySurveyIdAndTenantId(String surveyId, Long tenantId);
 
-    List<Reward> findByUserId(String userId);
+    /**
+     * Finds all Reward entities for a given user ID and tenant ID.
+     * @param userId The ID of the user.
+     * @param tenantId The ID of the tenant.
+     * @return A list of rewards for that user and tenant.
+     */
+    List<Reward> findByUserIdAndTenantId(String userId, Long tenantId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Reward> findById(UUID id);

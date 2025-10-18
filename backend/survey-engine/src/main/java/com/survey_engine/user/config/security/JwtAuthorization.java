@@ -33,11 +33,14 @@ import java.io.InputStream;
 import java.security.KeyStore;
 import java.util.UUID;
 
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
 @Configuration
 @RequiredArgsConstructor
 public class JwtAuthorization {
 
     private final PasswordEncoder passwordEncoder;
+    private final TenantResolverFilter tenantResolverFilter;
 
     @Value("${jwt.keystore.path}")
     private String keystorePath;
@@ -51,6 +54,8 @@ public class JwtAuthorization {
     @Bean
     @Order(1)
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
+
+        http.addFilterBefore(tenantResolverFilter, UsernamePasswordAuthenticationFilter.class);
 
         // 1. Initialize the configurer and create a request matcher for the endpoints.
         OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = new OAuth2AuthorizationServerConfigurer();

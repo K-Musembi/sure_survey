@@ -1,14 +1,15 @@
 package com.survey_engine.payments.models;
 
+import com.survey_engine.common.models.BaseEntity;
 import com.survey_engine.payments.models.enums.PaymentGateway;
 import com.survey_engine.payments.models.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -16,12 +17,13 @@ import java.util.UUID;
  * This entity tracks each attempt to make a payment, serving as a log for every transaction,
  * whether successful or not.
  */
+@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "payment_event")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class PaymentEvent {
+public class PaymentEvent extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -71,20 +73,4 @@ public class PaymentEvent {
      */
     @Column(name = "error_message", length = 255)
     private String errorMessage;
-
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

@@ -17,30 +17,16 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Service class for the Template entity.
- * Defines business logic for managing survey templates.
- */
 @Service
 public class TemplateService {
 
     private final TemplateRepository templateRepository;
 
-    /**
-     * Constructor for TemplateService.
-     * @param templateRepository An instance of TemplateRepository.
-     */
     @Autowired
     public TemplateService(TemplateRepository templateRepository) {
         this.templateRepository = templateRepository;
     }
 
-    /**
-     * Creates a new template. (Admin only)
-     * @param request The DTO containing the template data.
-     * @param roles The roles of the user making the request.
-     * @return A DTO for the created template.
-     */
     @Transactional
     public TemplateResponse createTemplate(TemplateRequest request, List<String> roles) {
         if (roles == null || !roles.contains("ADMIN")) {
@@ -55,13 +41,6 @@ public class TemplateService {
         return mapToResponse(savedTemplate);
     }
 
-    /**
-     * Updates an existing template. (Admin only)
-     * @param id The ID of the template to update.
-     * @param request The DTO with updated data.
-     * @param roles The roles of the user making the request.
-     * @return A DTO for the updated template.
-     */
     @Transactional
     public TemplateResponse updateTemplate(Long id, TemplateRequest request, List<String> roles) {
         if (roles == null || !roles.contains("ADMIN")) {
@@ -74,11 +53,6 @@ public class TemplateService {
         return mapToResponse(savedTemplate);
     }
 
-    /**
-     * Deletes a template. (Admin only)
-     * @param id The ID of the template to delete.
-     * @param roles The roles of the user making the request.
-     */
     @Transactional
     public void deleteTemplate(Long id, List<String> roles) {
         if (roles == null || !roles.contains("ADMIN")) {
@@ -90,10 +64,6 @@ public class TemplateService {
         templateRepository.deleteById(id);
     }
 
-    /**
-     * Retrieves all templates.
-     * @return A list of all template DTOs.
-     */
     @Transactional(readOnly = true)
     public List<TemplateResponse> getAllTemplates() {
         return templateRepository.findAll().stream()
@@ -101,11 +71,6 @@ public class TemplateService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Retrieves a single template by its ID.
-     * @param id The ID of the template.
-     * @return A template DTO.
-     */
     @Transactional(readOnly = true)
     public TemplateResponse getTemplateById(Long id) {
         return templateRepository.findById(id)
@@ -113,11 +78,6 @@ public class TemplateService {
                 .orElseThrow(() -> new EntityNotFoundException("Template not found with id: " + id));
     }
 
-    /**
-     * Retrieves all templates of a specific type.
-     * @param type The survey type.
-     * @return A list of template DTOs.
-     */
     @Transactional(readOnly = true)
     public List<TemplateResponse> getTemplatesByType(SurveyType type) {
         return templateRepository.findByType(type).stream()
@@ -125,11 +85,6 @@ public class TemplateService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Retrieves all templates for a specific sector.
-     * @param sector The industry sector.
-     * @return A list of template DTOs.
-     */
     @Transactional(readOnly = true)
     public List<TemplateResponse> getTemplatesBySector(String sector) {
         return templateRepository.findBySector(sector).stream()

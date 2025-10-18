@@ -14,16 +14,18 @@ import java.util.Optional;
 public interface SurveyRepository extends JpaRepository<Survey, Long> {
 
     /**
-     * Method to find survey by name
+     * Method to find survey by name and tenant ID.
      * @param name - survey name
+     * @param tenantId - tenant ID
      * @return - Optional of Survey
      */
-    Optional<Survey> findByName(String name);
+    Optional<Survey> findByNameAndTenantId(String name, Long tenantId);
 
     /**
-     * Method to find all surveys by user id
+     * Method to find all surveys by user id and tenant ID.
      * @param userId - user id
+     * @param tenantId - tenant ID
      * @return - List of surveys
      */
-    List<Survey> findByUserId(String userId);
+    List<Survey> findByUserIdAndTenantId(String userId, Long tenantId);
 }

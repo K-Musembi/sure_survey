@@ -2,14 +2,14 @@ package com.survey_engine.user.dto;
 
 /**
  * Response DTO for User entity
- * @param id
- * @param name
- * @param email
- * @param companyId
+ * @param id The user's ID.
+ * @param name The user's name.
+ * @param email The user's email.
+ * @param tenantId The ID of the tenant the user belongs to.
  */
 public record UserResponse(
         Long id,
         String name,
         String email,
-        Long companyId
+        Long tenantId
 ) {}

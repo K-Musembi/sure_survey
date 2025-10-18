@@ -10,6 +10,10 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Model class for Template entity.
+ * Maps to database table using JPA Hibernate ORM.
+ */
 @Entity
 @Table(name = "templates")
 @Data

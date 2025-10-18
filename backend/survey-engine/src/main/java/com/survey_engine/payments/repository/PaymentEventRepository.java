@@ -15,26 +15,29 @@ import java.util.UUID;
 public interface PaymentEventRepository extends JpaRepository<PaymentEvent, UUID> {
 
     /**
-     * Finds a PaymentEvent entity by its idempotency key.
+     * Finds a PaymentEvent entity by its idempotency key and tenant ID.
      *
      * @param idempotencyKey The unique key provided by the client.
+     * @param tenantId The ID of the tenant.
      * @return An Optional containing the found PaymentEvent or empty if not found.
      */
-    Optional<PaymentEvent> findByIdempotencyKey(String idempotencyKey);
+    Optional<PaymentEvent> findByIdempotencyKeyAndTenantId(String idempotencyKey, Long tenantId);
 
     /**
-     * Finds a PaymentEvent entity by the gateway's transaction identifier.
+     * Finds a PaymentEvent entity by the gateway's transaction identifier and tenant ID.
      *
      * @param gatewayTransactionId The unique identifier from the payment gateway (e.g., PayStack's reference).
+     * @param tenantId The ID of the tenant.
      * @return An Optional containing the found PaymentEvent or empty if not found.
      */
-    Optional<PaymentEvent> findByGatewayTransactionId(String gatewayTransactionId);
+    Optional<PaymentEvent> findByGatewayTransactionIdAndTenantId(String gatewayTransactionId, Long tenantId);
 
     /**
-     * Finds all PaymentEvent entities for a given user ID.
+     * Finds all PaymentEvent entities for a given user ID and tenant ID.
      *
      * @param userId The ID of the user.
+     * @param tenantId The ID of the tenant.
      * @return A list of payments for that user.
      */
-    List<PaymentEvent> findByUserId(String userId);
+    List<PaymentEvent> findByUserIdAndTenantId(String userId, Long tenantId);
 }

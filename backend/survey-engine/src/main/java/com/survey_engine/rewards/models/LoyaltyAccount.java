@@ -1,24 +1,26 @@
 package com.survey_engine.rewards.models;
 
+import com.survey_engine.common.models.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
  * Represents a user's loyalty points balance.
  * Each user has at most one loyalty account.
  */
+@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "loyalty_accounts")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class LoyaltyAccount {
+public class LoyaltyAccount extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -30,22 +32,11 @@ public class LoyaltyAccount {
     @Column(name = "balance", nullable = false, precision = 10, scale = 2)
     private BigDecimal balance;
 
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
     @PrePersist
     protected void onCreate() {
-        createdAt = updatedAt = LocalDateTime.now();
+        super.onCreate();
         if (balance == null) {
             balance = BigDecimal.ZERO;
         }
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
     }
 }

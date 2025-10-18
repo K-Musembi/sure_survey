@@ -71,7 +71,7 @@ public class TemplateQuestionController {
     public ResponseEntity<TemplateQuestionResponse> getQuestionById(
             @PathVariable Long templateId,
             @PathVariable Long questionId) {
-        TemplateQuestionResponse question = questionService.getQuestionById(questionId);
+        TemplateQuestionResponse question = questionService.getQuestionById(templateId, questionId);
         return ResponseEntity.ok(question);
     }
 
@@ -90,7 +90,7 @@ public class TemplateQuestionController {
             @Valid @RequestBody TemplateQuestionRequest request,
             @AuthenticationPrincipal Jwt jwt) {
         List<String> roles = jwt.getClaimAsStringList("roles");
-        TemplateQuestionResponse updatedQuestion = questionService.updateTemplateQuestion(questionId, request, roles);
+        TemplateQuestionResponse updatedQuestion = questionService.updateTemplateQuestion(templateId, questionId, request, roles);
         return ResponseEntity.ok(updatedQuestion);
     }
 
@@ -107,7 +107,7 @@ public class TemplateQuestionController {
             @PathVariable Long questionId,
             @AuthenticationPrincipal Jwt jwt) {
         List<String> roles = jwt.getClaimAsStringList("roles");
-        questionService.deleteTemplateQuestion(questionId, roles);
+        questionService.deleteTemplateQuestion(templateId, questionId, roles);
         return ResponseEntity.noContent().build();
     }
 }

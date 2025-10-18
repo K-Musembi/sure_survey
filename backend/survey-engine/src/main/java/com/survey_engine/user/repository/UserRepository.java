@@ -16,7 +16,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByEmail(String email);
 
-    List<User> findByCompanyId(Long companyId);
+    List<User> findByTenantId(Long tenantId);
+
+/**
+ * Finds all User entities belonging to a specific tenant.
+ *
+ * @param tenantId The ID of the tenant.
+ * @return A list of User entities for the given tenant.
+ */
 }
 
 //findById(), findAll(), etc. provided by default through JpaRepository

@@ -10,30 +10,39 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Model class for Company entity
+ * Model class for Tenant entity
  * Maps to database table using JPA Hibernate ORM
  */
 @Entity
-@Table(name = "company")
+@Table(name = "tenants")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Company {
+public class Tenant {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "name", nullable = false, length = 100)
+    @Column(nullable = false, unique = true)
+    private String slug;
+
+    @Column(nullable = false)
     private String name;
 
-    @Column(name = "sector", nullable = false, length = 100)
-    private String sector;
+    @Column(nullable = false)
+    private String status;
 
-    @Column(name = "country", nullable = false, length = 100)
-    private String country;
+    @Column
+    private String branding_s3_key;
 
-    @OneToMany(mappedBy = "company", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Column
+    private String plan;
+
+    @Column(columnDefinition = "jsonb")
+    private String metadata_json;
+
+    @OneToMany(mappedBy = "tenant", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<User> users = new ArrayList<>();
 
     @Column(name = "created_at", updatable = false)

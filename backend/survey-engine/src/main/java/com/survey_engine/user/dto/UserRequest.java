@@ -9,7 +9,8 @@ import jakarta.validation.constraints.Size;
  * @param name
  * @param email
  * @param password
- * @param companyId
+ * @param role
+ * @param tenantId
  */
 public record UserRequest(
         @NotBlank(message = "Name is required")
@@ -27,5 +28,5 @@ public record UserRequest(
         @Size(min = 3, max = 20, message = "Role must be between 3 and 20 characters")
         String role,
 
-        Long companyId
+        Long tenantId
 ) {}
