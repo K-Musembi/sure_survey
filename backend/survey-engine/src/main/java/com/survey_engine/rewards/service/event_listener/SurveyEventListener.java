@@ -5,6 +5,7 @@ import com.survey_engine.common.events.SurveyCompletedEvent;
 import com.survey_engine.rewards.models.Reward;
 import com.survey_engine.rewards.models.enums.RewardStatus;
 import com.survey_engine.rewards.repository.RewardRepository;
+import com.survey_engine.user.UserApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -25,6 +26,7 @@ public class SurveyEventListener {
 
     private final RewardRepository rewardRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final UserApi userApi;
 
     /**
      * Handles the {@link SurveyCompletedEvent} from the survey module.
@@ -39,7 +41,8 @@ public class SurveyEventListener {
     public void handleSurveyCompletion(SurveyCompletedEvent event) {
         log.info("Received SurveyCompletedEvent for surveyId: {}", event.surveyId());
 
-        Optional<Reward> rewardOpt = rewardRepository.findBySurveyId(String.valueOf(event.surveyId()));
+        Long tenantId = userApi.getTenantId();
+        Optional<Reward> rewardOpt = rewardRepository.findBySurveyIdAndTenantId(String.valueOf(event.surveyId()), tenantId);
         if (rewardOpt.isEmpty()) {
             log.info("No reward configured for surveyId: {}. Skipping reward workflow.", event.surveyId());
             return;

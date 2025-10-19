@@ -11,8 +11,9 @@ CREATE TABLE payment_event (
     payment_gateway VARCHAR(255) NOT NULL,
     gateway_transaction_id VARCHAR(255) UNIQUE,
     error_message VARCHAR(255),
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP
+    tenant_id BIGINT NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL
 );
 
 -- Create transactions table
@@ -23,7 +24,9 @@ CREATE TABLE transactions (
     amount DECIMAL(10, 2) NOT NULL,
     currency VARCHAR(3) NOT NULL,
     gateway_transaction_id VARCHAR(255) NOT NULL UNIQUE,
-    processed_at TIMESTAMP NOT NULL,
+    tenant_id BIGINT NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
     CONSTRAINT fk_payment_event
         FOREIGN KEY(payment_id)
             REFERENCES payment_event(id)

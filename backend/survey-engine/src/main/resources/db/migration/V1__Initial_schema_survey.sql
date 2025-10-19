@@ -8,6 +8,7 @@ CREATE TABLE surveys (
     access_type VARCHAR(255) NOT NULL,
     start_date TIMESTAMP,
     end_date TIMESTAMP,
+    tenant_id BIGINT NOT NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL
 );
@@ -30,8 +31,9 @@ CREATE TABLE responses (
     survey_id BIGINT NOT NULL REFERENCES surveys(id) ON DELETE CASCADE,
     status VARCHAR(255) NOT NULL,
     submission_date TIMESTAMP NOT NULL,
-    user_id VARCHAR(255),
+    participant_id VARCHAR(255),
     session_id VARCHAR(255),
+    tenant_id BIGINT NOT NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL
 );
