@@ -49,18 +49,7 @@ public class AuthService {
             throw new DataIntegrityViolationException("Email already exists for this tenant");
         }
 
-        String userRole = request.role();
-        if (request.tenantId() == null) { // Individual sign-up
-            if (userRole == null) {
-                userRole = "REGULAR";
-            }
-        } else { // Enterprise sign-up. If this is the first user for this tenant, make them ADMIN
-            if (userRepository.findByTenantId(tenant.getId()).isEmpty()) {
-                userRole = "ADMIN";
-            } else if (userRole == null) {
-                userRole = "REGULAR";
-            }
-        }
+        String userRole = assignUserRole(request, tenant);
 
         User user = new User();
         user.setName(request.name());
@@ -93,21 +82,41 @@ public class AuthService {
     }
 
     /**
+     * Assigns a role to the user based on the sign-up request and tenant context.
+     * If it's an individual sign-up (no tenantId provided), defaults to 'REGULAR'.
+     * If it's an enterprise sign-up and the first user for that tenant, assigns 'ADMIN'.
+     * Otherwise, defaults to 'REGULAR' or uses the role provided in the request.
+     *
+     * @param request The SignUpRequest containing user details.
+     * @param tenant The Tenant entity the user is signing up for.
+     * @return The assigned role for the user.
+     */
+    private String assignUserRole(SignUpRequest request, Tenant tenant) {
+        String userRole = request.role();
+        if (request.tenantId() == null) { // Individual sign-up
+            if (userRole == null) {
+                userRole = "REGULAR";
+            }
+        } else { // Enterprise sign-up. If this is the first user for this tenant, make them ADMIN
+            if (userRepository.findByTenantId(tenant.getId()).isEmpty()) {
+                userRole = "ADMIN";
+            } else if (userRole == null) {
+                userRole = "REGULAR";
+            }
+        }
+        return userRole;
+    }
+
+    /**
      * Find existing tenant or create default tenant
      * @param tenantIdFromRequest - tenant id from request object
      * @return - new or existing tenant
      */
     private Tenant resolveTenant(Long tenantIdFromRequest) {
         if (tenantIdFromRequest == null) {
+            // For individual sign-up, assume 'www' tenant exists and find it.
             return tenantRepository.findBySlug("www")
-                    .orElseGet(() -> {
-                        Tenant newDefaultTenant = new Tenant();
-                        newDefaultTenant.setName("Default Tenant");
-                        newDefaultTenant.setSlug("www");
-                        newDefaultTenant.setStatus("ACTIVE");
-                        newDefaultTenant.setPlan("FREE");
-                        return tenantRepository.save(newDefaultTenant);
-                    });
+                    .orElseThrow(() -> new EntityNotFoundException("Default 'www' tenant not found. Please ensure it is initialized."));
         } else {
             // Enterprise sign-up: find existing tenant
             return tenantRepository.findById(tenantIdFromRequest)

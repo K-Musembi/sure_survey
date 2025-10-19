@@ -6,6 +6,7 @@ import com.survey_engine.user.models.Tenant;
 import com.survey_engine.user.repository.TenantRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -18,14 +19,10 @@ import java.util.stream.Collectors;
  * Defines business logic for creating, retrieving, updating, and deleting tenants.
  */
 @Service
+@RequiredArgsConstructor
 public class TenantService {
 
     private final TenantRepository tenantRepository;
-
-    @Autowired
-    public TenantService(TenantRepository tenantRepository) {
-        this.tenantRepository = tenantRepository;
-    }
 
     /**
      * Creates a new tenant.
@@ -139,6 +136,12 @@ public class TenantService {
         tenantRepository.delete(tenant);
     }
 
+    /**
+     * Maps a {@link Tenant} entity to a {@link TenantResponse} DTO.
+     *
+     * @param tenant The {@link Tenant} entity to map.
+     * @return The corresponding {@link TenantResponse} DTO.
+     */
     private TenantResponse mapToTenantResponse(Tenant tenant) {
         return new TenantResponse(
                 tenant.getId(),

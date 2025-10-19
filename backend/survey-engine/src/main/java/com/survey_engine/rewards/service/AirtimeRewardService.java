@@ -1,16 +1,15 @@
 package com.survey_engine.rewards.service;
 
 import com.africastalking.airtime.AirtimeResponse;
-import com.survey_engine.common.events.SmsNotificationEvent;
 import com.survey_engine.rewards.models.Reward;
 import com.survey_engine.rewards.models.enums.RewardStatus;
 import com.survey_engine.rewards.models.enums.RewardTransactionStatus;
 import com.survey_engine.rewards.repository.RewardRepository;
-import com.survey_engine.user.service.TenantContext;
+import com.survey_engine.rewards.service.notifications.NotificationService;
+import com.survey_engine.user.UserApi;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,7 +28,8 @@ public class AirtimeRewardService {
 
     private final RewardTransactionService rewardTransactionService;
     private final RewardRepository rewardRepository;
-    private final ApplicationEventPublisher eventPublisher;
+    private final NotificationService notificationService;
+    private final UserApi userApi;
 
     /**
      * Processes the result of the airtime disbursement API call in a new transaction.
@@ -63,7 +63,7 @@ public class AirtimeRewardService {
                 rewardTransactionService.updateTransactionStatus(transactionId, RewardTransactionStatus.SUCCESS, entry.requestId, null);
 
                 // Lock the reward to prevent race conditions
-                Long tenantId = TenantContext.getTenantId();
+                Long tenantId = userApi.getTenantId();
                 Reward reward = rewardRepository.findByIdAndTenantId(rewardId, tenantId)
                         .orElseThrow(() -> new EntityNotFoundException("Reward not found with id: " + rewardId + " for tenant: " + tenantId));
 
@@ -76,7 +76,7 @@ public class AirtimeRewardService {
                     rewardRepository.save(reward);
 
                     String successMessage = String.format("You have received %s of airtime for completing our survey. Thank you!", entry.amount);
-                    eventPublisher.publishEvent(new SmsNotificationEvent(phoneNumber, successMessage));
+                    notificationService.sendSms(phoneNumber, successMessage);
                 } else {
                     // This case handles the race condition if another process already depleted the reward.
                     log.warn("Reward {} was already depleted. Airtime sent for transactionId {} will not be accounted for against the reward budget.", rewardId, transactionId);
@@ -109,7 +109,6 @@ public class AirtimeRewardService {
         rewardTransactionService.updateTransactionStatus(transactionId, RewardTransactionStatus.FAILED, null, reason);
 
         String failureMessage = "We were unable to process your airtime reward at this time. Please contact support for assistance.";
-        eventPublisher.publishEvent(new SmsNotificationEvent(phoneNumber, failureMessage));
+        notificationService.sendSms(phoneNumber, failureMessage);
     }
 }
-

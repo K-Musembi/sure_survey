@@ -4,7 +4,7 @@ import com.survey_engine.survey.service.SurveyService;
 import com.survey_engine.survey.dto.SurveyRequest;
 import com.survey_engine.survey.dto.SurveyResponse;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -22,18 +22,10 @@ import java.util.List;
 @RestController
 @Validated
 @RequestMapping("/api/v1/surveys")
+@RequiredArgsConstructor
 public class SurveyController {
 
     private final SurveyService surveyService;
-
-    /**
-     * Constructor for controller class
-     * @param surveyService - instance of service class
-     */
-    @Autowired
-    public SurveyController(SurveyService surveyService) {
-        this.surveyService = surveyService;
-    }
 
     /**
      * Method to create new survey for the authenticated user.
@@ -81,6 +73,7 @@ public class SurveyController {
         if (jwt == null) {
             throw new AuthenticationException("User is not authenticated.");
         }
+        String userId = jwt.getSubject();
         List<String> roles = jwt.getClaimAsStringList("roles");
         List<SurveyResponse> responseObject = surveyService.findAllSurveys(roles);
         return ResponseEntity.status(HttpStatus.OK).body(responseObject);

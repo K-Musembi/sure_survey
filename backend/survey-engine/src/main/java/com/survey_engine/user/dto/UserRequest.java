@@ -5,12 +5,13 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * Request DTO for User entity
- * @param name
- * @param email
- * @param password
- * @param role
- * @param tenantId
+ * Request DTO for User entity.
+ *
+ * @param name The user's full name.
+ * @param email The user's email address.
+ * @param password The user's password.
+ * @param role The user's role (e.g., "REGULAR", "ADMIN").
+ * @param tenantId The ID of the tenant the user belongs to.
  */
 public record UserRequest(
         @NotBlank(message = "Name is required")

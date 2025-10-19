@@ -55,6 +55,13 @@ public class RewardFulfillmentListener {
         );
     }
 
+    /**
+     * Resolves the responder ID to a phone number if it's not already one.
+     * This is used for reward types like AIRTIME or DATA_BUNDLE.
+     *
+     * @param responderId The identifier of the responder (can be a phone number or participant ID).
+     * @return An {@link Optional} containing the resolved phone number, or empty if it cannot be resolved.
+     */
     private Optional<String> resolvePhoneNumber(String responderId) {
         // Simple check to see if it's a phone number (e.g., from an SMS session)
         if (responderId.matches("^\\+?[1-9]\\d{1,14}$")) { // Basic E.164 regex
@@ -64,6 +71,13 @@ public class RewardFulfillmentListener {
         return userApi.findPhoneNumberByParticipantId(responderId);
     }
 
+    /**
+     * Delegates the actual reward disbursement to the appropriate {@link RewardProvider}.
+     *
+     * @param rewardId The ID of the reward configuration.
+     * @param recipientIdentifier The identifier of the recipient (e.g., phone number or user ID).
+     * @param rewardType The type of reward to disburse.
+     */
     private void disburseReward(UUID rewardId, String recipientIdentifier, RewardType rewardType) {
         RewardProvider provider = rewardProviders.stream()
                 .filter(p -> p.supports(rewardType))

@@ -14,15 +14,28 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.stream.Collectors;
 
+/**
+ * Service for generating JSON Web Tokens (JWTs).
+ * Uses Spring Security's JwtEncoder to create signed JWTs with custom claims.
+ */
 @Service
 @RequiredArgsConstructor
 public class JwtService {
 
     private final JwtEncoder jwtEncoder;
 
+    /**
+     * Configured expiration time for JWTs in minutes.
+     */
     @Value("${jwt.expiration}")
     private long jwtExpiration; // in minutes
 
+    /**
+     * Generates a JWT for the authenticated user.
+     *
+     * @param authentication The {@link Authentication} object representing the authenticated user.
+     * @return A signed JWT token string.
+     */
     public String generateToken(Authentication authentication) {
         User user = (User) authentication.getPrincipal();
         Instant now = Instant.now();

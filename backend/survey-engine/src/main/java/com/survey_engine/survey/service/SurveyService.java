@@ -8,12 +8,11 @@ import com.survey_engine.survey.models.Survey;
 import com.survey_engine.survey.repository.SurveyRepository;
 import com.survey_engine.survey.dto.SurveyRequest;
 import com.survey_engine.survey.dto.SurveyResponse;
-import com.survey_engine.survey.service.event_listener.PaymentEventListener;
-import com.survey_engine.user.service.TenantContext;
+import com.survey_engine.user.UserApi;
 import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -23,20 +22,17 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class SurveyService {
 
-    private static final Logger logger = LoggerFactory.getLogger(PaymentEventListener.class);
+    private static final Logger logger = LoggerFactory.getLogger(SurveyService.class);
 
     private final SurveyRepository surveyRepository;
-
-    @Autowired
-    public SurveyService(SurveyRepository surveyRepository) {
-        this.surveyRepository = surveyRepository;
-    }
+    private final UserApi userApi;
 
     @Transactional
     public SurveyResponse createSurvey(SurveyRequest surveyRequest, String userId) {
-        Long tenantId = TenantContext.getTenantId();
+        Long tenantId = userApi.getTenantId();
         if (surveyRepository.findByNameAndTenantId(surveyRequest.name(), tenantId).isPresent()) {
             throw new DataIntegrityViolationException("A survey with this name already exists");
         }
@@ -50,7 +46,7 @@ public class SurveyService {
 
     @Transactional(readOnly = true)
     public SurveyResponse findSurveyById(Long id) {
-        Long tenantId = TenantContext.getTenantId();
+        Long tenantId = userApi.getTenantId();
         Survey survey = surveyRepository.findById(id)
                 .filter(s -> s.getTenantId().equals(tenantId))
                 .orElseThrow(() -> new EntityNotFoundException("Survey not found with id: " + id));
@@ -59,7 +55,7 @@ public class SurveyService {
 
     @Transactional(readOnly = true)
     public List<SurveyResponse> findSurveysByUserId(String userId) {
-        Long tenantId = TenantContext.getTenantId();
+        Long tenantId = userApi.getTenantId();
         List<Survey> surveys = surveyRepository.findByUserIdAndTenantId(userId, tenantId);
         return surveys.stream()
                 .map(this::mapToSurveyResponse)
@@ -68,24 +64,22 @@ public class SurveyService {
 
     @Transactional(readOnly = true)
     public List<SurveyResponse> findAllSurveys(List<String> roles) {
-        Long tenantId = TenantContext.getTenantId();
+        //Long tenantId = userApi.getTenantId();
         List<Survey> surveys;
-        if (roles != null && roles.contains("ADMIN")) {
-            surveys = surveyRepository.findAll(); // Admins can see all surveys
-        } else {
-            // Regular users only see surveys for their tenant
-            surveys = surveyRepository.findAll().stream()
-                    .filter(s -> s.getTenantId().equals(tenantId))
-                    .collect(Collectors.toList());
+
+        if (roles != null && roles.contains("SYSTEM ADMIN"))  {
+            throw new AccessDeniedException("You are not allowed to view all surveys");
         }
+
+        surveys = surveyRepository.findAll(); // Admins can see all surveys
         return surveys.stream()
-                .map(this::mapToSurveyResponse)
-                .collect(Collectors.toList());
+                    .map(this::mapToSurveyResponse)
+                    .collect(Collectors.toList());
     }
 
     @Transactional
     public SurveyResponse updateSurvey(Long id, SurveyRequest surveyRequest, String userId, List<String> roles) {
-        Long tenantId = TenantContext.getTenantId();
+        Long tenantId = userApi.getTenantId();
         Survey survey = surveyRepository.findById(id)
                 .filter(s -> s.getTenantId().equals(tenantId))
                 .orElseThrow(() -> new EntityNotFoundException("Survey not found with id: " + id));
@@ -104,7 +98,7 @@ public class SurveyService {
 
     @Transactional
     public SurveyResponse activateSurvey(Long surveyId, String userId, List<String> roles) {
-        Long tenantId = TenantContext.getTenantId();
+        Long tenantId = userApi.getTenantId();
         Survey survey = surveyRepository.findById(surveyId)
                 .filter(s -> s.getTenantId().equals(tenantId))
                 .orElseThrow(() -> new EntityNotFoundException("Survey not found with id: " + surveyId));
@@ -128,7 +122,7 @@ public class SurveyService {
 
     @Transactional
     public SurveyResponse closeSurvey(Long surveyId, String userId, List<String> roles) {
-        Long tenantId = TenantContext.getTenantId();
+        Long tenantId = userApi.getTenantId();
         Survey survey = surveyRepository.findById(surveyId)
                 .filter(s -> s.getTenantId().equals(tenantId))
                 .orElseThrow(() -> new EntityNotFoundException("Survey not found with id: " + surveyId));
@@ -148,7 +142,7 @@ public class SurveyService {
 
     @Transactional
     public void activatePaidSurvey(Long surveyId) {
-        Long tenantId = TenantContext.getTenantId();
+        Long tenantId = userApi.getTenantId();
         Survey survey = surveyRepository.findById(surveyId)
                 .filter(s -> s.getTenantId().equals(tenantId))
                 .orElseThrow(() -> new EntityNotFoundException("Survey not found with id: " + surveyId));
@@ -170,7 +164,7 @@ public class SurveyService {
 
     @Transactional
     public void deleteSurvey(Long id, String userId, List<String> roles) {
-        Long tenantId = TenantContext.getTenantId();
+        Long tenantId = userApi.getTenantId();
         Survey survey = surveyRepository.findById(id)
                 .filter(s -> s.getTenantId().equals(tenantId))
                 .orElseThrow(() -> new EntityNotFoundException("Survey not found with id: " + id));

@@ -32,6 +32,12 @@ public class AfricasTalkingAirtimeProvider implements RewardProvider {
     private final RewardRepository rewardRepository;
 
 
+    /**
+     * Checks if this provider supports the given reward type.
+     *
+     * @param rewardType The {@link RewardType} to check.
+     * @return {@code true} if the reward type is AIRTIME or DATA_BUNDLE, {@code false} otherwise.
+     */
     @Override
     public boolean supports(RewardType rewardType) {
         return rewardType == RewardType.AIRTIME || rewardType == RewardType.DATA_BUNDLE;

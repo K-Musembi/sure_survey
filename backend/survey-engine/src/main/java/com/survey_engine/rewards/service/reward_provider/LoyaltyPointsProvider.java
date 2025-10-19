@@ -8,7 +8,7 @@ import com.survey_engine.rewards.models.enums.RewardType;
 import com.survey_engine.rewards.repository.RewardRepository;
 import com.survey_engine.rewards.service.LoyaltyTransactionService;
 import com.survey_engine.rewards.service.RewardTransactionService;
-import com.survey_engine.user.service.TenantContext;
+import com.survey_engine.user.UserApi;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +28,7 @@ public class LoyaltyPointsProvider implements RewardProvider {
     private final LoyaltyTransactionService loyaltyTransactionService;
     private final RewardTransactionService rewardTransactionService;
     private final RewardRepository rewardRepository;
+    private final UserApi userApi;
 
     @Override
     public boolean supports(RewardType rewardType) {
@@ -48,7 +49,7 @@ public class LoyaltyPointsProvider implements RewardProvider {
     public void disburse(UUID rewardId, String responderId) {
         log.info("Attempting to disburse LOYALTY_POINTS for rewardId: {} to responderId: {}", rewardId, responderId);
 
-        Long tenantId = TenantContext.getTenantId();
+        Long tenantId = userApi.getTenantId();
         Reward reward = rewardRepository.findByIdAndTenantId(rewardId, tenantId)
                 .orElseThrow(() -> new EntityNotFoundException("Reward not found with id: " + rewardId + " for tenant: " + tenantId));
 

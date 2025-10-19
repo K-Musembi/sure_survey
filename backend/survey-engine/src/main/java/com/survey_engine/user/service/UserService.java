@@ -8,6 +8,7 @@ import com.survey_engine.user.dto.UserRequest;
 import com.survey_engine.user.dto.UserResponse;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -20,24 +21,12 @@ import java.util.stream.Collectors;
  * Defines business logic
  */
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
     private final TenantRepository tenantRepository;
     private final PasswordEncoder passwordEncoder;
-
-    /**
-     * Constructor method
-     * @param userRepository - user repository instance
-     * @param tenantRepository - tenant repository instance
-     * @param passwordEncoder - password encoder instance
-     */
-    @Autowired
-    public UserService(UserRepository userRepository, TenantRepository tenantRepository, PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.tenantRepository = tenantRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
 
 
     /**

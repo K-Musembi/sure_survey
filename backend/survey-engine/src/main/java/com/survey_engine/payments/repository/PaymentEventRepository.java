@@ -40,4 +40,12 @@ public interface PaymentEventRepository extends JpaRepository<PaymentEvent, UUID
      * @return A list of payments for that user.
      */
     List<PaymentEvent> findByUserIdAndTenantId(String userId, Long tenantId);
+
+    /**
+     * Finds a PaymentEvent entity by the gateway's transaction identifier.
+     *
+     * @param gatewayTransactionId The unique identifier from the payment gateway (e.g., PayStack's reference).
+     * @return An Optional containing the found PaymentEvent or empty if not found.
+     */
+    Optional<PaymentEvent> findByGatewayTransactionId(String gatewayTransactionId);
 }

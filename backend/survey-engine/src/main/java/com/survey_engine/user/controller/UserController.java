@@ -4,6 +4,7 @@ import com.survey_engine.user.dto.UserRequest;
 import com.survey_engine.user.dto.UserResponse;
 import com.survey_engine.user.service.UserService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,18 +20,10 @@ import java.util.List;
 @RestController
 @Validated
 @RequestMapping("/api/v1/users")
+@RequiredArgsConstructor
 public class UserController {
 
-    private final com.survey_engine.user.service.UserService userService;
-
-    /**
-     * Constructor for user controller class
-     * @param userService - user service instance
-     */
-    @Autowired
-    public UserController(UserService userService) {
-        this.userService = userService;
-    }
+    private final UserService userService;
 
 
     /**

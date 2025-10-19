@@ -14,20 +14,37 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
+    /**
+     * Finds a User entity by its email address.
+     *
+     * @param email The email address of the user.
+     * @return An {@link Optional} containing the found User or empty if not found.
+     */
     Optional<User> findByEmail(String email);
 
+    /**
+     * Finds a User entity by its email address and tenant ID.
+     *
+     * @param email The email address of the user.
+     * @param tenantId The ID of the tenant.
+     * @return An {@link Optional} containing the found User or empty if not found.
+     */
     Optional<User> findByEmailAndTenantId(String email, Long tenantId);
 
+    /**
+     * Finds a User entity by its ID and tenant ID.
+     *
+     * @param id The ID of the user.
+     * @param tenantId The ID of the tenant.
+     * @return An {@link Optional} containing the found User or empty if not found.
+     */
     Optional<User> findByIdAndTenantId(Long id, Long tenantId);
 
+    /**
+     * Finds all User entities belonging to a specific tenant.
+     *
+     * @param tenantId The ID of the tenant.
+     * @return A list of User entities for the given tenant.
+     */
     List<User> findByTenantId(Long tenantId);
-
-/**
- * Finds all User entities belonging to a specific tenant.
- *
- * @param tenantId The ID of the tenant.
- * @return A list of User entities for the given tenant.
- */
 }
-
-//findById(), findAll(), etc. provided by default through JpaRepository

@@ -13,16 +13,19 @@ import java.util.Optional;
 @Repository
 public interface TenantRepository extends JpaRepository<Tenant, Long> {
 
+    /**
+     * Finds a {@link Tenant} entity by its name.
+     *
+     * @param name The name of the tenant.
+     * @return An {@link Optional} containing the found Tenant or empty if not found.
+     */
     Optional<Tenant> findByName(String name);
 
+    /**
+     * Finds a {@link Tenant} entity by its unique slug.
+     *
+     * @param slug The unique slug of the tenant.
+     * @return An {@link Optional} containing the found Tenant or empty if not found.
+     */
     Optional<Tenant> findBySlug(String slug);
-
-/**
- * Finds a Tenant entity by its unique slug.
- *
- * @param slug The unique slug of the tenant.
- * @return An Optional containing the found Tenant or empty if not found.
- */
 }
-
-//findById(), findAll(), etc. provided by default through JpaRepository

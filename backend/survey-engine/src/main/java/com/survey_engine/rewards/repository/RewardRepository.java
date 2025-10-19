@@ -28,6 +28,11 @@ public interface RewardRepository extends JpaRepository<Reward, UUID> {
      */
     List<Reward> findByUserIdAndTenantId(String userId, Long tenantId);
 
+    /**
+     * Finds a Reward entity by its ID with a pessimistic write lock.
+     * @param id The ID of the reward.
+     * @return An Optional containing the found Reward or empty if not found.
+     */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Reward> findById(UUID id);
 

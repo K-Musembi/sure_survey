@@ -96,6 +96,12 @@ public class RewardTransactionService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Maps a {@link RewardTransaction} entity to a {@link RewardTransactionResponse} DTO.
+     *
+     * @param transaction The {@link RewardTransaction} entity to map.
+     * @return The corresponding {@link RewardTransactionResponse} DTO.
+     */
     private RewardTransactionResponse mapToResponse(RewardTransaction transaction) {
         return new RewardTransactionResponse(
                 transaction.getId(),

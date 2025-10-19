@@ -4,9 +4,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * Request Data Transfer Object (DTO) for Tenant entity
- * @param name
- * @param slug
+ * Request Data Transfer Object (DTO) for Tenant entity.
+ *
+ * @param name The human-readable name of the tenant.
+ * @param slug A unique, URL-friendly identifier for the tenant (e.g., subdomain).
  */
 public record TenantRequest(
 
