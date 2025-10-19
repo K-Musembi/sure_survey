@@ -42,7 +42,9 @@ public class TenantService {
 
         Tenant tenant = new Tenant();
         tenant.setName(tenantRequest.name());
-        tenant.setSlug(tenantRequest.slug());
+        if (tenantRequest.slug() != null) {
+            tenant.setSlug(tenantRequest.slug());
+        }
         // Default status and plan for new tenants
         tenant.setStatus("ACTIVE");
         tenant.setPlan("FREE");

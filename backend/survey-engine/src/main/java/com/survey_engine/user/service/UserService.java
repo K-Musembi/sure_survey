@@ -49,8 +49,7 @@ public class UserService {
     @Transactional
     public UserResponse findUserById(Long id) {
         Long tenantId = TenantContext.getTenantId();
-        User user = userRepository.findById(id)
-                .filter(u -> u.getTenantId().equals(tenantId))
+        User user = userRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
         return mapToUserResponse(user);
@@ -65,8 +64,7 @@ public class UserService {
     @Transactional
     public UserResponse findUserByEmail(String email) {
         Long tenantId = TenantContext.getTenantId();
-        User user =  userRepository.findByEmail(email)
-                .filter(u -> u.getTenantId().equals(tenantId))
+        User user =  userRepository.findByEmailAndTenantId(email, tenantId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
         return mapToUserResponse(user);
@@ -96,8 +94,7 @@ public class UserService {
     @Transactional
     public UserResponse updateUser(Long id, UserRequest userRequest) {
         Long tenantId = TenantContext.getTenantId();
-        User user = userRepository.findById(id)
-                .filter(u -> u.getTenantId().equals(tenantId))
+        User user = userRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
         User savedUser = getUser(user, userRequest);
@@ -112,8 +109,7 @@ public class UserService {
     @Transactional
     public void deleteUser(Long id) {
         Long tenantId = TenantContext.getTenantId();
-        User user = userRepository.findById(id)
-                .filter(u -> u.getTenantId().equals(tenantId))
+        User user = userRepository.findByIdAndTenantId(id, tenantId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
         userRepository.delete(user);
     }

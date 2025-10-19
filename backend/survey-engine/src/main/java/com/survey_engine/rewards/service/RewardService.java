@@ -65,8 +65,7 @@ public class RewardService {
     @Transactional
     public RewardResponse cancelReward(UUID rewardId, String userId) {
         Long tenantId = TenantContext.getTenantId();
-        Reward reward = rewardRepository.findById(rewardId)
-                .filter(r -> r.getTenantId().equals(tenantId))
+        Reward reward = rewardRepository.findByIdAndTenantId(rewardId, tenantId)
                 .orElseThrow(() -> new EntityNotFoundException("Reward not found with id: " + rewardId));
 
         if (!reward.getUserId().equals(userId)) {

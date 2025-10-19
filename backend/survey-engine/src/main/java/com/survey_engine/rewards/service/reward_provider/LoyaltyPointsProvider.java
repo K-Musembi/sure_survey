@@ -8,6 +8,7 @@ import com.survey_engine.rewards.models.enums.RewardType;
 import com.survey_engine.rewards.repository.RewardRepository;
 import com.survey_engine.rewards.service.LoyaltyTransactionService;
 import com.survey_engine.rewards.service.RewardTransactionService;
+import com.survey_engine.user.service.TenantContext;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,8 +48,9 @@ public class LoyaltyPointsProvider implements RewardProvider {
     public void disburse(UUID rewardId, String responderId) {
         log.info("Attempting to disburse LOYALTY_POINTS for rewardId: {} to responderId: {}", rewardId, responderId);
 
-        Reward reward = rewardRepository.findById(rewardId)
-                .orElseThrow(() -> new EntityNotFoundException("Reward not found with id: " + rewardId));
+        Long tenantId = TenantContext.getTenantId();
+        Reward reward = rewardRepository.findByIdAndTenantId(rewardId, tenantId)
+                .orElseThrow(() -> new EntityNotFoundException("Reward not found with id: " + rewardId + " for tenant: " + tenantId));
 
         if (reward.getRemainingRewards() <= 0) {
             log.warn("Reward campaign {} is already depleted. Cannot disburse loyalty points to responderId: {}", rewardId, responderId);

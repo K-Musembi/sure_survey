@@ -1,5 +1,7 @@
 package com.survey_engine.user.controller;
 
+import com.survey_engine.user.dto.AuthResponse;
+import com.survey_engine.user.dto.LoginRequest;
 import com.survey_engine.user.dto.SignUpRequest;
 import com.survey_engine.user.dto.UserResponse;
 import com.survey_engine.user.service.AuthService;
@@ -36,5 +38,16 @@ public class AuthController {
     public ResponseEntity<UserResponse> registerUser(@Valid @RequestBody SignUpRequest request) {
         UserResponse responseObject = authService.registerUser(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseObject);
+    }
+
+    /**
+     * Method to authenticate user and provide a JWT token.
+     * @param request - The login request details (email and password).
+     * @return - An authentication response containing the JWT token.
+     */
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponse> loginUser(@Valid @RequestBody LoginRequest request) {
+        AuthResponse authResponse = authService.loginUser(request);
+        return ResponseEntity.ok(authResponse);
     }
 }

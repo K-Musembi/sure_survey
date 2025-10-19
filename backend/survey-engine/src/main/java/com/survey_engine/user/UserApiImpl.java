@@ -2,8 +2,11 @@ package com.survey_engine.user;
 
 
 import com.survey_engine.user.models.Participant;
+import com.survey_engine.user.models.User;
 import com.survey_engine.user.repository.ParticipantRepository;
+import com.survey_engine.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -13,6 +16,7 @@ import java.util.Optional;
 public class UserApiImpl implements UserApi {
 
     private final ParticipantRepository participantRepository;
+    private final UserRepository userRepository;
 
     @Override
     public Optional<String> findParticipantIdByPhoneNumber(String phoneNumber) {
@@ -28,5 +32,11 @@ public class UserApiImpl implements UserApi {
         } catch (NumberFormatException e) {
             return Optional.empty();
         }
+    }
+
+    @Override
+    public Optional<UserDetails> findUserDetailsByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .map(user -> user);
     }
 }

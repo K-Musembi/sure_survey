@@ -2,7 +2,9 @@
  * Common module - config
  */
 
-@ApplicationModule
+@ApplicationModule(
+        allowedDependencies = { "user" }
+)
 
 package com.survey_engine.common;
 

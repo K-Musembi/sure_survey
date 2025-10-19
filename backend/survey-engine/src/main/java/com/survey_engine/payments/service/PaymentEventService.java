@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.UUID;
@@ -30,30 +31,35 @@ public class PaymentEventService {
 
 
     @Transactional
-    public PaymentEventResponse createPaymentEvent(PaymentEventRequest request, String userId, String userEmail) {
+    public Mono<PaymentEventResponse> createPaymentEvent(PaymentEventRequest request, String userId, String userEmail) {
         Long tenantId = TenantContext.getTenantId();
-        paymentRepository.findByIdempotencyKeyAndTenantId(request.idempotencyKey(), tenantId).ifPresent(payment -> {
-            log.warn("Idempotency key conflict: {}", request.idempotencyKey());
-            throw new DataIntegrityViolationException("A paymentEvent with this idempotency key already exists.");
-        });
+        // Check for idempotency key first
+        return Mono.just(request)
+                .flatMap(req -> {
+                    if (paymentRepository.findByIdempotencyKeyAndTenantId(req.idempotencyKey(), tenantId).isPresent()) {
+                        log.warn("Idempotency key conflict: {}", req.idempotencyKey());
+                        return Mono.error(new DataIntegrityViolationException("A paymentEvent with this idempotency key already exists."));
+                    }
+                    return Mono.just(req);
+                })
+                .flatMap(req -> {
+                    String reference = UUID.randomUUID().toString();
+                    return paystackService.initializePayment(req, userEmail, reference)
+                            .flatMap(paystackResponse -> {
+                                if (paystackResponse == null || !paystackResponse.status()) {
+                                    log.error("PayStack initialization failed: {}", paystackResponse != null ? paystackResponse.message() : "No response");
+                                    return Mono.error(new IllegalStateException("PaymentEvent gateway failed to initialize transaction."));
+                                }
+                                PaymentEvent paymentEvent = persistPaymentEvent(req, paystackResponse, userId, userEmail, tenantId);
+                                log.info("Successfully created and saved pending paymentEvent with reference: {}", paymentEvent.getGatewayTransactionId());
 
-        String reference = UUID.randomUUID().toString();
-        PaystackResponse paystackResponse = paystackService.initializePayment(request, userEmail, reference)
-                .block();
-
-        if (paystackResponse == null || !paystackResponse.status()) {
-            log.error("PayStack initialization failed: {}", paystackResponse != null ? paystackResponse.message() : "No response");
-            throw new IllegalStateException("PaymentEvent gateway failed to initialize transaction.");
-        }
-
-        PaymentEvent paymentEvent = persistPaymentEvent(request, paystackResponse, userId, userEmail, tenantId);
-        log.info("Successfully created and saved pending paymentEvent with reference: {}", paymentEvent.getGatewayTransactionId());
-
-        return new PaymentEventResponse(
-                paystackResponse.data().authorizationUrl(),
-                paystackResponse.data().accessCode(),
-                paystackResponse.data().reference()
-        );
+                                return Mono.just(new PaymentEventResponse(
+                                        paystackResponse.data().authorizationUrl(),
+                                        paystackResponse.data().accessCode(),
+                                        paystackResponse.data().reference()
+                                ));
+                            });
+                });
     }
 
     @Transactional(readOnly = true)

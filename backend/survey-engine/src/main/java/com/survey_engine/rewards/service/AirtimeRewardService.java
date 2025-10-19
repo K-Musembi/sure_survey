@@ -6,6 +6,7 @@ import com.survey_engine.rewards.models.Reward;
 import com.survey_engine.rewards.models.enums.RewardStatus;
 import com.survey_engine.rewards.models.enums.RewardTransactionStatus;
 import com.survey_engine.rewards.repository.RewardRepository;
+import com.survey_engine.user.service.TenantContext;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,8 +63,9 @@ public class AirtimeRewardService {
                 rewardTransactionService.updateTransactionStatus(transactionId, RewardTransactionStatus.SUCCESS, entry.requestId, null);
 
                 // Lock the reward to prevent race conditions
-                Reward reward = rewardRepository.findById(rewardId)
-                        .orElseThrow(() -> new EntityNotFoundException("Reward not found with id: " + rewardId));
+                Long tenantId = TenantContext.getTenantId();
+                Reward reward = rewardRepository.findByIdAndTenantId(rewardId, tenantId)
+                        .orElseThrow(() -> new EntityNotFoundException("Reward not found with id: " + rewardId + " for tenant: " + tenantId));
 
                 if (reward.getRemainingRewards() > 0) {
                     reward.setRemainingRewards(reward.getRemainingRewards() - 1);

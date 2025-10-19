@@ -13,6 +13,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.UUID;
@@ -37,7 +38,7 @@ public class PaymentEventController {
      * @return A ResponseEntity containing the authorization URL for the frontend.
      */
     @PostMapping
-    public ResponseEntity<PaymentEventResponse> initializePaymentEvent(
+    public Mono<ResponseEntity<PaymentEventResponse>> initializePaymentEvent(
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody PaymentEventRequest paymentRequest) {
 
@@ -45,9 +46,8 @@ public class PaymentEventController {
         String userEmail = jwt.getClaimAsString("email");
 
         log.info("Initializing payment for user {} and survey {}", userId, paymentRequest.surveyId());
-        PaymentEventResponse response = paymentService.createPaymentEvent(paymentRequest, userId, userEmail);
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return paymentService.createPaymentEvent(paymentRequest, userId, userEmail)
+                .map(response -> ResponseEntity.status(HttpStatus.CREATED).body(response));
     }
 
     /**

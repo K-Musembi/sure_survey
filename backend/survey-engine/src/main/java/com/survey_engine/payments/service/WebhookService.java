@@ -9,6 +9,7 @@ import com.survey_engine.payments.models.enums.PaymentStatus;
 import com.survey_engine.payments.models.enums.TransactionType;
 import com.survey_engine.payments.repository.PaymentEventRepository;
 import com.survey_engine.payments.repository.TransactionRepository;
+import com.survey_engine.user.service.TenantContext;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -57,8 +58,9 @@ public class WebhookService {
      */
     private void handleChargeSuccess(PaystackWebhookData data) {
         String reference = data.reference();
-        PaymentEvent paymentEvent = paymentRepository.findByGatewayTransactionId(reference)
-                .orElseThrow(() -> new EntityNotFoundException("PaymentEvent with reference " + reference + " not found."));
+        Long tenantId = TenantContext.getTenantId(); // Get tenantId from context
+        PaymentEvent paymentEvent = paymentRepository.findByGatewayTransactionIdAndTenantId(reference, tenantId)
+                .orElseThrow(() -> new EntityNotFoundException("PaymentEvent with reference " + reference + " not found for tenant " + tenantId));
 
         // Idempotency Check: Ensure we haven't already processed this.
         if (paymentEvent.getStatus() == PaymentStatus.SUCCEEDED) {

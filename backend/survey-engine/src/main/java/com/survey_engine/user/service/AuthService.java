@@ -1,5 +1,8 @@
 package com.survey_engine.user.service;
 
+import com.survey_engine.user.config.security.JwtService;
+import com.survey_engine.user.dto.AuthResponse;
+import com.survey_engine.user.dto.LoginRequest;
 import com.survey_engine.user.dto.SignUpRequest;
 import com.survey_engine.user.dto.UserResponse;
 import com.survey_engine.user.models.Tenant;
@@ -10,6 +13,9 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import org.springframework.stereotype.Service;
@@ -27,6 +33,8 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final TenantRepository tenantRepository;
     private final TenantService tenantService;
+    private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
 
     /**
      * Registers new user and generates token
@@ -35,36 +43,22 @@ public class AuthService {
      */
     @Transactional
     public UserResponse registerUser(SignUpRequest request) {
-        if (userRepository.findByEmail(request.email()).isPresent()) {
-            throw new DataIntegrityViolationException("Email already exists");
+
+        Tenant tenant = resolveTenant(request.tenantId());
+        if (userRepository.findByEmailAndTenantId(request.email(), tenant.getId()).isPresent()) {
+            throw new DataIntegrityViolationException("Email already exists for this tenant");
         }
 
-        Tenant tenant;
-        if (request.tenantId() == null) {
-            // Individual sign-up: assign to default tenant
-            tenant = tenantRepository.findBySlug("www")
-                    .orElseGet(() -> {
-                        // Create default tenant if it doesn't exist
-                        Tenant defaultTenant = new Tenant();
-                        defaultTenant.setName("Default Tenant");
-                        defaultTenant.setSlug("www");
-                        defaultTenant.setStatus("ACTIVE");
-                        defaultTenant.setPlan("FREE");
-                        return tenantRepository.save(defaultTenant);
-                    });
-            // Set role to REGULAR for individual users
-            if (request.role() == null) {
-                request = new SignUpRequest(request.name(), request.email(), request.password(), "REGULAR", tenant.getId());
+        String userRole = request.role();
+        if (request.tenantId() == null) { // Individual sign-up
+            if (userRole == null) {
+                userRole = "REGULAR";
             }
-        } else {
-            // Enterprise sign-up: find existing tenant or create new
-            tenant = tenantRepository.findById(request.tenantId())
-                    .orElseThrow(() -> new EntityNotFoundException("Tenant not found"));
-            // If this is the first user for this tenant, make them ADMIN
+        } else { // Enterprise sign-up. If this is the first user for this tenant, make them ADMIN
             if (userRepository.findByTenantId(tenant.getId()).isEmpty()) {
-                request = new SignUpRequest(request.name(), request.email(), request.password(), "ADMIN", tenant.getId());
-            } else if (request.role() == null) {
-                request = new SignUpRequest(request.name(), request.email(), request.password(), "REGULAR", tenant.getId());
+                userRole = "ADMIN";
+            } else if (userRole == null) {
+                userRole = "REGULAR";
             }
         }
 
@@ -72,8 +66,8 @@ public class AuthService {
         user.setName(request.name());
         user.setEmail(request.email());
         user.setPassword(passwordEncoder.encode(request.password()));
-        user.setRole(request.role());
-        user.setTenantId(tenant.getId()); // Set tenantId from BaseEntity
+        user.setRole(userRole);
+        user.setTenantId(tenant.getId());
 
         User savedUser = userRepository.save(user);
 
@@ -83,5 +77,41 @@ public class AuthService {
                 savedUser.getEmail(),
                 savedUser.getTenantId()
         );
+    }
+
+    /**
+     * Authenticates a user and generates a JWT token.
+     * @param request LoginRequest DTO
+     * @return AuthResponse DTO containing the JWT token.
+     */
+    public AuthResponse loginUser(LoginRequest request) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.email(), request.password())
+        );
+        String token = jwtService.generateToken(authentication);
+        return new AuthResponse(token);
+    }
+
+    /**
+     * Find existing tenant or create default tenant
+     * @param tenantIdFromRequest - tenant id from request object
+     * @return - new or existing tenant
+     */
+    private Tenant resolveTenant(Long tenantIdFromRequest) {
+        if (tenantIdFromRequest == null) {
+            return tenantRepository.findBySlug("www")
+                    .orElseGet(() -> {
+                        Tenant newDefaultTenant = new Tenant();
+                        newDefaultTenant.setName("Default Tenant");
+                        newDefaultTenant.setSlug("www");
+                        newDefaultTenant.setStatus("ACTIVE");
+                        newDefaultTenant.setPlan("FREE");
+                        return tenantRepository.save(newDefaultTenant);
+                    });
+        } else {
+            // Enterprise sign-up: find existing tenant
+            return tenantRepository.findById(tenantIdFromRequest)
+                    .orElseThrow(() -> new EntityNotFoundException("Tenant not found"));
+        }
     }
 }
