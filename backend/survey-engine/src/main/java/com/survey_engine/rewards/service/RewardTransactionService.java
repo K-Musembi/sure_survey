@@ -2,6 +2,7 @@ package com.survey_engine.rewards.service;
 
 import com.survey_engine.rewards.dto.RewardTransactionResponse;
 import com.survey_engine.rewards.repository.RewardTransactionRepository;
+import com.survey_engine.user.UserApi;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ public class RewardTransactionService {
 
     private final RewardTransactionRepository rewardTransactionRepository;
     private final RewardRepository rewardRepository;
+    private final UserApi userApi;
 
     /**
      * Creates a new, pending reward transaction.
@@ -38,7 +40,8 @@ public class RewardTransactionService {
      */
     @Transactional
     public RewardTransaction createPendingTransaction(UUID rewardId, String participantId, String recipientIdentifier) {
-        Reward reward = rewardRepository.findById(rewardId)
+        Long tenantId = userApi.getTenantId();
+        Reward reward = rewardRepository.findByIdAndTenantId(rewardId, tenantId)
                 .orElseThrow(() -> new EntityNotFoundException("Reward not found with id: " + rewardId));
 
         RewardTransaction transaction = new RewardTransaction();
@@ -56,17 +59,16 @@ public class RewardTransactionService {
      * @param status The new status (e.g., SUCCESS, FAILED).
      * @param providerTransactionId The ID from the external reward_provider, if successful.
      * @param failureReason The reason for failure, if applicable.
-     * @return The updated RewardTransaction entity.
      */
     @Transactional
-    public RewardTransaction updateTransactionStatus(UUID transactionId, RewardTransactionStatus status, String providerTransactionId, String failureReason) {
+    public void updateTransactionStatus(UUID transactionId, RewardTransactionStatus status, String providerTransactionId, String failureReason) {
         RewardTransaction transaction = rewardTransactionRepository.findById(transactionId)
                 .orElseThrow(() -> new EntityNotFoundException("RewardTransaction not found with id: " + transactionId));
 
         transaction.setStatus(status);
         transaction.setProviderTransactionId(providerTransactionId);
         transaction.setFailureReason(failureReason);
-        return rewardTransactionRepository.save(transaction);
+        rewardTransactionRepository.save(transaction);
     }
 
     /**

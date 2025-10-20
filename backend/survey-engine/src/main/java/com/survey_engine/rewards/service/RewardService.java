@@ -43,17 +43,7 @@ public class RewardService {
             throw new DataIntegrityViolationException("A reward for survey " + rewardRequest.surveyId() + " already exists.");
         });
 
-        Reward reward = new Reward();
-        reward.setTenantId(tenantId);
-        reward.setSurveyId(rewardRequest.surveyId());
-        reward.setUserId(userId);
-        reward.setRewardType(rewardRequest.rewardType());
-        reward.setAmountPerRecipient(rewardRequest.amountPerRecipient());
-        reward.setCurrency(rewardRequest.currency());
-        reward.setProvider(rewardRequest.provider());
-        reward.setMaxRecipients(rewardRequest.maxRecipients());
-        reward.setRemainingRewards(rewardRequest.maxRecipients());
-        reward.setStatus(RewardStatus.ACTIVE);
+        Reward reward = getReward(rewardRequest, userId, tenantId);
 
         Reward savedReward = rewardRepository.save(reward);
         return mapToRewardResponse(savedReward);
@@ -115,6 +105,28 @@ public class RewardService {
         reward.setStatus(RewardStatus.CANCELLED);
         Reward savedReward = rewardRepository.save(reward);
         return mapToRewardResponse(savedReward);
+    }
+
+    /**
+     * Instantiate a new Reward instance and set properties
+     * @param rewardRequest - request DTO
+     * @param userId - user id
+     * @param tenantId - tenant id
+     * @return - Reward instance
+     */
+    private static Reward getReward(RewardRequest rewardRequest, String userId, Long tenantId) {
+        Reward reward = new Reward();
+        reward.setTenantId(tenantId);
+        reward.setSurveyId(rewardRequest.surveyId());
+        reward.setUserId(userId);
+        reward.setRewardType(rewardRequest.rewardType());
+        reward.setAmountPerRecipient(rewardRequest.amountPerRecipient());
+        reward.setCurrency(rewardRequest.currency());
+        reward.setProvider(rewardRequest.provider());
+        reward.setMaxRecipients(rewardRequest.maxRecipients());
+        reward.setRemainingRewards(rewardRequest.maxRecipients());
+        reward.setStatus(RewardStatus.ACTIVE);
+        return reward;
     }
 
     /**

@@ -32,7 +32,6 @@ public class LoyaltyAccount extends BaseEntity {
     @Column(name = "balance", nullable = false, precision = 10, scale = 2)
     private BigDecimal balance;
 
-    @PrePersist
     protected void onCreate() {
         super.onCreate();
         if (balance == null) {
