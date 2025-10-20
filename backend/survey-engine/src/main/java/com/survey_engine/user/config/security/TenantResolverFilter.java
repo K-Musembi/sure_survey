@@ -1,6 +1,5 @@
 package com.survey_engine.user.config.security;
 
-import com.survey_engine.user.models.Tenant;
 import com.survey_engine.user.repository.TenantRepository;
 import com.survey_engine.user.service.TenantContext;
 import jakarta.servlet.FilterChain;

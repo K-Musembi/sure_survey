@@ -42,15 +42,6 @@ public class JwtAuthorization {
     private final PasswordEncoder passwordEncoder;
     private final TenantResolverFilter tenantResolverFilter;
 
-    @Value("${jwt.keystore.path}")
-    private String keystorePath;
-
-    @Value("${jwt.keystore.password}")
-    private String keystorePassword;
-
-    @Value("${jwt.keystore.alias}")
-    private String keyAlias;
-
     @Bean
     @Order(1)
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -103,19 +94,11 @@ public class JwtAuthorization {
         return new InMemoryRegisteredClientRepository(registeredClient);
     }
 
-    @Bean
-    public JWKSource<SecurityContext> jwkSource() {
-        try (InputStream is = getClass().getClassLoader().getResourceAsStream(keystorePath)) {
-            KeyStore keyStore = KeyStore.getInstance("PKCS12");
-            keyStore.load(is, keystorePassword.toCharArray());
-            RSAKey rsaKey = RSAKey.load(keyStore, keyAlias, keystorePassword.toCharArray());
-            JWKSet jwkSet = new JWKSet(rsaKey);
-            return new ImmutableJWKSet<>(jwkSet);
-        } catch (Exception ex) {
-            throw new IllegalStateException("Failed to load JWK source", ex);
-        }
-    }
-
+    /**
+     * Provides a {@link JwtDecoder} bean for decoding JWTs.
+     * @param jwkSource The {@link JWKSource} for verifying JWT signatures.
+     * @return A {@link JwtDecoder} instance.
+     */
     @Bean
     public JwtDecoder jwtDecoder(JWKSource<SecurityContext> jwkSource) {
         return OAuth2AuthorizationServerConfiguration.jwtDecoder(jwkSource);

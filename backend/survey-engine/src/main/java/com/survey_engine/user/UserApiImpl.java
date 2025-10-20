@@ -79,4 +79,5 @@ public class UserApiImpl implements UserApi {
     public Optional<com.survey_engine.user.models.Tenant> findTenantById(Long tenantId) {
         return tenantRepository.findById(tenantId);
     }
+
 }

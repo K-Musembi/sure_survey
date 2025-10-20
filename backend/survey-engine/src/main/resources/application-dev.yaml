@@ -63,3 +63,7 @@ logging:
   level:
     root: INFO
     com.survey.survey: DEBUG
+
+testcontainers:
+  client:
+    host: host.docker.internal
