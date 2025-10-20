@@ -34,3 +34,7 @@ build/
 
 ### Context File ###
 GEMINI.md
+
+### JWT Store Files ###
+keystore.jks
+keystore.jks.old
