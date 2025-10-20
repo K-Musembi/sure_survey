@@ -1,0 +1,61 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: survey-engine
+
+  datasource:
+    url: jdbc:postgresql://localhost:${ MAIN_SURVEY_ENGINE_PORT}/${MAIN_SURVEY_ENGINE_DB}
+    username: ${MAIN_SURVEY_ENGINE_ADMIN}
+    password: ${MAIN_SURVEY_ENGINE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 20000
+      maximum-pool-size: 10
+      idle-timeout: 10000
+      max-lifetime: 600000
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+    show-sql: false
+
+  flyway:
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    enabled: true
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://127.0.0.1:8080
+  data:
+    redis:
+      port: 6379
+      host: localhost
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    publisher-confirm-type: correlated
+    publisher-returns: true
+
+jwt:
+  keystore:
+    path: ${JWT_STORE_PATH}
+    password: ${JWT_STORE_PASSWORD}
+    alias: ${JWT_STORE_ALIAS}
+
+logging:
+  level:
+    root: INFO
+    com.survey.survey: DEBUG
+

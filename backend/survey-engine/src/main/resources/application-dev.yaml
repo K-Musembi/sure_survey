@@ -1,13 +1,9 @@
-
 server:
   port: 8080
 
 spring:
   application:
     name: survey-engine
-
-  profiles:
-    active: dev
 
   datasource:
     url: jdbc:postgresql://localhost:${ MAIN_SURVEY_ENGINE_PORT}/${MAIN_SURVEY_ENGINE_DB}
@@ -58,8 +54,12 @@ jwt:
     password: ${JWT_STORE_PASSWORD}
     alias: ${JWT_STORE_ALIAS}
 
+paystack:
+  api:
+    base-url: ${PAYSTACK_BASE_URL}
+    secret-key: ${PAYSTACK_TEST_KEY}
+
 logging:
   level:
     root: INFO
     com.survey.survey: DEBUG
-

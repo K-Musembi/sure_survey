@@ -2,15 +2,15 @@ package com.survey_engine.survey.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.survey_engine.survey.config.rabbitmq.RabbitMQConfig;
+import com.survey_engine.survey.config.rabbitmq.SurveyRabbitMQConfig;
 import com.survey_engine.survey.dto.ResponseSubmissionPayload;
 import com.survey_engine.survey.models.FailedResponseSubmission;
 import com.survey_engine.survey.repository.FailedResponseSubmissionRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
@@ -18,12 +18,19 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class ResponseRabbitMqPublisher implements InitializingBean {
 
     private final RabbitTemplate rabbitTemplate;
     private final FailedResponseSubmissionRepository failedResponseSubmissionRepository;
     private final ObjectMapper objectMapper;
+
+    public ResponseRabbitMqPublisher(@Qualifier("surveyRabbitTemplate") RabbitTemplate rabbitTemplate,
+                                     FailedResponseSubmissionRepository failedResponseSubmissionRepository,
+                                     ObjectMapper objectMapper) {
+        this.rabbitTemplate = rabbitTemplate;
+        this.failedResponseSubmissionRepository = failedResponseSubmissionRepository;
+        this.objectMapper = objectMapper;
+    }
 
     @Override
     public void afterPropertiesSet() {
@@ -38,7 +45,7 @@ public class ResponseRabbitMqPublisher implements InitializingBean {
     @Retryable(retryFor = AmqpException.class, maxAttempts = 3, backoff = @Backoff(delay = 2000))
     public void publishResponse(ResponseSubmissionPayload payload) {
         log.info("Publishing survey response for surveyId: {} to RabbitMQ.", payload.surveyId());
-        rabbitTemplate.convertAndSend(RabbitMQConfig.SURVEY_EXCHANGE, RabbitMQConfig.RESPONSE_ROUTING_KEY, payload);
+        rabbitTemplate.convertAndSend(SurveyRabbitMQConfig.SURVEY_EXCHANGE, SurveyRabbitMQConfig.RESPONSE_ROUTING_KEY, payload);
     }
 
     @Recover

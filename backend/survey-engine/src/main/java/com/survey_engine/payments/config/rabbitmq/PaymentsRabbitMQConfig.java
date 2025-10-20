@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Configuration;
  * Configures RabbitMQ exchanges, queues, and bindings for publishing payment events.
  */
 @Configuration
-public class RabbitMQConfig {
+public class PaymentsRabbitMQConfig {
 
     // Exchange that will receive all payment-related events
     public static final String PAYMENT_EXCHANGE = "payment.exchange";
@@ -88,7 +88,7 @@ public class RabbitMQConfig {
      * @return A Jackson2JsonMessageConverter bean.
      */
     @Bean
-    public MessageConverter jsonMessageConverter() {
+    public MessageConverter paymentJsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
     }
 
@@ -99,9 +99,9 @@ public class RabbitMQConfig {
      * @return A configured RabbitTemplate bean.
      */
     @Bean
-    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
+    public RabbitTemplate paymentRabbitTemplate(ConnectionFactory connectionFactory) {
         final RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
-        rabbitTemplate.setMessageConverter(jsonMessageConverter());
+        rabbitTemplate.setMessageConverter(paymentJsonMessageConverter());
         return rabbitTemplate;
     }
 }

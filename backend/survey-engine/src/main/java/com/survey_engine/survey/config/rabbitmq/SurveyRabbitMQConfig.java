@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Configuration;
  * and a dead-letter queue for resilient error handling.
  */
 @Configuration
-public class RabbitMQConfig {
+public class SurveyRabbitMQConfig {
 
     public static final String SURVEY_EXCHANGE = "survey.exchange";
     public static final String RESPONSE_QUEUE = "survey.responses.queue";
@@ -90,7 +90,7 @@ public class RabbitMQConfig {
      * @return A Jackson2JsonMessageConverter instance.
      */
     @Bean
-    public MessageConverter jsonMessageConverter() {
+    public MessageConverter surveyJsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
     }
 
@@ -100,9 +100,9 @@ public class RabbitMQConfig {
      * @return A configured RabbitTemplate instance.
      */
     @Bean
-    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
+    public RabbitTemplate surveyRabbitTemplate(ConnectionFactory connectionFactory) {
         final RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
-        rabbitTemplate.setMessageConverter(jsonMessageConverter());
+        rabbitTemplate.setMessageConverter(surveyJsonMessageConverter());
         return rabbitTemplate;
     }
 }

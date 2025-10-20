@@ -1,6 +1,6 @@
 package com.survey_engine.survey.service.event_listener;
 
-import com.survey_engine.survey.config.rabbitmq.RabbitMQConfig;
+import com.survey_engine.survey.config.rabbitmq.SurveyRabbitMQConfig;
 import com.survey_engine.survey.dto.ResponseResponse;
 import com.survey_engine.survey.dto.ResponseSubmissionPayload;
 import com.survey_engine.survey.service.ResponseService;
@@ -39,7 +39,7 @@ public class RabbitMqListener {
      *
      * @param payload The survey submission data consumed from the RabbitMQ queue.
      */
-    @RabbitListener(queues = RabbitMQConfig.RESPONSE_QUEUE)
+    @RabbitListener(queues = SurveyRabbitMQConfig.RESPONSE_QUEUE)
     public void processResponseAndNotify(ResponseSubmissionPayload payload) {
         logger.info("Received response submission for survey {}", payload.surveyId());
         try {
