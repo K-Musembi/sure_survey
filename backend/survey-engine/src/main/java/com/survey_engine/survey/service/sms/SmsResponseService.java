@@ -4,7 +4,7 @@ import com.survey_engine.survey.common.enums.SurveyStatus;
 import com.survey_engine.survey.dto.AnswerRequest;
 import com.survey_engine.survey.dto.ResponseRequest;
 import com.survey_engine.survey.models.Question;
-import com.survey_engine.survey.models.SmsSession;
+import com.survey_engine.survey.dto.sms.SmsRedisSession;
 import com.survey_engine.survey.models.Survey;
 import com.survey_engine.survey.repository.SurveyRepository;
 import com.survey_engine.survey.service.ResponseService;
@@ -37,7 +37,7 @@ public class SmsResponseService {
      * @return The appropriate response message to send back to the user.
      */
     public String handleSmsRequest(String from, String body) {
-        Optional<SmsSession> sessionOpt = sessionService.getSession(from);
+        Optional<SmsRedisSession> sessionOpt = sessionService.getSession(from);
 
         if (sessionOpt.isEmpty()) {
             return handleNewConversation(from, body);
@@ -77,7 +77,7 @@ public class SmsResponseService {
                     .sorted(Comparator.comparing(Question::getPosition))
                     .toList();
 
-            SmsSession newSession = new SmsSession(from, surveyId, 0, new HashMap<>());
+            SmsRedisSession newSession = new SmsRedisSession(from, surveyId, 0, new HashMap<>());
             sessionService.saveSession(newSession);
 
             return questions.get(0).getQuestionText();
@@ -92,11 +92,11 @@ public class SmsResponseService {
     /**
      * Handles subsequent messages in an ongoing survey conversation.
      *
-     * @param session The current {@link SmsSession} for the user.
+     * @param session The current {@link SmsRedisSession} for the user.
      * @param body The user's answer to the previous question.
      * @return The next question, a "thank you" message, or an error message.
      */
-    private String handleOngoingConversation(SmsSession session, String body) {
+    private String handleOngoingConversation(SmsRedisSession session, String body) {
         Survey survey = surveyRepository.findById(session.surveyId()).orElse(null);
         if (survey == null) {
             sessionService.deleteSession(session.sessionId());
@@ -115,7 +115,7 @@ public class SmsResponseService {
 
         if (nextIndex < questions.size()) {
             // There are more questions
-            SmsSession updatedSession = new SmsSession(session.sessionId(), session.surveyId(), nextIndex, session.answers());
+            SmsRedisSession updatedSession = new SmsRedisSession(session.sessionId(), session.surveyId(), nextIndex, session.answers());
             sessionService.saveSession(updatedSession);
             return questions.get(nextIndex).getQuestionText();
         } else {

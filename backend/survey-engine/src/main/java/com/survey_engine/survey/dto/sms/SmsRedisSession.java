@@ -1,4 +1,4 @@
-package com.survey_engine.survey.models;
+package com.survey_engine.survey.dto.sms;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -12,7 +12,7 @@ import java.util.Map;
  * @param currentQuestionIndex The 0-based index of the current question being asked.
  * @param answers A map storing the question ID and the answer value provided by the user.
  */
-public record SmsSession(
+public record SmsRedisSession(
         String sessionId,
         Long surveyId,
         int currentQuestionIndex,

@@ -1,6 +1,6 @@
 package com.survey_engine.survey.service.sms;
 
-import com.survey_engine.survey.models.SmsSession;
+import com.survey_engine.survey.dto.sms.SmsRedisSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -42,17 +42,17 @@ public class SmsResponseRedisSession {
      * Saves or updates a participant's survey session in Redis with a configured Time-To-Live (TTL).
      * @param session The session object to save.
      */
-    public void saveSession(SmsSession session) {
+    public void saveSession(SmsRedisSession session) {
         redisTemplate.opsForValue().set(getKey(session.sessionId()), session, SESSION_TTL);
     }
 
     /**
      * Retrieves a participant's survey session from Redis.
      * @param sessionId The participant's phone number.
-     * @return An Optional containing the SmsSession if found, otherwise an empty Optional.
+     * @return An Optional containing the SmsRedisSession if found, otherwise an empty Optional.
      */
-    public Optional<SmsSession> getSession(String sessionId) {
-        SmsSession session = (SmsSession) redisTemplate.opsForValue().get(getKey(sessionId));
+    public Optional<SmsRedisSession> getSession(String sessionId) {
+        SmsRedisSession session = (SmsRedisSession) redisTemplate.opsForValue().get(getKey(sessionId));
         return Optional.ofNullable(session);
     }
 

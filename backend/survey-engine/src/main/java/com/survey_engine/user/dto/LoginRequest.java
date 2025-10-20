@@ -1,5 +1,6 @@
 package com.survey_engine.user.dto;
 
+import com.survey_engine.user.config.security.xss.Sanitize;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
@@ -14,6 +15,7 @@ public record LoginRequest(
         @NotBlank(message = "Email is required")
         String email,
 
+        @Sanitize
         @NotBlank(message = "Password is required")
         String password
 ) {}

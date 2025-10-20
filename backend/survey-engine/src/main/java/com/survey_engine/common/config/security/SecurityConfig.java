@@ -2,6 +2,7 @@ package com.survey_engine.common.config.security;
 
 
 import com.survey_engine.user.UserApi;
+import com.survey_engine.user.config.security.JwtAuthorization;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -90,6 +91,7 @@ public class SecurityConfig {
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
+
         return new BCryptPasswordEncoder();
     }
 
@@ -135,13 +137,13 @@ public class SecurityConfig {
 
     /**
      * Provides a {@link JwtEncoder} bean for encoding JWTs.
-     * It uses the JWK source configured in {@link JwtAuthorization}.
      *
      * @param jwkSource The {@link JWKSource} for signing JWTs.
      * @return A {@link NimbusJwtEncoder} instance.
      */
     @Bean
     public JwtEncoder jwtEncoder(JWKSource<SecurityContext> jwkSource) {
+
         return new NimbusJwtEncoder(jwkSource);
     }
 }

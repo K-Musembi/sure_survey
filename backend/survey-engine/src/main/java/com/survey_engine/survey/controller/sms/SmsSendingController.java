@@ -1,6 +1,6 @@
 package com.survey_engine.survey.controller.sms;
 
-import com.survey_engine.survey.dto.SmsRequest;
+import com.survey_engine.survey.dto.sms.SmsRequest;
 import com.survey_engine.survey.service.sms.SmsSendingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

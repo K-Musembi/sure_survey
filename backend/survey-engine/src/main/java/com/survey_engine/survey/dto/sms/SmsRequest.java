@@ -1,4 +1,4 @@
-package com.survey_engine.survey.dto;
+package com.survey_engine.survey.dto.sms;
 
 import jakarta.validation.constraints.NotBlank;
 
