@@ -36,5 +36,4 @@ build/
 GEMINI.md
 
 ### JWT Store Files ###
-keystore.jks
-keystore.jks.old
+jwt-keystore.p12
