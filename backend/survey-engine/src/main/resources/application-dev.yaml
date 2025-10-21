@@ -6,7 +6,7 @@ spring:
     name: survey-engine
 
   datasource:
-    url: jdbc:postgresql://localhost:${ MAIN_SURVEY_ENGINE_PORT}/${MAIN_SURVEY_ENGINE_DB}
+    url: jdbc:postgresql://localhost:${MAIN_SURVEY_ENGINE_PORT}/${MAIN_SURVEY_ENGINE_DB}
     username: ${MAIN_SURVEY_ENGINE_ADMIN}
     password: ${MAIN_SURVEY_ENGINE_PASSWORD}
     driver-class-name: org.postgresql.Driver
@@ -63,7 +63,3 @@ logging:
   level:
     root: INFO
     com.survey.survey: DEBUG
-
-testcontainers:
-  client:
-    host: host.docker.internal
