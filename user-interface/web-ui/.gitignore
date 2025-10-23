@@ -26,3 +26,6 @@ dist-ssr
 # Context Files
 GEMINI.md
 PLAN.md
+
+# Flowbite
+.flowbite-react/
