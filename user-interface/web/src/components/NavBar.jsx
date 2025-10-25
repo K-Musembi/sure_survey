@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Navbar, Button, Avatar, Dropdown } from 'flowbite-react'
+import { Navbar, NavbarBrand, NavbarToggle, NavbarCollapse, 
+  NavbarLink, Button, Avatar, Dropdown, DropdownHeader, DropdownItem, DropdownDivider } from 'flowbite-react'
 import useAuthStore from '../stores/authStore'
 import { useLogout } from '../hooks/useApi'
 
@@ -23,11 +24,11 @@ const NavBar = () => {
 
   return (
     <Navbar fluid rounded className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
-      <Navbar.Brand as={Link} to="/">
+      <NavbarBrand as={Link} to="/" className="flex items-center">
         <span className="self-center whitespace-nowrap text-2xl font-bold text-primary-600">
-          SureSurvey
+          Sure Survey
         </span>
-      </Navbar.Brand>
+      </NavbarBrand>
 
       <div className="flex md:order-2 gap-3">
         {isAuthenticated ? (
@@ -60,31 +61,31 @@ const NavBar = () => {
                 </Avatar>
               }
             >
-              <Dropdown.Header>
+              <DropdownHeader>
                 <span className="block text-sm font-medium text-gray-900">
                   {user?.name || 'User'}
                 </span>
                 <span className="block truncate text-sm text-gray-500">
                   {user?.email || ''}
                 </span>
-              </Dropdown.Header>
+              </DropdownHeader>
               
-              <Dropdown.Item as={Link} to="/dashboard">
+              <DropdownItem as={Link} to="/dashboard">
                 Dashboard
-              </Dropdown.Item>
+              </DropdownItem>
               
-              <Dropdown.Item as={Link} to="/profile">
+              <DropdownItem as={Link} to="/profile">
                 Profile Settings
-              </Dropdown.Item>
+              </DropdownItem>
               
-              <Dropdown.Divider />
+              <DropdownDivider />
               
-              <Dropdown.Item 
+              <DropdownItem 
                 onClick={handleLogout}
                 className="text-red-600 hover:bg-red-50"
               >
                 Sign out
-              </Dropdown.Item>
+              </DropdownItem>
             </Dropdown>
           </>
         ) : (
@@ -113,87 +114,87 @@ const NavBar = () => {
         )}
 
         {/* Mobile menu toggle */}
-        <Navbar.Toggle 
+        <NavbarToggle 
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           className="md:hidden"
         />
       </div>
 
       {/* Navigation Links */}
-      <Navbar.Collapse className={isMenuOpen ? 'block' : 'hidden'}>
-        <Navbar.Link
+      <NavbarCollapse className={isMenuOpen ? 'block' : 'hidden'}>
+        <NavbarLink
           as={Link}
           to="/"
           className="text-gray-700 hover:text-primary-600 md:hover:bg-transparent"
         >
           Home
-        </Navbar.Link>
+        </NavbarLink>
         
-        <Navbar.Link
+        <NavbarLink
           as={Link}
           to="/features"
           className="text-gray-700 hover:text-primary-600 md:hover:bg-transparent"
         >
           Features
-        </Navbar.Link>
+        </NavbarLink>
         
-        <Navbar.Link
+        <NavbarLink
           as={Link}
           to="/pricing"
           className="text-gray-700 hover:text-primary-600 md:hover:bg-transparent"
         >
           Pricing
-        </Navbar.Link>
+        </NavbarLink>
         
-        <Navbar.Link
+        <NavbarLink
           as={Link}
           to="/contact"
           className="text-gray-700 hover:text-primary-600 md:hover:bg-transparent"
         >
           Contact
-        </Navbar.Link>
+        </NavbarLink>
 
         {/* Mobile-only authenticated links */}
         {isAuthenticated && (
           <>
-            <Navbar.Link
+            <NavbarLink
               as={Link}
               to="/dashboard"
               className="text-gray-700 hover:text-primary-600 md:hover:bg-transparent md:hidden"
             >
               Dashboard
-            </Navbar.Link>
+            </NavbarLink>
             
-            <Navbar.Link
+            <NavbarLink
               onClick={handleLogout}
               className="text-red-600 hover:text-red-700 md:hover:bg-transparent md:hidden cursor-pointer"
             >
               Sign Out
-            </Navbar.Link>
+            </NavbarLink>
           </>
         )}
 
         {/* Mobile-only auth links */}
         {!isAuthenticated && (
           <>
-            <Navbar.Link
+            <NavbarLink
               as={Link}
               to="/login"
               className="text-gray-700 hover:text-primary-600 md:hover:bg-transparent md:hidden"
             >
               Sign In
-            </Navbar.Link>
+            </NavbarLink>
             
-            <Navbar.Link
+            <NavbarLink
               as={Link}
               to="/signup"
               className="text-primary-600 hover:text-primary-700 md:hover:bg-transparent md:hidden font-medium"
             >
-              Get Started
-            </Navbar.Link>
+              Contacts
+            </NavbarLink>
           </>
         )}
-      </Navbar.Collapse>
+      </NavbarCollapse>
     </Navbar>
   )
 }

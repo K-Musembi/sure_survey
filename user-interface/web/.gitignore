@@ -26,6 +26,13 @@ dist-ssr
 
 # Context file
 GEMINI.md
+.github/copilot-project-plan.md
+public/Payment Recommendation.pdf
+public/Survey Creator Dashboard Wireframe.pdf
 
 # Flowbite Tailwind
 .flowbite-react/
+
+# Environment variables
+.env
+.env.example

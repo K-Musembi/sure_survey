@@ -1,12 +1,14 @@
 import { Link } from 'react-router-dom'
 import { Button } from 'flowbite-react'
-import { HiChartBar, HiCurrencyDollar, HiLightningBolt } from 'react-icons/hi'
+import { HiChartBar, HiCurrencyDollar, HiLightningBolt } from "react-icons/hi";
 
 const Hero = () => {
   return (
     <section className="relative bg-gradient-to-br from-primary-50 via-white to-primary-50 py-20 lg:py-32">
       {/* Background Pattern */}
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%2384cc16" fill-opacity="0.05"%3E%3Ccircle cx="30" cy="30" r="1"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-50"></div>
+      <div className="absolute inset-0 opacity-50" style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2384cc16' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+      }}></div>
       
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="lg:grid lg:grid-cols-12 lg:gap-8 lg:items-center">
@@ -64,7 +66,7 @@ const Hero = () => {
                   to="/demo"
                   color="gray"
                   size="xl"
-                  className="border-2 border-gray-300 text-gray-700 hover:bg-gray-50 px-8 py-4 text-lg font-semibold"
+                  className="text-gray-700 hover:text-primary-600 md:hover:bg-transparent md:hidden"
                 >
                   Watch Demo
                 </Button>

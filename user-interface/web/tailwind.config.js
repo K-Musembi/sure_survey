@@ -1,11 +1,10 @@
-import { defineConfig } from '@tailwindcss/vite'
-import flowbite from 'flowbite-react/tailwind'
-
-export default defineConfig({
+/** @type {import('tailwindcss').Config} */
+export default {
   content: [
     './index.html',
     './src/**/*.{js,ts,jsx,tsx}',
-    flowbite.content(),
+    "./node_modules/flowbite-react/**/*.{js,jsx,ts,tsx}",  // include Flowbite React
+    "./node_modules/flowbite/**/*.{js,jsx,ts,tsx,html}"
   ],
   theme: {
     extend: {
@@ -37,12 +36,13 @@ export default defineConfig({
           950: '#020617',
         }
       },
-      fontFamily: {
+       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
     },
   },
   plugins: [
-    flowbite.plugin(),
+    require('flowbite/plugin'),
   ],
-})
+}
+

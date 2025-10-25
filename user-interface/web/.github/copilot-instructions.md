@@ -36,6 +36,9 @@ This file gives concise, actionable guidance for AI coding agents working on thi
 - For client-side state, use zustand for simple and scalable state management.
 - Both react-query and zustand have already been added as dependencies.
 
+### API calls
+- To be handled using `src/services/apiServices.js`
+
 ### Real-Time Dashboard Analytics
 - Recharts is preferred. Data will be served from the backend using SSE.
 - The dependency has been added.
