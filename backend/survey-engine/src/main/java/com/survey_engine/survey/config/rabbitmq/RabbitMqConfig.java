@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Configuration;
  * and a dead-letter queue for resilient error handling.
  */
 @Configuration
-public class SurveyRabbitMQConfig {
+public class RabbitMqConfig {
 
     public static final String SURVEY_EXCHANGE = "survey.exchange";
     public static final String RESPONSE_QUEUE = "survey.responses.queue";
