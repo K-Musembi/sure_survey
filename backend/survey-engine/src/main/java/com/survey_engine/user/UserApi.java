@@ -2,7 +2,6 @@ package com.survey_engine.user;
 
 import com.survey_engine.user.models.Tenant;
 import org.springframework.modulith.NamedInterface;
-import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Optional;
 
@@ -26,13 +25,6 @@ public interface UserApi {
      * @return An {@link Optional} containing the phone number as a String, or empty if not found or invalid ID.
      */
     Optional<String> findPhoneNumberByParticipantId(String participantId);
-
-    /**
-     * Finds user details by email.
-     * @param email The email of the user.
-     * @return An {@link Optional} containing {@link UserDetails}, or empty if not found.
-     */
-    Optional<UserDetails> findUserDetailsByEmail(String email);
 
     /**
      * Retrieves the tenant ID from the current context.

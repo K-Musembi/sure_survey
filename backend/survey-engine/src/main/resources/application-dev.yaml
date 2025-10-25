@@ -50,16 +50,23 @@ spring:
 
 jwt:
   keystore:
-    path: ${JWT_STORE_PATH}
-    password: ${JWT_STORE_PASSWORD}
-    alias: ${JWT_STORE_ALIAS}
+    path: store/keystore.p12
+    password: password
+    alias: survey-engine
+  expiration: 30
 
 paystack:
   api:
     base-url: ${PAYSTACK_BASE_URL}
     secret-key: ${PAYSTACK_TEST_KEY}
 
+africastalking:
+  api:
+    api-key: SECRET_API_KEY
+    username: SECRET_USERNAME
+
 logging:
   level:
     root: INFO
     com.survey.survey: DEBUG
+

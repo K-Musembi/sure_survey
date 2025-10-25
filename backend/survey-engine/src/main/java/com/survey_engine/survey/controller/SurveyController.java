@@ -12,7 +12,6 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import javax.naming.AuthenticationException;
 import java.util.List;
 
 /**
@@ -69,10 +68,7 @@ public class SurveyController {
      * @return - HTTP response
      */
     @GetMapping
-    public ResponseEntity<List<SurveyResponse>> getAllSurveys(@AuthenticationPrincipal Jwt jwt) throws AuthenticationException {
-        if (jwt == null) {
-            throw new AuthenticationException("User is not authenticated.");
-        }
+    public ResponseEntity<List<SurveyResponse>> getAllSurveys(@AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
         List<String> roles = jwt.getClaimAsStringList("roles");
         List<SurveyResponse> responseObject = surveyService.findAllSurveys(roles);

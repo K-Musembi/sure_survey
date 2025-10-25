@@ -6,7 +6,6 @@ import com.survey_engine.user.repository.UserRepository;
 import com.survey_engine.user.repository.TenantRepository;
 import com.survey_engine.user.service.TenantContext;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -45,18 +44,6 @@ public class UserApiImpl implements UserApi {
         } catch (NumberFormatException e) {
             return Optional.empty();
         }
-    }
-
-    /**
-     * Finds user details by email.
-     *
-     * @param email The email of the user.
-     * @return An {@link Optional} containing {@link UserDetails}, or empty if not found.
-     */
-    @Override
-    public Optional<UserDetails> findUserDetailsByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .map(user -> user);
     }
 
     /**

@@ -1,17 +1,12 @@
-package com.survey_engine.common.config.security;
+package com.survey_engine.user.config.security;
 
-import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jose.jwk.RSAKey;
-import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
-import com.nimbusds.jose.jwk.source.JWKSource;
-import com.nimbusds.jose.proc.SecurityContext;
-import com.survey_engine.user.UserApi;
+import com.survey_engine.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -24,14 +19,8 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.oauth2.jwt.JwtEncoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
-
-import java.io.InputStream;
-import java.security.KeyStore;
 
 
 /**
@@ -43,6 +32,8 @@ import java.security.KeyStore;
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final UserRepository userRepository;
 
     /**
      * Configures the security filter chain for HTTP requests.
@@ -64,28 +55,24 @@ public class SecurityConfig {
                         .authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(Customizer.withDefaults())
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                            response.getWriter().write("401 Unauthorized: " + authException.getMessage());
+                        })
+                );
         return http.build();
     }
 
     /**
-     * Provides a {@link PasswordEncoder} bean for encoding and verifying passwords.
-     * @return A {@link BCryptPasswordEncoder} instance.
-     */
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
-    /**
      * Provides a {@link UserDetailsService} bean that loads user-specific data.
-     * It uses the {@link UserApi} to find user details by email.
-     * @param userApi The {@link UserApi} instance for user data access.
+     * It uses the {@link UserRepository} to find user details by email.
      * @return A {@link UserDetailsService} implementation.
      */
     @Bean
-    public UserDetailsService userDetailsService(UserApi userApi) {
-        return email -> userApi.findUserDetailsByEmail(email)
+    public UserDetailsService userDetailsService() {
+        return email -> userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 
