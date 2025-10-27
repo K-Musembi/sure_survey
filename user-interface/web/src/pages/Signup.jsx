@@ -34,12 +34,14 @@ const Signup = () => {
 
         <div className="mb-4">
           <div className="flex items-center gap-4">
-            <Radio id="individual" name="mode" value="individual" checked={mode === 'individual'} onChange={() => setMode('individual')}>
-              Individual
-            </Radio>
-            <Radio id="enterprise" name="mode" value="enterprise" checked={mode === 'enterprise'} onChange={() => setMode('enterprise')}>
-              Enterprise
-            </Radio>
+            <div className="flex items-center gap-2">
+              <Radio id="individual" name="mode" value="individual" checked={mode === 'individual'} onChange={() => setMode('individual')} />
+              <Label htmlFor="individual">Individual</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Radio id="enterprise" name="mode" value="enterprise" checked={mode === 'enterprise'} onChange={() => setMode('enterprise')} />
+              <Label htmlFor="enterprise">Enterprise</Label>
+            </div>
           </div>
         </div>
 

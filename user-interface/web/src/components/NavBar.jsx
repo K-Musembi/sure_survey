@@ -94,9 +94,8 @@ const NavBar = () => {
             <Button
               as={Link}
               to="/login"
-              color="gray"
               size="sm"
-              className="text-gray-700 hover:text-gray-900"
+              className="bg-gray-100 hover:bg-gray-200 text-gray-800"
             >
               Sign In
             </Button>
@@ -190,7 +189,7 @@ const NavBar = () => {
               to="/signup"
               className="text-primary-600 hover:text-primary-700 md:hover:bg-transparent md:hidden font-medium"
             >
-              Contacts
+              Sign Up
             </NavbarLink>
           </>
         )}

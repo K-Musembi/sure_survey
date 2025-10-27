@@ -64,9 +64,8 @@ const Hero = () => {
                 <Button
                   as={Link}
                   to="/demo"
-                  color="gray"
                   size="xl"
-                  className="text-gray-700 hover:text-primary-600 md:hover:bg-transparent md:hidden"
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-800"
                 >
                   Watch Demo
                 </Button>

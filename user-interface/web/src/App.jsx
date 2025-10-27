@@ -9,8 +9,20 @@ import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile'
 import SurveyBuilder from './pages/SurveyBuilder'
 import SurveySession from './pages/SurveySession'
+import useAuthStore from './stores/authStore'
 
 export default function App() {
+
+  const ProtectedRoute = ({ children }) => {
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+    return isAuthenticated ? children : <Navigate to="/login" replace />
+  }
+
+  const PublicRoute = ({ children }) => {
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+    return isAuthenticated ? <Navigate to="/dashboard" replace /> : children
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Routes>
