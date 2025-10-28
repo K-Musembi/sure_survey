@@ -49,7 +49,7 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(req -> req
-                        .requestMatchers(HttpMethod.OPTIONS, "/** ").permitAll()  // allow CORS preflight requests
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()  // allow CORS preflight requests
                         .requestMatchers("/api/v1/auth/signup", "/api/v1/auth/login").permitAll() // Permit login endpoint
                         .anyRequest()
                         .authenticated()
