@@ -49,7 +49,7 @@ const SurveyBuilder = () => {
     const newQuestion = {
       id: Date.now(),
       text: '',
-      type: 'TEXT',
+      type: 'FREE_TEXT',
       required: true,
       options: []
     }
@@ -60,11 +60,11 @@ const SurveyBuilder = () => {
     try {
       const surveyData = {
         ...currentSurvey,
-        questions: currentSurvey.questions.map(q => ({
-          text: q.text,
-          type: q.type,
-          required: q.required,
-          options: q.options || []
+        questions: currentSurvey.questions.map((q, index) => ({
+          questionText: q.text,
+          questionType: q.type,
+          position: index,
+          options: JSON.stringify(q.options || []),
         }))
       }
       await createSurveyMutation.mutateAsync(surveyData)
@@ -112,7 +112,7 @@ const SurveyBuilder = () => {
                         {type === 'CSAT' && 'Customer Satisfaction - measure satisfaction levels'}
                       </p>
                     </div>
-                    <Radio name="surveyType" value={type} checked={surveyType === type} />
+                    <Radio name="surveyType" value={type} checked={surveyType === type} onChange={() => handleTypeSelection(type)} />
                   </div>
                 </div>
               ))}
@@ -205,10 +205,12 @@ const SurveyBuilder = () => {
                           value={question.type}
                           onChange={(e) => updateQuestion(question.id, { type: e.target.value })}
                         >
-                          <option value="TEXT">Text</option>
-                          <option value="MULTIPLE_CHOICE">Multiple Choice</option>
-                          <option value="SCALE">Scale (1-10)</option>
-                          <option value="YES_NO">Yes/No</option>
+                          <option value="FREE_TEXT">Text</option>
+                          <option value="MULTIPLE_CHOICE_SINGLE">Multiple Choice</option>
+                          <option value="MULTIPLE_CHOICE_MULTI">Checkboxes</option>
+                          <option value="RATING_LINEAR">Scale (1-10)</option>
+                          <option value="RATING_STAR">Star Rating</option>
+                          <option value="NPS_SCALE">Net Promoter Score</option>
                         </Select>
                       </div>
                       
@@ -224,7 +226,7 @@ const SurveyBuilder = () => {
                       </div>
                     </div>
 
-                    {question.type === 'MULTIPLE_CHOICE' && (
+                    {question.type === 'MULTIPLE_CHOICE_SINGLE' && (
                       <div>
                         <Label>Options</Label>
                         <div className="space-y-2 mt-2">

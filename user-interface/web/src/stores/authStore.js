@@ -9,7 +9,6 @@ const useAuthStore = create()(
         tenant: null,
         isAuthenticated: false,
         isLoading: false,
-        token: null,
         
         // Actions
         setUser: (user) => set({ user, isAuthenticated: !!user }, false, 'setUser'),
@@ -23,7 +22,6 @@ const useAuthStore = create()(
           try {
             set({ 
               user: userData?.user || userData,
-              token: userData?.token || null, 
               isAuthenticated: true, 
               isLoading: false 
             }, false, 'login/success')
@@ -37,7 +35,6 @@ const useAuthStore = create()(
           set({ 
             user: null, 
             tenant: null,
-            token: null,
             isAuthenticated: false, 
             isLoading: false 
           }, false, 'logout')
@@ -54,7 +51,6 @@ const useAuthStore = create()(
           user: state.user,
           tenant: state.tenant,
           isAuthenticated: state.isAuthenticated,
-          token: state.token,
         }),
       }
     ),

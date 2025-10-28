@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Button, Card, Badge, Tabs, Dropdown } from 'flowbite-react'
+import { Button, Card, Badge, Tabs, TabItem, Dropdown, DropdownItem, DropdownDivider } from 'flowbite-react'
 import NavBar from '../components/NavBar'
 import AnalyticsDashboard from '../components/AnalyticsDashboard'
 import PaymentModal from '../components/PaymentModal'
@@ -9,7 +9,6 @@ import { HiPlus, HiEye, HiPencil, HiPlay, HiStop, HiCurrencyDollar, HiShare, HiD
 
 const Dashboard = () => {
   const { data: surveys, isLoading, refetch } = useMySurveys()
-  const [activeTab, setActiveTab] = useState('surveys')
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
   const [selectedSurvey, setSelectedSurvey] = useState(null)
   
@@ -83,12 +82,8 @@ const Dashboard = () => {
         </div>
 
         {/* Tabs */}
-        <Tabs.Group
-          aria-label="Dashboard tabs"
-          style="underline"
-          onActiveTabChange={(tab) => setActiveTab(['surveys', 'analytics'][tab])}
-        >
-          <Tabs.Item title="My Surveys" icon={HiEye}>
+        <Tabs aria-label="Dashboard tabs" variant="underline">
+          <TabItem active title="My Surveys" icon={HiEye}>
             {/* Surveys Tab Content */}
             <div className="space-y-6">
               {isLoading ? (
@@ -115,25 +110,25 @@ const Dashboard = () => {
                           inline
                           label={<HiDotsVertical className="w-5 h-5 text-gray-400" />}
                         >
-                          <Dropdown.Item as={Link} to={`/survey/${survey.id}/edit`}>
+                          <DropdownItem as={Link} to={`/survey/${survey.id}/edit`}>
                             <HiPencil className="w-4 h-4 mr-2" />
                             Edit
-                          </Dropdown.Item>
-                          <Dropdown.Item onClick={() => copyToClipboard(getSurveyUrl(survey))}>
+                          </DropdownItem>
+                          <DropdownItem onClick={() => copyToClipboard(getSurveyUrl(survey))}>
                             <HiShare className="w-4 h-4 mr-2" />
                             Copy Link
-                          </Dropdown.Item>
-                          <Dropdown.Divider />
+                          </DropdownItem>
+                          <DropdownDivider />
                           {survey.status === 'DRAFT' ? (
-                            <Dropdown.Item onClick={() => handleActivateSurvey(survey)}>
+                            <DropdownItem onClick={() => handleActivateSurvey(survey)}>
                               <HiPlay className="w-4 h-4 mr-2" />
                               Activate
-                            </Dropdown.Item>
+                            </DropdownItem>
                           ) : (
-                            <Dropdown.Item>
+                            <DropdownItem>
                               <HiStop className="w-4 h-4 mr-2" />
                               Pause
-                            </Dropdown.Item>
+                            </DropdownItem>
                           )}
                         </Dropdown>
                       </div>
@@ -225,13 +220,13 @@ const Dashboard = () => {
                 </Card>
               )}
             </div>
-          </Tabs.Item>
+          </TabItem>
 
-          <Tabs.Item title="Analytics" icon={HiCurrencyDollar}>
+          <TabItem title="Analytics" icon={HiCurrencyDollar}>
             {/* Analytics Tab Content */}
             <AnalyticsDashboard surveys={surveys || []} />
-          </Tabs.Item>
-        </Tabs.Group>
+          </TabItem>
+        </Tabs>
       </main>
 
       {/* Payment Modal */}

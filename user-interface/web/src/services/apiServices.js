@@ -1,4 +1,5 @@
 import axios from 'axios'
+import useAuthStore from '../stores/authStore'
 
 // Create axios instance with base configuration
 const api = axios.create({
@@ -34,9 +35,9 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
       
-      // Handle token refresh or redirect to login
-      console.warn('[API] Unauthorized access - redirecting to login')
-      window.location.href = '/login'
+      // On unauthorized, logout the user from the store
+      console.warn('[API] Unauthorized access. Logging out.')
+      useAuthStore.getState().logout()
       return Promise.reject(error)
     }
     

@@ -27,7 +27,11 @@ export default function App() {
     <div className="min-h-screen bg-gray-50">
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={
+          <PublicRoute>
+            <Home />
+          </PublicRoute>
+        } />
         <Route path="/login" element={
           <PublicRoute>
             <Login />

@@ -52,13 +52,10 @@ const NavBar = () => {
                 <Avatar
                   alt="User settings"
                   img={user?.avatar || undefined}
+                  placeholderInitials={user?.name?.charAt(0)?.toUpperCase() || 'U'}
                   rounded
                   className="w-8 h-8"
-                >
-                  <div className="font-medium text-sm">
-                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                  </div>
-                </Avatar>
+                />
               }
             >
               <DropdownHeader>
