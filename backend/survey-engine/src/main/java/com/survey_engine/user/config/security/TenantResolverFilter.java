@@ -43,6 +43,9 @@ public class TenantResolverFilter extends OncePerRequestFilter {
         if (parts.length > 1) {
             String slug = parts[0];
             tenantRepository.findBySlug(slug).ifPresent(tenant -> TenantContext.setTenantId(tenant.getId()));
+        } else {
+            // If no subdomain is present, attempt to set a default tenant (e.g., "www")
+            tenantRepository.findBySlug("www").ifPresent(tenant -> TenantContext.setTenantId(tenant.getId()));
         }
 
         try {

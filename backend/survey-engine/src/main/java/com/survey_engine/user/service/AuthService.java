@@ -1,8 +1,8 @@
 package com.survey_engine.user.service;
 
 import com.survey_engine.user.config.security.JwtService;
-import com.survey_engine.user.dto.AuthResponse;
 import com.survey_engine.user.dto.LoginRequest;
+import com.survey_engine.user.dto.LoginResponse;
 import com.survey_engine.user.dto.SignUpRequest;
 import com.survey_engine.user.dto.UserResponse;
 import com.survey_engine.user.models.Tenant;
@@ -73,12 +73,13 @@ public class AuthService {
      * @param request LoginRequest DTO
      * @return AuthResponse DTO containing the JWT token.
      */
-    public AuthResponse loginUser(LoginRequest request) {
+    public LoginResponse loginUser(LoginRequest request) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.email(), request.password())
         );
+        User user = (User) authentication.getPrincipal();
         String token = jwtService.generateToken(authentication);
-        return new AuthResponse(token);
+        return new LoginResponse(token, user);
     }
 
     /**

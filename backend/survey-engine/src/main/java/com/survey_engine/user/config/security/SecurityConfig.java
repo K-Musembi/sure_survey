@@ -34,6 +34,19 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     private final UserRepository userRepository;
+    private final CustomBearerTokenResolver customBearerTokenResolver;
+
+    @Bean
+    @Order(1)
+    public SecurityFilterChain publicSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/api/v1/auth/**")
+                .cors(Customizer.withDefaults())
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        return http.build();
+    }
 
     /**
      * Configures the security filter chain for HTTP requests.
@@ -44,19 +57,19 @@ public class SecurityConfig {
      */
     @Bean
     @Order(2)
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(req -> req
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()  // allow CORS preflight requests
-                        .requestMatchers("/api/v1/auth/signup", "/api/v1/auth/login").permitAll() // Permit login endpoint
                         .anyRequest()
                         .authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(Customizer.withDefaults())
+                        .bearerTokenResolver(customBearerTokenResolver)
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setStatus(HttpStatus.UNAUTHORIZED.value());
                             response.getWriter().write("401 Unauthorized: " + authException.getMessage());

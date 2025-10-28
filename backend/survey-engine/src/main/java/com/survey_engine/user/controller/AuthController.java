@@ -1,10 +1,12 @@
 package com.survey_engine.user.controller;
 
-import com.survey_engine.user.dto.AuthResponse;
 import com.survey_engine.user.dto.LoginRequest;
+import com.survey_engine.user.dto.LoginResponse;
 import com.survey_engine.user.dto.SignUpRequest;
 import com.survey_engine.user.dto.UserResponse;
 import com.survey_engine.user.service.AuthService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -46,8 +48,26 @@ public class AuthController {
      * @return - An authentication response containing the JWT token.
      */
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> loginUser(@Valid @RequestBody LoginRequest request) {
-        AuthResponse authResponse = authService.loginUser(request);
-        return ResponseEntity.ok(authResponse);
+    public ResponseEntity<UserResponse> loginUser(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
+        LoginResponse loginResponse = authService.loginUser(request);
+        response.addCookie(createCookie(loginResponse.token()));
+
+        UserResponse userResponse = new UserResponse(
+                loginResponse.user().getId(),
+                loginResponse.user().getName(),
+                loginResponse.user().getEmail(),
+                loginResponse.user().getTenantId()
+        );
+
+        return ResponseEntity.ok(userResponse);
+    }
+
+    private Cookie createCookie(String token) {
+        Cookie cookie = new Cookie("access_token", token);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/");
+        // cookie.setSecure(true); // Uncomment in production
+        cookie.setMaxAge(60 * 60 * 24); // 1 day
+        return cookie;
     }
 }

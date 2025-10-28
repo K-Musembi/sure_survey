@@ -33,6 +33,9 @@ public class SurveyService {
     @Transactional
     public SurveyResponse createSurvey(SurveyRequest surveyRequest, String userId) {
         Long tenantId = userApi.getTenantId();
+        if (tenantId == null) {
+            throw new IllegalStateException("Tenant context not found. Cannot create survey without a tenant.");
+        }
         if (surveyRepository.findByNameAndTenantId(surveyRequest.name(), tenantId).isPresent()) {
             throw new DataIntegrityViolationException("A survey with this name already exists");
         }
