@@ -1,27 +1,31 @@
-import NavBar from '../components/NavBar'
+import { Card, Label, TextInput } from 'flowbite-react'
 import useAuthStore from '../stores/authStore'
+import { useQuery } from '@tanstack/react-query'
+import { subscriptionAPI } from '../services/apiServices'
+import { QUERY_KEYS } from '../lib/queryClient'
 
 const Profile = () => {
-  const { user } = useAuthStore()
+  const { user, tenant } = useAuthStore()
+
+  const { data: subscription, isLoading: isLoadingSubscription } = useQuery({
+    queryKey: QUERY_KEYS.auth.subscription,
+    queryFn: async () => {
+      const response = await subscriptionAPI.getSubscription()
+      return response.data
+    },
+    enabled: !!user, // Only fetch if user is available
+  })
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <NavBar />
-      <main className="flex-grow max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-2xl font-semibold mb-4">Profile Settings</h1>
-        <div className="card">
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Name</label>
-              <div className="mt-1 text-gray-900">{user?.name || '—'}</div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Email</label>
-              <div className="mt-1 text-gray-900">{user?.email || '—'}</div>
-            </div>
-          </div>
-        </div>
-      </main>
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold text-gray-900">My Information</h1>
+
+      <Card className="mt-4">
+        <p>Profile content placeholder.</p>
+        <p>User: {user?.name}</p>
+        <p>Tenant: {tenant?.name}</p>
+        <p>Subscription Status: {subscription?.status}</p>
+      </Card>
     </div>
   )
 }

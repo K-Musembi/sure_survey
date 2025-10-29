@@ -30,10 +30,10 @@ const Signup = () => {
     <div className="min-h-screen flex flex-col">
       <NavBar />
       <div className="max-w-lg w-full mx-auto mt-16 p-6">
-        <h1 className="text-2xl font-bold mb-4">Create an account</h1>
+        <h1 className="text-2xl font-bold mb-4 text-center">Sure Survey</h1>
 
         <div className="mb-4">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 justify-center">
             <div className="flex items-center gap-2">
               <Radio id="individual" name="mode" value="individual" checked={mode === 'individual'} onChange={() => setMode('individual')} />
               <Label htmlFor="individual">Individual</Label>

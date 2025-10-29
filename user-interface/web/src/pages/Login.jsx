@@ -33,7 +33,7 @@ const Login = () => {
     <div className="min-h-screen flex flex-col">
       <NavBar />
       <div className="max-w-md w-full mx-auto mt-16 p-6">
-        <h1 className="text-2xl font-bold mb-4">Sign in to SureSurvey</h1>
+        <h1 className="text-2xl font-bold mb-4 text-center">Sure Survey</h1>
         {errorMessage && (
           <Alert color="failure" icon={HiExclamationCircle} className="mb-4">
             {errorMessage}

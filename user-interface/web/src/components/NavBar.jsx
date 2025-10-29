@@ -5,7 +5,7 @@ import { Navbar, NavbarBrand, NavbarToggle, NavbarCollapse,
 import useAuthStore from '../stores/authStore'
 import { useLogout } from '../hooks/useApi'
 
-const NavBar = () => {
+const NavBar = ({ isDashboard }) => {
   const navigate = useNavigate()
   const { user, isAuthenticated } = useAuthStore()
   const logoutMutation = useLogout()
@@ -118,40 +118,44 @@ const NavBar = () => {
 
       {/* Navigation Links */}
       <NavbarCollapse className={isMenuOpen ? 'block' : 'hidden'}>
-        <NavbarLink
-          as={Link}
-          to="/"
-          className="text-gray-700 hover:text-primary-600 md:hover:bg-transparent"
-        >
-          Home
-        </NavbarLink>
-        
-        <NavbarLink
-          as={Link}
-          to="/features"
-          className="text-gray-700 hover:text-primary-600 md:hover:bg-transparent"
-        >
-          Features
-        </NavbarLink>
-        
-        <NavbarLink
-          as={Link}
-          to="/pricing"
-          className="text-gray-700 hover:text-primary-600 md:hover:bg-transparent"
-        >
-          Pricing
-        </NavbarLink>
-        
-        <NavbarLink
-          as={Link}
-          to="/contact"
-          className="text-gray-700 hover:text-primary-600 md:hover:bg-transparent"
-        >
-          Contact
-        </NavbarLink>
+        {!isDashboard && (
+          <>
+            <NavbarLink
+              as={Link}
+              to="/"
+              className="text-gray-700 hover:text-primary-600 md:hover:bg-transparent"
+            >
+              Home
+            </NavbarLink>
+            
+            <NavbarLink
+              as={Link}
+              to="/features"
+              className="text-gray-700 hover:text-primary-600 md:hover:bg-transparent"
+            >
+              Features
+            </NavbarLink>
+            
+            <NavbarLink
+              as={Link}
+              to="/pricing"
+              className="text-gray-700 hover:text-primary-600 md:hover:bg-transparent"
+            >
+              Pricing
+            </NavbarLink>
+            
+            <NavbarLink
+              as={Link}
+              to="/contact"
+              className="text-gray-700 hover:text-primary-600 md:hover:bg-transparent"
+            >
+              Contact
+            </NavbarLink>
+          </>
+        )}
 
         {/* Mobile-only authenticated links */}
-        {isAuthenticated && (
+        {isAuthenticated && !isDashboard && (
           <>
             <NavbarLink
               as={Link}
