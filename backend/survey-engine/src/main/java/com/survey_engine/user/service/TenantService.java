@@ -7,9 +7,10 @@ import com.survey_engine.user.repository.TenantRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+
+import org.apache.commons.text.similarity.JaroWinklerDistance;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,16 +24,62 @@ import java.util.stream.Collectors;
 public class TenantService {
 
     private final TenantRepository tenantRepository;
+    private static final double SIMILARITY_THRESHOLD = 0.8;
+
+    /**
+     * Finds tenants with names similar to the given name.
+     *
+     * @param name The name to compare against.
+     * @return A list of {@link TenantResponse} objects with similar names.
+     */
+    @Transactional
+    public List<TenantResponse> findSimilarTenants(String name) {
+        List<Tenant> allTenants = tenantRepository.findAll();
+        JaroWinklerDistance jaroWinklerDistance = new JaroWinklerDistance();
+
+        return allTenants.stream()
+                .filter(tenant -> jaroWinklerDistance.apply(
+                        name.toLowerCase(), tenant.getName().toLowerCase()) > SIMILARITY_THRESHOLD)
+                .map(this::mapToTenantResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Finds an existing tenant by name or creates a new one if it doesn't exist.
+     *
+     * @param organizationName The name of the organization.
+     * @return The found or created {@link Tenant} object.
+     */
+    @Transactional
+    public Tenant findOrCreateTenant(String organizationName) {
+        return tenantRepository.findByName(organizationName)
+                .orElseGet(() -> {
+                    TenantRequest tenantRequest = new TenantRequest(organizationName, organizationName.toLowerCase().replaceAll("\\s+", "-"));
+                    return createTenant(tenantRequest);
+                });
+    }
+
+    /**
+     * Creates a new tenant and maps it to a response DTO.
+     *
+     * @param tenantRequest The DTO containing the details for the new tenant.
+     * @return A DTO representing the newly created tenant.
+     */
+    @Transactional
+    public TenantResponse createTenantAndMapToResponse(TenantRequest tenantRequest) {
+        Tenant tenant = createTenant(tenantRequest);
+        return mapToTenantResponse(tenant);
+    }
 
     /**
      * Creates a new tenant.
      *
      * @param tenantRequest The DTO containing the details for the new tenant.
-     * @return A DTO representing the newly created tenant.
+     * @return The created {@link Tenant} object.
      * @throws DataIntegrityViolationException if a tenant with the given name already exists.
      */
     @Transactional
-    public TenantResponse createTenant(TenantRequest tenantRequest) {
+    public Tenant createTenant(TenantRequest tenantRequest) {
         if (tenantRepository.findByName(tenantRequest.name()).isPresent()) {
             throw new DataIntegrityViolationException("Tenant already exists");
         }
@@ -45,8 +92,7 @@ public class TenantService {
         // Default status and plan for new tenants
         tenant.setStatus("ACTIVE");
         tenant.setPlan("FREE");
-        Tenant savedTenant = tenantRepository.save(tenant);
-        return mapToTenantResponse(savedTenant);
+        return tenantRepository.save(tenant);
     }
 
     /**

@@ -118,6 +118,9 @@ public class UserService {
         if (userRequest.role() != null) {
             user.setRole(userRequest.role());
         }
+        if (userRequest.department() != null) {
+            user.setDepartment(userRequest.department());
+        }
         if (userRequest.tenantId() != null) {
             Tenant tenant = tenantRepository.findById(userRequest.tenantId())
                     .orElseThrow(() -> new EntityNotFoundException("Tenant Not Found"));
@@ -134,11 +137,17 @@ public class UserService {
      * @return - response DTO
      */
     private UserResponse mapToUserResponse(User user) {
+        String tenantName = tenantRepository.findById(user.getTenantId())
+                .map(Tenant::getName)
+                .orElse(null);
+
         return new UserResponse(
                 user.getId(),
                 user.getName(),
                 user.getEmail(),
-                user.getTenantId()
+                user.getDepartment(),
+                user.getTenantId(),
+                tenantName
         );
     }
 }

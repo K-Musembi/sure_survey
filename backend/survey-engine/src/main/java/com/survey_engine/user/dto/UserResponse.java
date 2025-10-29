@@ -11,5 +11,7 @@ public record UserResponse(
         Long id,
         String name,
         String email,
-        Long tenantId
+        String department,
+        Long tenantId,
+        String tenantName
 ) {}

@@ -1,0 +1,1 @@
+ALTER TABLE app_user ADD COLUMN department VARCHAR(100);

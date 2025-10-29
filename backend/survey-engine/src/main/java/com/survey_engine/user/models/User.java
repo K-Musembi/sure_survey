@@ -23,6 +23,10 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@NamedEntityGraph(
+    name = "User.tenant",
+    attributeNodes = @NamedAttributeNode("tenant")
+)
 public class User extends BaseEntity implements UserDetails {
 
     /**
@@ -55,6 +59,9 @@ public class User extends BaseEntity implements UserDetails {
      */
     @Column(name = "role", length = 20)
     private String role;
+
+    @Column(name = "department", length = 100)
+    private String department;
 
     /**
      * The tenant this user belongs to.

@@ -85,7 +85,7 @@ public class SecurityConfig {
      */
     @Bean
     public UserDetailsService userDetailsService() {
-        return email -> userRepository.findByEmail(email)
+        return email -> userRepository.findByEmailWithTenant(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 

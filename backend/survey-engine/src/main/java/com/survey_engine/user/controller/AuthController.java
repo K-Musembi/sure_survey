@@ -1,9 +1,6 @@
 package com.survey_engine.user.controller;
 
-import com.survey_engine.user.dto.LoginRequest;
-import com.survey_engine.user.dto.LoginResponse;
-import com.survey_engine.user.dto.SignUpRequest;
-import com.survey_engine.user.dto.UserResponse;
+import com.survey_engine.user.dto.*;
 import com.survey_engine.user.service.AuthService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
@@ -43,6 +40,17 @@ public class AuthController {
     }
 
     /**
+     * Method to check for similar tenant names.
+     * @param request - The check tenant request details.
+     * @return - A response containing a list of similar tenant names.
+     */
+    @PostMapping("/check-tenant")
+    public ResponseEntity<CheckTenantResponse> checkTenant(@Valid @RequestBody CheckTenantRequest request) {
+        CheckTenantResponse responseObject = authService.checkTenantNameSimilarity(request);
+        return ResponseEntity.ok(responseObject);
+    }
+
+    /**
      * Method to authenticate user and provide a JWT token.
      * @param request - The login request details (email and password).
      * @return - An authentication response containing the JWT token.
@@ -56,7 +64,9 @@ public class AuthController {
                 loginResponse.user().getId(),
                 loginResponse.user().getName(),
                 loginResponse.user().getEmail(),
-                loginResponse.user().getTenantId()
+                loginResponse.user().getDepartment(),
+                loginResponse.user().getTenantId(),
+                loginResponse.user().getTenant().getName()
         );
 
         return ResponseEntity.ok(userResponse);

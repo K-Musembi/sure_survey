@@ -1,10 +1,7 @@
 package com.survey_engine.user.service;
 
 import com.survey_engine.user.config.security.JwtService;
-import com.survey_engine.user.dto.LoginRequest;
-import com.survey_engine.user.dto.LoginResponse;
-import com.survey_engine.user.dto.SignUpRequest;
-import com.survey_engine.user.dto.UserResponse;
+import com.survey_engine.user.dto.*;
 import com.survey_engine.user.models.Tenant;
 import com.survey_engine.user.repository.TenantRepository;
 import com.survey_engine.user.repository.UserRepository;
@@ -19,6 +16,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Business logic for authentication service
@@ -44,7 +44,7 @@ public class AuthService {
     @Transactional
     public UserResponse registerUser(SignUpRequest request) {
 
-        Tenant tenant = resolveTenant(request.tenantId());
+        Tenant tenant = resolveTenant(request.organization());
         if (userRepository.findByEmailAndTenantId(request.email(), tenant.getId()).isPresent()) {
             throw new DataIntegrityViolationException("Email already exists for this tenant");
         }
@@ -56,6 +56,7 @@ public class AuthService {
         user.setEmail(request.email());
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setRole(userRole);
+        user.setDepartment(request.department());
         user.setTenantId(tenant.getId());
 
         User savedUser = userRepository.save(user);
@@ -64,7 +65,9 @@ public class AuthService {
                 savedUser.getId(),
                 savedUser.getName(),
                 savedUser.getEmail(),
-                savedUser.getTenantId()
+                savedUser.getDepartment(),
+                savedUser.getTenantId(),
+                tenant.getName()
         );
     }
 
@@ -83,6 +86,21 @@ public class AuthService {
     }
 
     /**
+     * Checks for similar tenant names.
+     *
+     * @param request The check tenant request details.
+     * @return A response containing a list of similar tenant names.
+     */
+    @Transactional()
+    public CheckTenantResponse checkTenantNameSimilarity(CheckTenantRequest request) {
+        List<String> similarTenantNames = tenantService.findSimilarTenants(request.tenantName())
+                .stream()
+                .map(TenantResponse::name)
+                .collect(Collectors.toList());
+        return new CheckTenantResponse(similarTenantNames);
+    }
+
+    /**
      * Assigns a role to the user based on the sign-up request and tenant context.
      * If it's an individual sign-up (no tenantId provided), defaults to 'REGULAR'.
      * If it's an enterprise sign-up and the first user for that tenant, assigns 'ADMIN'.
@@ -94,7 +112,7 @@ public class AuthService {
      */
     private String assignUserRole(SignUpRequest request, Tenant tenant) {
         String userRole = request.role();
-        if (request.tenantId() == null) { // Individual sign-up
+        if (request.organization() == null) { // Individual sign-up
             if (userRole == null) {
                 userRole = "REGULAR";
             }
@@ -108,20 +126,13 @@ public class AuthService {
         return userRole;
     }
 
-    /**
-     * Find existing tenant or create default tenant
-     * @param tenantIdFromRequest - tenant id from request object
-     * @return - new or existing tenant
-     */
-    private Tenant resolveTenant(Long tenantIdFromRequest) {
-        if (tenantIdFromRequest == null) {
+    private Tenant resolveTenant(String organization) {
+        if (organization == null) {
             // For individual sign-up, assume 'www' tenant exists and find it.
             return tenantRepository.findBySlug("www")
                     .orElseThrow(() -> new EntityNotFoundException("Default 'www' tenant not found. Please ensure it is initialized."));
-        } else {
-            // Enterprise sign-up: find existing tenant
-            return tenantRepository.findById(tenantIdFromRequest)
-                    .orElseThrow(() -> new EntityNotFoundException("Tenant not found"));
         }
+
+        return tenantService.findOrCreateTenant(organization);
     }
 }

@@ -31,7 +31,7 @@ public class TenantController {
      */
     @PostMapping
     public ResponseEntity<TenantResponse> createTenant(@Valid @RequestBody TenantRequest tenantRequest) {
-        TenantResponse responseObject = tenantService.createTenant(tenantRequest);
+        TenantResponse responseObject = tenantService.createTenantAndMapToResponse(tenantRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseObject);
     }
 

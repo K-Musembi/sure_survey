@@ -13,7 +13,6 @@ import jakarta.validation.constraints.Size;
  * @param email The user's email address.
  * @param password The user's chosen password.
  * @param role The user's role (e.g., "REGULAR", "ADMIN").
- * @param tenantId The ID of the tenant the user belongs to (optional for individual sign-up).
  */
 public record SignUpRequest(
         @Sanitize
@@ -35,5 +34,11 @@ public record SignUpRequest(
         @Size(min = 3, max = 20, message = "Role must be between 3 and 20 characters")
         String role,
 
-        Long tenantId
+        @Sanitize
+        @Size(min = 3, max = 100, message = "Department must be between 3 and 100 characters")
+        String department,
+
+        @Sanitize
+        @Size(min = 3, max = 100, message = "Organization must be between 3 and 100 characters")
+        String organization
 ) {}

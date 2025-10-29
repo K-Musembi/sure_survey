@@ -33,5 +33,9 @@ public record UserRequest(
         @Size(min = 3, max = 20, message = "Role must be between 3 and 20 characters")
         String role,
 
+        @Sanitize
+        @Size(min = 3, max = 100, message = "Department must be between 3 and 100 characters")
+        String department,
+
         Long tenantId
 ) {}

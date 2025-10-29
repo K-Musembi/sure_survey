@@ -22,6 +22,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     Optional<User> findByEmail(String email);
 
+    @EntityGraph(value = "User.tenant")
+    Optional<User> findByEmailWithTenant(String email);
+
     /**
      * Finds a User entity by its email address and tenant ID.
      *
