@@ -23,8 +23,10 @@ import java.util.List;
 public record SurveyResponse(
         Long id,
         String name,
+        String introduction,
         SurveyType type,
         String userId,
+        String createdByName,
         SurveyStatus status,
         AccessType accessType,
         LocalDateTime startDate,

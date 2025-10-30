@@ -1,6 +1,7 @@
 package com.survey_engine.user.repository;
 
 import com.survey_engine.user.models.User;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -50,4 +51,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return A list of User entities for the given tenant.
      */
     List<User> findByTenantId(Long tenantId);
+
+    /**
+     * Finds all User entities belonging to a specific tenant and department.
+     *
+     * @param tenantId The ID of the tenant.
+     * @param department The department of the user.
+     * @return A list of User entities for the given tenant and department.
+     */
+    List<User> findByTenantIdAndDepartment(Long tenantId, String department);
 }

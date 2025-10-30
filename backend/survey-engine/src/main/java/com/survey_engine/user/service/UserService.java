@@ -74,6 +74,21 @@ public class UserService {
     }
 
     /**
+     * Method to find users by tenant id and department.
+     * @param tenantId - tenant id
+     * @param department - department
+     * @return - List of response DTOs
+     */
+    @Transactional
+    public List<UserResponse> findUsersByTenantIdAndDepartment(Long tenantId, String department) {
+        List<User> users = userRepository.findByTenantIdAndDepartment(tenantId, department);
+
+        return users.stream()
+                .map(this::mapToUserResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Method to update user properties, scoped by the current tenant.
      * @param id - user id
      * @param userRequest - request DTO

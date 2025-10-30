@@ -51,21 +51,35 @@ public class SurveyController {
     }
 
     /**
-     * Method to retrieve all surveys for the currently authenticated user.
-     * @param jwt - The JWT token of the authenticated user
-     * @return - HTTP response
+     * Retrieves all surveys created by the currently authenticated user.
+     *
+     * @param jwt The JWT token of the authenticated user.
+     * @return A ResponseEntity containing a list of the user's surveys.
      */
     @GetMapping("/my-surveys")
     public ResponseEntity<List<SurveyResponse>> getMySurveys(@AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
-        List<SurveyResponse> responseObject = surveyService.findSurveysByUserId(userId);
+        List<SurveyResponse> responseObject = surveyService.findMySurveys(userId);
+        return ResponseEntity.status(HttpStatus.OK).body(responseObject);
+    }
+
+    /**
+     * Retrieves all surveys belonging to the department of the currently authenticated user.
+     *
+     * @param jwt The JWT token of the authenticated user.
+     * @return A ResponseEntity containing a list of the team's surveys.
+     */
+    @GetMapping("/my-team")
+    public ResponseEntity<List<SurveyResponse>> getMyTeamSurveys(@AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt.getSubject();
+        List<SurveyResponse> responseObject = surveyService.findMyTeamSurveys(userId);
         return ResponseEntity.status(HttpStatus.OK).body(responseObject);
     }
 
     /**
      * Method to retrieve all surveys (admin use)
      * @param jwt - The JWT token of the authenticated user
-     * @return - HTTP response
+     *
      */
     @GetMapping
     public ResponseEntity<List<SurveyResponse>> getAllSurveys(@AuthenticationPrincipal Jwt jwt) {

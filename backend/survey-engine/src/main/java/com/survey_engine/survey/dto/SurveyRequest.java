@@ -26,6 +26,9 @@ public record SurveyRequest(
         @Sanitize
         String name,
 
+        @Sanitize
+        String introduction,
+
         @NotNull(message = "Survey type is required")
         SurveyType type,
 
