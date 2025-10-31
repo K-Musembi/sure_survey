@@ -17,6 +17,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Service class for the Template entity.
+ * Defines business logic for managing templates.
+ * Creation, update, and deletion of templates are restricted to SUPER_ADMIN users.
+ */
 @Service
 public class TemplateService {
 
@@ -27,11 +32,18 @@ public class TemplateService {
         this.templateRepository = templateRepository;
     }
 
+    /**
+     * Creates a new template. Only SUPER_ADMIN can create templates.
+     *
+     * @param request The request body with template data.
+     * @param roles The roles of the user making the request.
+     * @return A DTO for the created template.
+     * @throws AccessDeniedException if the user is not a SUPER_ADMIN.
+     * @throws DataIntegrityViolationException if a template with the same name already exists.
+     */
     @Transactional
     public TemplateResponse createTemplate(TemplateRequest request, List<String> roles) {
-        if (roles == null || !roles.contains("ADMIN")) {
-            throw new AccessDeniedException("Only admins can create templates.");
-        }
+        authorizeSuperAdmin(roles, "create");
         if (templateRepository.findByName(request.name()).isPresent()) {
             throw new DataIntegrityViolationException("A template with this name already exists.");
         }
@@ -41,11 +53,19 @@ public class TemplateService {
         return mapToResponse(savedTemplate);
     }
 
+    /**
+     * Updates an existing template. Only SUPER_ADMIN can update templates.
+     *
+     * @param id The ID of the template to update.
+     * @param request The DTO with updated data.
+     * @param roles The roles of the user making the request.
+     * @return A DTO for the updated template.
+     * @throws AccessDeniedException if the user is not a SUPER_ADMIN.
+     * @throws EntityNotFoundException if the template is not found.
+     */
     @Transactional
     public TemplateResponse updateTemplate(Long id, TemplateRequest request, List<String> roles) {
-        if (roles == null || !roles.contains("ADMIN")) {
-            throw new AccessDeniedException("Only admins can update templates.");
-        }
+        authorizeSuperAdmin(roles, "update");
         Template template = templateRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Template not found with id: " + id));
 
@@ -53,11 +73,17 @@ public class TemplateService {
         return mapToResponse(savedTemplate);
     }
 
+    /**
+     * Deletes a template. Only SUPER_ADMIN can delete templates.
+     *
+     * @param id The ID of the template to delete.
+     * @param roles The roles of the user making the request.
+     * @throws AccessDeniedException if the user is not a SUPER_ADMIN.
+     * @throws EntityNotFoundException if the template is not found.
+     */
     @Transactional
     public void deleteTemplate(Long id, List<String> roles) {
-        if (roles == null || !roles.contains("ADMIN")) {
-            throw new AccessDeniedException("Only admins can delete templates.");
-        }
+        authorizeSuperAdmin(roles, "delete");
         if (!templateRepository.existsById(id)) {
             throw new EntityNotFoundException("Template not found with id: " + id);
         }
@@ -90,6 +116,20 @@ public class TemplateService {
         return templateRepository.findBySector(sector).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Authorizes the action based on the user's roles.
+     * This method checks if the user has the 'SUPER_ADMIN' role.
+     *
+     * @param roles The list of roles of the authenticated user.
+     * @param action The action being attempted (e.g., "create", "update", "delete").
+     * @throws AccessDeniedException if the user does not have the 'SUPER_ADMIN' role.
+     */
+    private void authorizeSuperAdmin(List<String> roles, String action) {
+        if (roles == null || !roles.contains("SUPER_ADMIN")) {
+            throw new AccessDeniedException("Only SUPER_ADMIN can " + action + " templates.");
+        }
     }
 
     private Template getTemplate(Template template, TemplateRequest request) {

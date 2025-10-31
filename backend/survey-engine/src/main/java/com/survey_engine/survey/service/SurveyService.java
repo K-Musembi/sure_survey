@@ -7,7 +7,7 @@ import com.survey_engine.survey.dto.QuestionResponse;
 import com.survey_engine.survey.models.Survey;
 import com.survey_engine.survey.repository.SurveyRepository;
 import com.survey_engine.survey.dto.SurveyRequest;
-import com.survey_engine.survey.dto.SurveyResponse;
+import com.survey_engine.survey.dto.SurveysResponse;
 import com.survey_engine.user.UserApi;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -41,12 +41,12 @@ public class SurveyService {
      *
      * @param surveyRequest The request DTO containing survey details.
      * @param userId The ID of the user creating the survey.
-     * @return A {@link SurveyResponse} DTO for the newly created survey.
+     * @return A {@link SurveysResponse} DTO for the newly created survey.
      * @throws IllegalStateException if the tenant context is not found.
      * @throws DataIntegrityViolationException if a survey with the same name already exists for the tenant.
      */
     @Transactional
-    public SurveyResponse createSurvey(SurveyRequest surveyRequest, String userId) {
+    public SurveysResponse createSurvey(SurveyRequest surveyRequest, String userId) {
         Long tenantId = userApi.getTenantId();
         if (tenantId == null) {
             throw new IllegalStateException("Tenant context not found. Cannot create survey without a tenant.");
@@ -69,11 +69,11 @@ public class SurveyService {
      * Finds a single survey by its ID within the current tenant.
      *
      * @param id The ID of the survey to find.
-     * @return A {@link SurveyResponse} for the found survey.
+     * @return A {@link SurveysResponse} for the found survey.
      * @throws EntityNotFoundException if the survey is not found.
      */
     @Transactional(readOnly = true)
-    public SurveyResponse findSurveyById(Long id) {
+    public SurveysResponse findSurveyById(Long id) {
         Long tenantId = userApi.getTenantId();
         Survey survey = surveyRepository.findById(id)
                 .filter(s -> s.getTenantId().equals(tenantId))
@@ -89,10 +89,10 @@ public class SurveyService {
      * Finds all surveys created by the specified user.
      *
      * @param userId The ID of the user.
-     * @return A list of {@link SurveyResponse} objects.
+     * @return A list of {@link SurveysResponse} objects.
      */
     @Transactional(readOnly = true)
-    public List<SurveyResponse> findMySurveys(String userId) {
+    public List<SurveysResponse> findMySurveys(String userId) {
         Long tenantId = userApi.getTenantId();
         List<Survey> surveys = surveyRepository.findByTenantIdAndUserIdIn(tenantId, Collections.singletonList(userId));
         return getSurveyResponses(surveys, Collections.singleton(userId));
@@ -102,10 +102,10 @@ public class SurveyService {
      * Finds all surveys belonging to the department of the specified user.
      *
      * @param userId The ID of the user whose department surveys are to be fetched.
-     * @return A list of {@link SurveyResponse} objects for the department.
+     * @return A list of {@link SurveysResponse} objects for the department.
      */
     @Transactional(readOnly = true)
-    public List<SurveyResponse> findMyTeamSurveys(String userId) {
+    public List<SurveysResponse> findMyTeamSurveys(String userId) {
         Long tenantId = userApi.getTenantId();
         String currentUserDepartment = userApi.getUserDepartmentById(userId);
 
@@ -126,11 +126,11 @@ public class SurveyService {
      * Finds all surveys within the current tenant. This method is intended for ADMIN users.
      *
      * @param roles The roles of the user requesting the data.
-     * @return A list of all {@link SurveyResponse} objects for the tenant.
+     * @return A list of all {@link SurveysResponse} objects for the tenant.
      * @throws AccessDeniedException if the user is not an ADMIN.
      */
     @Transactional(readOnly = true)
-    public List<SurveyResponse> findAllSurveys(List<String> roles) {
+    public List<SurveysResponse> findAllSurveys(List<String> roles) {
         Long tenantId = userApi.getTenantId();
 
         if (roles == null || !roles.contains("ADMIN"))  {
@@ -154,13 +154,13 @@ public class SurveyService {
      * @param surveyRequest The request DTO with updated survey details.
      * @param userId The ID of the user performing the update.
      * @param roles The roles of the user.
-     * @return A {@link SurveyResponse} for the updated survey.
+     * @return A {@link SurveysResponse} for the updated survey.
      * @throws EntityNotFoundException if the survey is not found.
      * @throws AccessDeniedException if the user does not have permission.
      * @throws IllegalStateException if the survey is not in DRAFT status.
      */
     @Transactional
-    public SurveyResponse updateSurvey(Long id, SurveyRequest surveyRequest, String userId, List<String> roles) {
+    public SurveysResponse updateSurvey(Long id, SurveyRequest surveyRequest, String userId, List<String> roles) {
         Long tenantId = userApi.getTenantId();
         Survey survey = surveyRepository.findById(id)
                 .filter(s -> s.getTenantId().equals(tenantId))
@@ -188,13 +188,13 @@ public class SurveyService {
      * @param surveyId The ID of the survey to activate.
      * @param userId The ID of the user performing the action.
      * @param roles The roles of the user.
-     * @return A {@link SurveyResponse} for the activated survey.
+     * @return A {@link SurveysResponse} for the activated survey.
      * @throws EntityNotFoundException if the survey is not found.
      * @throws AccessDeniedException if the user does not have permission.
      * @throws IllegalStateException if the survey is not in DRAFT status or has no questions.
      */
     @Transactional
-    public SurveyResponse activateSurvey(Long surveyId, String userId, List<String> roles) {
+    public SurveysResponse activateSurvey(Long surveyId, String userId, List<String> roles) {
         Long tenantId = userApi.getTenantId();
         Survey survey = surveyRepository.findById(surveyId)
                 .filter(s -> s.getTenantId().equals(tenantId))
@@ -222,13 +222,13 @@ public class SurveyService {
      * @param surveyId The ID of the survey to close.
      * @param userId The ID of the user performing the action.
      * @param roles The roles of the user.
-     * @return A {@link SurveyResponse} for the closed survey.
+     * @return A {@link SurveysResponse} for the closed survey.
      * @throws EntityNotFoundException if the survey is not found.
      * @throws AccessDeniedException if the user does not have permission.
      * @throws IllegalStateException if the survey is not in ACTIVE status.
      */
     @Transactional
-    public SurveyResponse closeSurvey(Long surveyId, String userId, List<String> roles) {
+    public SurveysResponse closeSurvey(Long surveyId, String userId, List<String> roles) {
         Long tenantId = userApi.getTenantId();
         Survey survey = surveyRepository.findById(surveyId)
                 .filter(s -> s.getTenantId().equals(tenantId))
@@ -308,10 +308,10 @@ public class SurveyService {
      *
      * @param userId The ID of the user associated with the survey action.
      * @param survey The {@link Survey} entity to save.
-     * @return A {@link SurveyResponse} for the saved survey.
+     * @return A {@link SurveysResponse} for the saved survey.
      */
     @NotNull
-    private SurveyResponse getSurveyResponse(String userId, Survey survey) {
+    private SurveysResponse getSurveyResponse(String userId, Survey survey) {
         Survey savedSurvey = surveyRepository.save(survey);
 
         String userName = userApi.getUserNameById(userId);
@@ -325,10 +325,10 @@ public class SurveyService {
      *
      * @param surveys The list of {@link Survey} entities.
      * @param uniqueUserIds A set of user IDs for which to fetch usernames.
-     * @return A list of {@link SurveyResponse} DTOs.
+     * @return A list of {@link SurveysResponse} DTOs.
      */
     @NotNull
-    private List<SurveyResponse> getSurveyResponses(List<Survey> surveys, Set<String> uniqueUserIds) {
+    private List<SurveysResponse> getSurveyResponses(List<Survey> surveys, Set<String> uniqueUserIds) {
         Map<String, String> userIdToNameMap = userApi.getUserNamesByIds(uniqueUserIds);
 
         return surveys.stream()
@@ -374,16 +374,16 @@ public class SurveyService {
      *
      * @param survey The {@link Survey} entity to map.
      * @param userIdToNameMap A map of user IDs to usernames.
-     * @return A {@link SurveyResponse} DTO.
+     * @return A {@link SurveysResponse} DTO.
      */
-    private SurveyResponse mapToSurveyResponse(Survey survey, Map<String, String> userIdToNameMap) {
+    private SurveysResponse mapToSurveyResponse(Survey survey, Map<String, String> userIdToNameMap) {
         List<QuestionResponse> questions = survey.getQuestions().stream()
                 .map(this::mapToQuestionResponse)
                 .collect(Collectors.toList());
 
         String createdByName = userIdToNameMap.get(survey.getUserId());
 
-        return new SurveyResponse(
+        return new SurveysResponse(
                 survey.getId(),
                 survey.getName(),
                 survey.getIntroduction(),

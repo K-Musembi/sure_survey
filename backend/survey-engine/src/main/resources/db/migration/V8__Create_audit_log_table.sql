@@ -1,0 +1,8 @@
+CREATE TABLE audit_log (
+    id BIGSERIAL PRIMARY KEY,
+    actor VARCHAR(255) NOT NULL,
+    action VARCHAR(255) NOT NULL,
+    parameters TEXT,
+    status VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
+);

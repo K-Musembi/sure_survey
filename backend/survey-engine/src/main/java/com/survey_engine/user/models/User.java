@@ -75,9 +75,18 @@ public class User extends BaseEntity implements UserDetails {
      *
      * @return A collection of {@link GrantedAuthority} objects.
      */
+    /**
+     * Returns the authorities granted to the user. The role is prefixed with "ROLE_"
+     * to integrate with Spring Security's role-based authorization.
+     *
+     * @return A collection of {@link GrantedAuthority} objects.
+     */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(role));
+        if (role == null || role.isBlank()) {
+            return List.of();
+        }
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role));
     }
 
     /**

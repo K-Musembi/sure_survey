@@ -126,6 +126,15 @@ public class AuthService {
         return userRole;
     }
 
+    /**
+     * Resolves the tenant based on the provided organization name.
+     * If the organization name is null (indicating an individual sign-up), it defaults to the 'www' tenant.
+     * Otherwise, it attempts to find an existing tenant or create a new one if it doesn't exist.
+     *
+     * @param organization The name of the organization, or null for individual sign-ups.
+     * @return The resolved Tenant entity.
+     * @throws EntityNotFoundException If the default 'www' tenant is not found during an individual sign-up.
+     */
     private Tenant resolveTenant(String organization) {
         if (organization == null) {
             // For individual sign-up, assume 'www' tenant exists and find it.
@@ -134,5 +143,29 @@ public class AuthService {
         }
 
         return tenantService.findOrCreateTenant(organization);
+    }
+
+    /**
+     * Authenticates a SUPER_ADMIN user and generates a JWT token.
+     * Throws an AccessDeniedException if the user does not have the SUPER_ADMIN role.
+     * @param request LoginRequest DTO
+     * @return LoginResponse DTO containing the JWT token and user details.
+     */
+    public LoginResponse loginSuperAdmin(LoginRequest request) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.email(), request.password())
+        );
+        User user = (User) authentication.getPrincipal();
+
+        // Verify the user has the SUPER_ADMIN role
+        boolean isSuperAdmin = user.getAuthorities().stream()
+                .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_SUPER_ADMIN"));
+
+        if (!isSuperAdmin) {
+            throw new org.springframework.security.access.AccessDeniedException("Access Denied: User is not a system admin.");
+        }
+
+        String token = jwtService.generateToken(authentication);
+        return new LoginResponse(token, user);
     }
 }

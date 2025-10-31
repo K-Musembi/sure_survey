@@ -12,6 +12,6 @@ import jakarta.validation.constraints.Size;
 public record CheckTenantRequest(
         @Sanitize
         @NotBlank(message = "Tenant name is required")
-        @Size(min = 3, max = 100, message = "Tenant name must be between 3 and 100 characters")
+        @Size(min = 2, max = 100, message = "Tenant name must be between 3 and 100 characters")
         String tenantName
 ) {}

@@ -20,7 +20,7 @@ import java.util.List;
  * @param createdAt
  * @param questions
  */
-public record SurveyResponse(
+public record SurveysResponse(
         Long id,
         String name,
         String introduction,

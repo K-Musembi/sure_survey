@@ -26,12 +26,25 @@ public class TenantResolverFilter extends OncePerRequestFilter {
     private final TenantRepository tenantRepository;
 
     /**
+     * Determines whether the filter should not be applied to the current request.
+     * This method is overridden to exclude specific authentication-related endpoints
+     * from tenant resolution, allowing unauthenticated access for signup and tenant checks.
+     *
+     * @param request The current HttpServletRequest.
+     * @return true if the request URI matches an excluded path (e.g., /api/v1/auth/signup, /api/v1/auth/check-tenant), false otherwise.
+     */
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path.equals("/api/v1/auth/signup") || path.equals("/api/v1/auth/check-tenant");
+    }
+
+    /**
      * Performs the tenant resolution logic for each incoming request.
      * It attempts to resolve the tenant in the following order:
      * 1. By slug from the subdomain in the request's hostname.
      * 2. By name from the "X-Tenant-Organization" request header.
      * 3. Falls back to a default tenant with the slug "www".
-     *
      * Once resolved, it sets the tenant ID in the {@link TenantContext} and ensures
      * the context is cleared after the request is processed.
      *

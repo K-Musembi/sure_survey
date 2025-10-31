@@ -2,7 +2,7 @@ package com.survey_engine.survey.controller;
 
 import com.survey_engine.survey.service.SurveyService;
 import com.survey_engine.survey.dto.SurveyRequest;
-import com.survey_engine.survey.dto.SurveyResponse;
+import com.survey_engine.survey.dto.SurveysResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -33,9 +33,9 @@ public class SurveyController {
      * @return - HTTP response
      */
     @PostMapping
-    public ResponseEntity<SurveyResponse> createSurvey(@Valid @RequestBody SurveyRequest surveyRequest, @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<SurveysResponse> createSurvey(@Valid @RequestBody SurveyRequest surveyRequest, @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
-        SurveyResponse responseObject = surveyService.createSurvey(surveyRequest, userId);
+        SurveysResponse responseObject = surveyService.createSurvey(surveyRequest, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseObject);
     }
 
@@ -45,8 +45,8 @@ public class SurveyController {
      * @return - HTTP response
      */
     @GetMapping("/{id}")
-    public ResponseEntity<SurveyResponse> getSurveyById(@PathVariable Long id) {
-        SurveyResponse responseObject = surveyService.findSurveyById(id);
+    public ResponseEntity<SurveysResponse> getSurveyById(@PathVariable Long id) {
+        SurveysResponse responseObject = surveyService.findSurveyById(id);
         return ResponseEntity.status(HttpStatus.OK).body(responseObject);
     }
 
@@ -57,9 +57,9 @@ public class SurveyController {
      * @return A ResponseEntity containing a list of the user's surveys.
      */
     @GetMapping("/my-surveys")
-    public ResponseEntity<List<SurveyResponse>> getMySurveys(@AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<List<SurveysResponse>> getMySurveys(@AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
-        List<SurveyResponse> responseObject = surveyService.findMySurveys(userId);
+        List<SurveysResponse> responseObject = surveyService.findMySurveys(userId);
         return ResponseEntity.status(HttpStatus.OK).body(responseObject);
     }
 
@@ -70,9 +70,9 @@ public class SurveyController {
      * @return A ResponseEntity containing a list of the team's surveys.
      */
     @GetMapping("/my-team")
-    public ResponseEntity<List<SurveyResponse>> getMyTeamSurveys(@AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<List<SurveysResponse>> getMyTeamSurveys(@AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
-        List<SurveyResponse> responseObject = surveyService.findMyTeamSurveys(userId);
+        List<SurveysResponse> responseObject = surveyService.findMyTeamSurveys(userId);
         return ResponseEntity.status(HttpStatus.OK).body(responseObject);
     }
 
@@ -82,10 +82,10 @@ public class SurveyController {
      *
      */
     @GetMapping
-    public ResponseEntity<List<SurveyResponse>> getAllSurveys(@AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<List<SurveysResponse>> getAllSurveys(@AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
         List<String> roles = jwt.getClaimAsStringList("roles");
-        List<SurveyResponse> responseObject = surveyService.findAllSurveys(roles);
+        List<SurveysResponse> responseObject = surveyService.findAllSurveys(roles);
         return ResponseEntity.status(HttpStatus.OK).body(responseObject);
     }
 
@@ -97,14 +97,14 @@ public class SurveyController {
      * @return - HTTP response
      */
     @PutMapping("/{id}")
-    public ResponseEntity<SurveyResponse> updateSurvey(
+    public ResponseEntity<SurveysResponse> updateSurvey(
             @PathVariable Long id,
             @Valid @RequestBody SurveyRequest surveyRequest,
             @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
         // Assuming roles are in a JWT 'roles' claim, e.g., ["USER", "ADMIN"]
         List<String> roles = jwt.getClaimAsStringList("roles"); 
-        SurveyResponse responseObject = surveyService.updateSurvey(id, surveyRequest, userId, roles);
+        SurveysResponse responseObject = surveyService.updateSurvey(id, surveyRequest, userId, roles);
         return ResponseEntity.status(HttpStatus.OK).body(responseObject);
     }
 
@@ -115,10 +115,10 @@ public class SurveyController {
      * @return - HTTP response
      */
     @PostMapping("/{id}/activate")
-    public ResponseEntity<SurveyResponse> activateSurvey(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<SurveysResponse> activateSurvey(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
         List<String> roles = jwt.getClaimAsStringList("roles");
-        SurveyResponse responseObject = surveyService.activateSurvey(id, userId, roles);
+        SurveysResponse responseObject = surveyService.activateSurvey(id, userId, roles);
         return ResponseEntity.ok(responseObject);
     }
 
@@ -129,10 +129,10 @@ public class SurveyController {
      * @return - HTTP response
      */
     @PostMapping("/{id}/close")
-    public ResponseEntity<SurveyResponse> closeSurvey(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<SurveysResponse> closeSurvey(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
         List<String> roles = jwt.getClaimAsStringList("roles");
-        SurveyResponse responseObject = surveyService.closeSurvey(id, userId, roles);
+        SurveysResponse responseObject = surveyService.closeSurvey(id, userId, roles);
         return ResponseEntity.ok(responseObject);
     }
 

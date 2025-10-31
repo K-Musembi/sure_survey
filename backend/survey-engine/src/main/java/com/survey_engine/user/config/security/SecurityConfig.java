@@ -57,6 +57,40 @@ public class SecurityConfig {
      */
     @Bean
     @Order(2)
+    public SecurityFilterChain adminSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/api/admin/**")
+                .cors(Customizer.withDefaults())
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth -> auth
+                        .anyRequest().hasRole("SUPER_ADMIN")
+                )
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(Customizer.withDefaults())
+                        .bearerTokenResolver(customBearerTokenResolver)
+                )
+                .exceptionHandling(exceptions ->
+                        exceptions.authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                            response.getWriter().write("401 Unauthorized: " + authException.getMessage());
+                        }).accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(HttpStatus.FORBIDDEN.value());
+                            response.getWriter().write("403 Forbidden: " + accessDeniedException.getMessage());
+                        })
+                );
+        return http.build();
+    }
+
+    /**
+     * Configures the security filter chain for HTTP requests.
+     *
+     * @param http The {@link HttpSecurity} to configure.
+     * @return A configured {@link SecurityFilterChain}.
+     * @throws Exception if an error occurs during configuration.
+     */
+    @Bean
+    @Order(3)
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(Customizer.withDefaults())

@@ -1,8 +1,10 @@
 package com.survey_engine.user.repository;
 
+import com.survey_engine.user.dto.TenantUserCount;
 import com.survey_engine.user.models.User;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -60,4 +62,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return A list of User entities for the given tenant and department.
      */
     List<User> findByTenantIdAndDepartment(Long tenantId, String department);
+
+    /**
+     * Counts users and groups them by tenant ID.
+     *
+     * @return A list of {@link TenantUserCount} projections.
+     */
+    @Query("SELECT new com.survey_engine.user.dto.TenantUserCount(u.tenantId, COUNT(u.id)) FROM User u WHERE u.tenantId IS NOT NULL GROUP BY u.tenantId")
+    List<TenantUserCount> countUsersByTenant();
 }
