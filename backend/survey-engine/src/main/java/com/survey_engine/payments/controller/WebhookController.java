@@ -2,7 +2,7 @@ package com.survey_engine.payments.controller;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.survey_engine.payments.config.PaystackWebclientConfig;
+import com.survey_engine.common.config.PaystackWebclientConfig;
 import com.survey_engine.payments.dto.paystack.PaystackWebhookData;
 import com.survey_engine.payments.dto.paystack.PaystackWebhookEvent;
 import com.survey_engine.payments.service.WebhookService;

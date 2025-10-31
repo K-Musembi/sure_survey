@@ -29,7 +29,6 @@ public class PaymentEvent extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
-
     @Column(name = "user_id", nullable = false)
     private String userId;
 
