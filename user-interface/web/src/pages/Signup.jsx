@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Label, TextInput, Button, Radio } from 'flowbite-react'
 import NavBar from '../components/NavBar'
 import { useSignup } from '../hooks/useApi'
+import { authAPI } from '../services/apiServices'
 
 const Signup = () => {
   const navigate = useNavigate()
@@ -10,15 +11,50 @@ const Signup = () => {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [tenantName, setTenantName] = useState('')
+  const [organization, setOrganization] = useState('')
+  const [department, setDepartment] = useState('')
+  const [similarTenants, setSimilarTenants] = useState([])
+  const [debounceTimeout, setDebounceTimeout] = useState(null)
 
   const signupMutation = useSignup()
+
+  const handleTenantCheck = async (tenantName) => {
+    if (debounceTimeout) {
+      clearTimeout(debounceTimeout)
+    }
+
+    if (tenantName.length > 2) {
+      const timeout = setTimeout(async () => {
+        try {
+          const response = await authAPI.checkTenant(tenantName)
+          setSimilarTenants(response.data)
+        } catch (error) {
+          console.error('Error checking tenant:', error)
+          setSimilarTenants([])
+        }
+      }, 500)
+      setDebounceTimeout(timeout)
+    } else {
+      setSimilarTenants([])
+    }
+  }
+
+  const handleOrganizationChange = (e) => {
+    const newTenantName = e.target.value
+    setOrganization(newTenantName)
+    handleTenantCheck(newTenantName)
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      const payload = { name, email, password }
-      if (mode === 'enterprise') payload.tenantName = tenantName
+      const payload = { name, email, password, role: 'USER' }
+      if (mode === 'enterprise') {
+        payload.organization = organization
+        if (department) {
+          payload.department = department
+        }
+      }
       await signupMutation.mutateAsync(payload)
       navigate('/login')
     } catch (error) {
@@ -52,10 +88,32 @@ const Signup = () => {
           </div>
 
           {mode === 'enterprise' && (
-            <div>
-              <Label htmlFor="tenant">Organization name</Label>
-              <TextInput id="tenant" placeholder="Acme LLC" required value={tenantName} onChange={(e) => setTenantName(e.target.value)} />
-            </div>
+            <>
+              <div>
+                <Label htmlFor="tenant">Organization name</Label>
+                <TextInput id="tenant" placeholder="Acme LLC" required value={organization} onChange={handleOrganizationChange} />
+                {similarTenants.length > 0 && (
+                  <div className="border border-gray-300 rounded-md mt-1">
+                    {similarTenants.map((tenant) => (
+                      <div
+                        key={tenant}
+                        className="p-2 cursor-pointer hover:bg-gray-100"
+                        onClick={() => {
+                          setOrganization(tenant)
+                          setSimilarTenants([])
+                        }}
+                      >
+                        {tenant}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="department">Department</Label>
+                <TextInput id="department" placeholder="Optional" value={department} onChange={(e) => setDepartment(e.target.value)} />
+              </div>
+            </>
           )}
 
           <div>

@@ -49,16 +49,18 @@ api.interceptors.response.use(
 // Auth API calls
 export const authAPI = {
   signup: (userData) => api.post('/auth/signup', userData),
-  login: (credentials) => api.post('/auth/login', credentials),
+  login: (credentials) => {
+    const { tenantName, ...rest } = credentials
+    const headers = {}
+    if (tenantName) {
+      headers['X-Tenant-Organization'] = tenantName
+    }
+    return api.post('/auth/login', rest, { headers })
+  },
   logout: () => api.post('/auth/logout'),
   me: () => api.get('/auth/me'),
   refreshToken: () => api.post('/auth/refresh'),
-}
-
-// Tenant API calls
-export const tenantAPI = {
-  create: (tenantData) => api.post('/tenants', tenantData),
-  get: (tenantId) => api.get(`/tenants/${tenantId}`),
+  checkTenant: (tenantName) => api.post('/auth/check-tenant', { tenantName }),
 }
 
 // Survey API calls
