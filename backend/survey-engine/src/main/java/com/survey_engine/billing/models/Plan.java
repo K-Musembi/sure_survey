@@ -1,27 +1,25 @@
 package com.survey_engine.billing.models;
 
 import com.survey_engine.billing.models.enums.PlanInterval;
-import com.survey_engine.common.models.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 /**
  * Represents a subscription plan template.
  * This entity stores the details of the various subscription plans offered,
- * such as "Basic", "Pro", etc.
+ * such as "Basic", "Pro", etc. This is a global entity and not tied to a specific tenant.
  */
-@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "billing_plans")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Plan extends BaseEntity {
+public class Plan {
 
     /**
      * The unique identifier for the plan.
@@ -36,6 +34,10 @@ public class Plan extends BaseEntity {
     @Column(nullable = false, unique = true)
     private String name;
 
+    /**
+     * The code for the corresponding plan in the Paystack payment gateway.
+     * This is used to identify the plan when creating subscriptions with Paystack.
+     */
     /**
      * The code for the corresponding plan in the Paystack payment gateway.
      * This is used to identify the plan when creating subscriptions with Paystack.
@@ -62,4 +64,26 @@ public class Plan extends BaseEntity {
      */
     @Column(columnDefinition = "TEXT")
     private String features;
+
+    /**
+     * The timestamp when the entity was created.
+     */
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    /**
+     * The timestamp when the entity was last updated.
+     */
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

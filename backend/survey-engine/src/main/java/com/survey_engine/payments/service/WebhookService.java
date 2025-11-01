@@ -1,5 +1,6 @@
 package com.survey_engine.payments.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.survey_engine.billing.BillingApi;
 import com.survey_engine.common.events.PaymentSuccessEvent;
 import com.survey_engine.payments.dto.paystack.PaystackWebhookData;
@@ -11,7 +12,6 @@ import com.survey_engine.payments.models.enums.TransactionType;
 import com.survey_engine.payments.repository.PaymentEventRepository;
 import com.survey_engine.payments.repository.TransactionRepository;
 import jakarta.persistence.EntityNotFoundException;
-import com.survey_engine.billing.BillingApi;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -21,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -36,6 +35,7 @@ public class WebhookService {
     private final TransactionRepository transactionRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final BillingApi billingApi;
+    private final ObjectMapper objectMapper;
 
 
     /**
@@ -48,34 +48,19 @@ public class WebhookService {
     public void processWebhookEvent(PaystackWebhookEvent<PaystackWebhookData> event) {
         log.info("Processing webhook event of type: {}", event.event());
 
+        // Convert the nested data object to a Map for easier processing in other modules.
+        Map<String, Object> eventDataMap = objectMapper.convertValue(event.data(), Map.class);
+
         // Handle payment-specific events
         if ("charge.success".equals(event.event())) {
             handleChargeSuccess(event.data());
         } else if (event.event().startsWith("subscription.")) {
-            billingApi.handleSubscriptionWebhookEvent(event.event(), convertPaystackWebhookDataToMap(event.data()));
+            billingApi.handleSubscriptionWebhookEvent(event.event(), eventDataMap);
         } else if (event.event().startsWith("invoice.")) {
-            billingApi.handleInvoiceWebhookEvent(event.event(), convertPaystackWebhookDataToMap(event.data()));
+            billingApi.handleInvoiceWebhookEvent(event.event(), eventDataMap);
         } else {
             log.warn("Unhandled webhook event type: {}", event.event());
         }
-    }
-
-    /**
-     * Converts PaystackWebhookData to a Map<String, Object> for generic handling by other APIs.
-     *
-     * @param data The PaystackWebhookData object.
-     * @return A Map representation of the webhook data.
-     */
-    private Map<String, Object> convertPaystackWebhookDataToMap(PaystackWebhookData data) {
-        Map<String, Object> map = new HashMap<>();
-        map.put("reference", data.reference());
-        map.put("amount", data.amount());
-        map.put("currency", data.currency());
-        map.put("transactionId", data.transactionId());
-        map.put("status", data.status());
-        map.put("channel", data.channel());
-        // Add other fields from PaystackWebhookData as needed
-        return map;
     }
 
     /**

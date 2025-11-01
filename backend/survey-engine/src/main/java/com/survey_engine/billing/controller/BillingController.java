@@ -49,7 +49,7 @@ public class BillingController {
      */
     @GetMapping("/subscription")
     public ResponseEntity<SubscriptionResponse> getSubscription(@AuthenticationPrincipal Jwt jwt) {
-        String tenantId = String.valueOf(userApi.getTenantId());
+        Long tenantId = userApi.getTenantId();
         Optional<Subscription> subscription = subscriptionService.getActiveSubscriptionForTenant(tenantId);
         return subscription.map(this::mapToSubscriptionResponse)
                 .map(ResponseEntity::ok)
@@ -67,7 +67,7 @@ public class BillingController {
     public ResponseEntity<SubscriptionResponse> createSubscription(
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody SubscriptionRequest request) {
-        String tenantId = String.valueOf(userApi.getTenantId());
+        Long tenantId = userApi.getTenantId();
         Subscription newSubscription = subscriptionService.createSubscription(tenantId, request.planId());
         return ResponseEntity.status(HttpStatus.CREATED).body(mapToSubscriptionResponse(newSubscription));
     }
@@ -95,7 +95,7 @@ public class BillingController {
      */
     @GetMapping("/invoices")
     public ResponseEntity<List<InvoiceResponse>> getInvoices(@AuthenticationPrincipal Jwt jwt) {
-        String tenantId = String.valueOf(userApi.getTenantId());
+        Long tenantId = userApi.getTenantId();
         List<Invoice> invoices = invoiceService.findInvoicesByTenantId(tenantId);
         List<InvoiceResponse> invoiceResponses = invoices.stream()
                 .map(this::mapToInvoiceResponse)

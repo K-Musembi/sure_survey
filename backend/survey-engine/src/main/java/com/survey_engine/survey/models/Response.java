@@ -1,21 +1,24 @@
 package com.survey_engine.survey.models;
 
+import com.survey_engine.common.models.BaseEntity;
 import com.survey_engine.survey.common.enums.ResponseStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "responses")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Response {
+public class Response extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,22 +44,11 @@ public class Response {
     @OneToMany(mappedBy = "response", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Answer> answers = new ArrayList<>();
 
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @PrePersist
+    @Override
     protected void onCreate() {
-        createdAt = updatedAt = LocalDateTime.now();
+        super.onCreate();
         if (submissionDate == null) {
-            submissionDate = createdAt;
+            submissionDate = getCreatedAt();
         }
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
     }
 }

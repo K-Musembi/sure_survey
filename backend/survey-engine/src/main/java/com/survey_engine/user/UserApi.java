@@ -82,6 +82,13 @@ public interface UserApi {
     Optional<User> findUserBySubject(String subject);
 
     /**
+     * Finds a tenant ID by user email.
+     * @param email The email of the user.
+     * @return An {@link Optional} containing the tenant ID, or empty if not found.
+     */
+    Optional<Long> findTenantIdByEmail(String email);
+
+    /**
      * Returns the name of a user given their ID.
      * @param userId The ID of the user.
      * @return The name of the user.

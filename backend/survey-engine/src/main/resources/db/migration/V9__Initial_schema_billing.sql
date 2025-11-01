@@ -13,7 +13,7 @@ CREATE TABLE billing_plans (
 -- Create billing_subscriptions table
 CREATE TABLE billing_subscriptions (
     id UUID PRIMARY KEY,
-    tenant_id VARCHAR(255) NOT NULL,
+    tenant_id BIGINT NOT NULL,
     plan_id BIGINT NOT NULL REFERENCES billing_plans(id),
     paystack_subscription_id VARCHAR(255) UNIQUE,
     status VARCHAR(255) NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE billing_subscriptions (
 -- Create billing_invoices table
 CREATE TABLE billing_invoices (
     id UUID PRIMARY KEY,
-    tenant_id VARCHAR(255) NOT NULL,
+    tenant_id BIGINT NOT NULL,
     subscription_id UUID REFERENCES billing_subscriptions(id),
     paystack_invoice_id VARCHAR(255) UNIQUE,
     status VARCHAR(255) NOT NULL,

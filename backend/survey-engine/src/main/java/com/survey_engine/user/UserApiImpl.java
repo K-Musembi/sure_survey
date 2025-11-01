@@ -80,12 +80,22 @@ public class UserApiImpl implements UserApi {
 
     @Override
     public Optional<User> findUserById(String userId) {
-        return userRepository.findById(Long.parseLong(userId));
+        if (userId.matches("\\d+")) {
+            return userRepository.findById(Long.parseLong(userId));
+        }
+        return userRepository.findByEmail(userId);
     }
 
     @Override
     public Map<String, String> findUserDetailsMapById(String userId) {
-        return userRepository.findById(Long.parseLong(userId))
+        Optional<User> userOptional;
+        if (userId.matches("\\d+")) {
+            userOptional = userRepository.findById(Long.parseLong(userId));
+        } else {
+            userOptional = userRepository.findByEmail(userId);
+        }
+
+        return userOptional
                 .map(user -> {
                     Map<String, String> userDetails = new HashMap<>();
                     userDetails.put("name", user.getName());
@@ -99,7 +109,9 @@ public class UserApiImpl implements UserApi {
 
     @Override
     public List<User> findUsersByIds(List<String> userIds) {
-        List<Long> longUserIds = userIds.stream().map(Long::parseLong).collect(toList());
+        List<Long> longUserIds = userIds.stream()
+                .filter(s -> s.matches("\\d+"))
+                .map(Long::parseLong).collect(toList());
         return userRepository.findAllById(longUserIds);
     }
 
@@ -113,16 +125,34 @@ public class UserApiImpl implements UserApi {
         return userRepository.findByEmail(subject);
     }
 
+    /**
+     * Finds a tenant ID by user email.
+     * @param email The email of the user.
+     * @return An {@link Optional} containing the tenant ID, or empty if not found.
+     */
+    @Override
+    public Optional<Long> findTenantIdByEmail(String email) {
+        return userRepository.findByEmail(email).map(User::getTenantId);
+    }
+
     @Override
     public String getUserNameById(String userId) {
-        return userRepository.findById(Long.parseLong(userId))
+        Optional<User> userOptional;
+        if (userId.matches("\\d+")) {
+            userOptional = userRepository.findById(Long.parseLong(userId));
+        } else {
+            userOptional = userRepository.findByEmail(userId);
+        }
+        return userOptional
                 .map(User::getName)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
     }
 
     @Override
     public Map<String, String> getUserNamesByIds(Set<String> userIds) {
-        List<Long> longUserIds = userIds.stream().map(Long::parseLong).collect(toList());
+        List<Long> longUserIds = userIds.stream()
+                .filter(s -> s.matches("\\d+"))
+                .map(Long::parseLong).collect(toList());
         return userRepository.findAllById(longUserIds).stream()
                 .collect(Collectors.toMap(user -> String.valueOf(user.getId()), User::getName));
     }

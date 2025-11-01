@@ -59,12 +59,6 @@ public class Tenant {
     private String plan;
 
     /**
-     * Additional metadata for the tenant in JSONB format.
-     */
-    @Column(columnDefinition = "jsonb")
-    private String metadata_json;
-
-    /**
      * List of users belonging to this tenant.
      */
     @OneToMany(mappedBy = "tenant", cascade = CascadeType.ALL, orphanRemoval = true)

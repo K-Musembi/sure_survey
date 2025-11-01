@@ -31,12 +31,6 @@ public class Subscription extends BaseEntity {
     private UUID id;
 
     /**
-     * The ID of the tenant this subscription belongs to.
-     */
-    @Column(nullable = false)
-    private String tenantId;
-
-    /**
      * The plan to which the tenant is subscribed.
      */
     @ManyToOne(fetch = FetchType.LAZY)

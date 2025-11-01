@@ -19,7 +19,7 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, UUID
      * @param tenantId The ID of the tenant.
      * @return An {@link Optional} containing the found Subscription or empty if not found.
      */
-    Optional<Subscription> findByTenantId(String tenantId);
+    Optional<Subscription> findByTenantId(Long tenantId);
 
     /**
      * Finds a Subscription entity by its Paystack subscription ID.

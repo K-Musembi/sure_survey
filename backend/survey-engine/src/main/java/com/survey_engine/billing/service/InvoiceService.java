@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -31,6 +32,7 @@ public class InvoiceService {
     private final InvoiceRepository invoiceRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final UserApi userApi;
+    private final WebhookTenantFinder webhookTenantFinder;
 
     /**
      * Finds an invoice by its ID for the current tenant.
@@ -41,7 +43,7 @@ public class InvoiceService {
      */
     @Transactional(readOnly = true)
     public Invoice findInvoiceById(UUID invoiceId) {
-        String tenantId = String.valueOf(userApi.getTenantId());
+        Long tenantId = userApi.getTenantId();
         return invoiceRepository.findById(invoiceId)
                 .filter(invoice -> invoice.getTenantId().equals(tenantId))
                 .orElseThrow(() -> new EntityNotFoundException("Invoice not found with ID: " + invoiceId));
@@ -54,7 +56,7 @@ public class InvoiceService {
      * @return A list of {@link Invoice} entities.
      */
     @Transactional(readOnly = true)
-    public List<Invoice> findInvoicesByTenantId(String tenantId) {
+    public List<Invoice> findInvoicesByTenantId(Long tenantId) {
         return invoiceRepository.findByTenantId(tenantId);
     }
 
@@ -89,7 +91,8 @@ public class InvoiceService {
         String paystackInvoiceId = (String) eventData.get("invoice_code");
         String status = (String) eventData.get("status");
         String subscriptionCode = (String) eventData.get("subscription_code");
-        String tenantId = (String) eventData.get("customer_code"); // Assuming customer_code maps to tenantId
+
+        Long tenantId = webhookTenantFinder.findTenantId(eventData);
 
         Invoice invoice = invoiceRepository.findByPaystackInvoiceId(paystackInvoiceId)
                 .orElseGet(() -> {
@@ -97,21 +100,7 @@ public class InvoiceService {
                     Invoice newInvoice = new Invoice();
                     newInvoice.setPaystackInvoiceId(paystackInvoiceId);
                     newInvoice.setTenantId(tenantId);
-
-                    // Extract amount, due date, etc. from eventData
-                    Object amountObj = eventData.get("amount");
-                    if (amountObj instanceof Number) {
-                        newInvoice.setAmount(BigDecimal.valueOf(((Number) amountObj).doubleValue()).divide(BigDecimal.valueOf(100), 2, BigDecimal.ROUND_HALF_UP));
-                    } else if (amountObj instanceof String) {
-                        try {
-                            newInvoice.setAmount(new BigDecimal((String) amountObj).divide(BigDecimal.valueOf(100), 2, BigDecimal.ROUND_HALF_UP));
-                        } catch (NumberFormatException e) {
-                            log.error("Error parsing amount from webhook: {}", amountObj, e);
-                            newInvoice.setAmount(BigDecimal.ZERO);
-                        }
-                    } else {
-                        newInvoice.setAmount(BigDecimal.ZERO);
-                    }
+                    newInvoice.setAmount(extractAmountFromWebhook(eventData));
 
                     String dueDateStr = (String) eventData.get("due_date");
                     if (dueDateStr != null) {
@@ -156,5 +145,28 @@ public class InvoiceService {
 
         invoiceRepository.save(invoice);
         log.info("Invoice {} updated to status {}", invoice.getId(), invoice.getStatus());
+    }
+
+    /**
+     * Extracts and parses the amount from the webhook event data.
+     *
+     * @param eventData The data payload of the event.
+     * @return The parsed amount as a BigDecimal, or BigDecimal ZERO if parsing fails.
+     */
+    private BigDecimal extractAmountFromWebhook(Map<String, Object> eventData) {
+        Object amountObj = eventData.get("amount");
+        if (amountObj instanceof Number) {
+            return BigDecimal.valueOf(((Number) amountObj).doubleValue()).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        } else if (amountObj instanceof String) {
+            try {
+                return new BigDecimal((String) amountObj).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            } catch (NumberFormatException e) {
+                log.error("Error parsing amount from webhook: {}", amountObj, e);
+                return BigDecimal.ZERO;
+            }
+        } else {
+            log.warn("Amount in webhook is not a recognized type: {}", amountObj);
+            return BigDecimal.ZERO;
+        }
     }
 }

@@ -32,6 +32,7 @@ public class SubscriptionService {
     private final PlanRepository planRepository;
     private final UserApi userApi;
     private final PaystackSubscriptionService paystackSubscriptionService;
+    private final WebhookTenantFinder webhookTenantFinder;
 
     /**
      * Creates a new subscription for a given tenant and plan.
@@ -45,7 +46,7 @@ public class SubscriptionService {
      * @throws IllegalStateException if the tenant already has an active subscription.
      */
     @Transactional
-    public Subscription createSubscription(String tenantId, Long planId) {
+    public Subscription createSubscription(Long tenantId, Long planId) {
         Plan plan = planRepository.findById(planId)
                 .orElseThrow(() -> new EntityNotFoundException("Plan not found with ID: " + planId));
 
@@ -56,7 +57,7 @@ public class SubscriptionService {
         }
 
         // Get user details for customer creation
-        Map<String, String> userDetails = userApi.findUserDetailsMapById(tenantId);
+        Map<String, String> userDetails = userApi.findUserDetailsMapById(String.valueOf(tenantId));
         if (userDetails.isEmpty()) {
             throw new EntityNotFoundException("User not found for tenantId: " + tenantId);
         }
@@ -70,6 +71,10 @@ public class SubscriptionService {
         var paystackSubscriptionData = paystackSubscriptionService.createCustomer(userDetails.get("email"), firstName, lastName, userDetails.get("phone"))
                 .flatMap(customerCode -> paystackSubscriptionService.createSubscription(customerCode, plan.getPaystackPlanCode()))
                 .block(); // Block to get the result in a transactional context
+
+        if (paystackSubscriptionData == null) {
+            throw new IllegalStateException("Failed to create subscription on Paystack, response was null.");
+        }
 
         Subscription subscription = new Subscription();
         subscription.setTenantId(tenantId);
@@ -96,8 +101,10 @@ public class SubscriptionService {
         Subscription subscription = subscriptionRepository.findById(subscriptionId)
                 .orElseThrow(() -> new EntityNotFoundException("Subscription not found with ID: " + subscriptionId));
 
-        paystackSubscriptionService.cancelSubscription(subscription.getPaystackSubscriptionId(), subscription.getPaystackEmailToken())
+        Boolean cancelledSuccessfully = paystackSubscriptionService.cancelSubscription(subscription.getPaystackSubscriptionId(), subscription.getPaystackEmailToken())
                 .block(); // Block for result. Throws exception on failure, rolling back the transaction.
+
+        log.info("Paystack subscription cancellation status for subscription {}: {}", subscriptionId, cancelledSuccessfully);
 
         subscription.setStatus(SubscriptionStatus.CANCELED);
         return subscriptionRepository.save(subscription);
@@ -110,7 +117,7 @@ public class SubscriptionService {
      * @return An {@link Optional} containing the active {@link Subscription} or empty if not found.
      */
     @Transactional(readOnly = true)
-    public Optional<Subscription> getActiveSubscriptionForTenant(String tenantId) {
+    public Optional<Subscription> getActiveSubscriptionForTenant(Long tenantId) {
         return subscriptionRepository.findByTenantId(tenantId)
                 .filter(s -> s.getStatus() == SubscriptionStatus.ACTIVE);
     }
@@ -146,8 +153,9 @@ public class SubscriptionService {
     private void handlePaystackSubscriptionEvent(String eventType, Map<String, Object> eventData) {
         String paystackSubscriptionId = (String) eventData.get("subscription_code");
         String status = (String) eventData.get("status");
-        String tenantId = (String) eventData.get("customer_code"); // Assuming customer_code maps to tenantId
         String planCode = (String) eventData.get("plan_code");
+
+        Long tenantId = webhookTenantFinder.findTenantId(eventData);
 
         Subscription subscription = subscriptionRepository.findByPaystackSubscriptionId(paystackSubscriptionId)
                 .orElseGet(() -> {

@@ -22,11 +22,12 @@ public record SignUpRequest(
 
         @Email(message = "Email should be valid")
         @NotBlank(message = "Email is required")
+        @Pattern(regexp = "^[\\w!#$%&'*+/=?`{|}~^-]+(?:\\.[\\w!#$%&'*+/=?`{|}~^-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,6}$", message = "Email should be valid")
         String email,
 
         @Sanitize
         @NotBlank(message = "Password is required")
-        @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}$",
+        @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[a-zA-Z\\d]{8,}$",
                 message = "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number.")
         String password,
 

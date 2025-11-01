@@ -36,7 +36,7 @@ public class TenantResolverFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        return path.equals("/api/v1/auth/signup") || path.equals("/api/v1/auth/check-tenant");
+        return path.equals("/api/v1/auth/signup") || path.equals("/api/v1/auth/check-tenant") || path.equals("/api/v1/auth/login");
     }
 
     /**

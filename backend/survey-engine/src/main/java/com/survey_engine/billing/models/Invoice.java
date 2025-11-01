@@ -32,18 +32,15 @@ public class Invoice extends BaseEntity {
     private UUID id;
 
     /**
-     * The ID of the tenant this invoice belongs to.
-     */
-    @Column(nullable = false)
-    private String tenantId;
-
-    /**
      * The subscription this invoice is associated with.
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subscription_id")
     private Subscription subscription;
 
+    /**
+     * The unique identifier for this invoice in the Paystack payment gateway.
+     */
     /**
      * The unique identifier for this invoice in the Paystack payment gateway.
      */
