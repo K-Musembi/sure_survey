@@ -52,6 +52,14 @@ public interface UserApi {
     Optional<User> findUserById(String userId);
 
     /**
+     * Finds essential user details by their ID and returns them as a Map.
+     * The map will contain keys such as "name", "email", and "phone".
+     * @param userId The ID of the user to find.
+     * @return A {@link Map} containing user details, or an empty map if the user is not found.
+     */
+    Map<String, String> findUserDetailsMapById(String userId);
+
+    /**
      * Finds all users for a given list of user IDs.
      * @param userIds The list of user IDs to find.
      * @return A list of {@link com.survey_engine.user.models.User}.

@@ -11,6 +11,8 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -79,6 +81,20 @@ public class UserApiImpl implements UserApi {
     @Override
     public Optional<User> findUserById(String userId) {
         return userRepository.findById(Long.parseLong(userId));
+    }
+
+    @Override
+    public Map<String, String> findUserDetailsMapById(String userId) {
+        return userRepository.findById(Long.parseLong(userId))
+                .map(user -> {
+                    Map<String, String> userDetails = new HashMap<>();
+                    userDetails.put("name", user.getName());
+                    userDetails.put("email", user.getEmail());
+                    // TODO: The User entity does not have a phone number. Using email as a placeholder.
+                    userDetails.put("phone", user.getEmail());
+                    return userDetails;
+                })
+                .orElse(Collections.emptyMap());
     }
 
     @Override

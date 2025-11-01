@@ -70,4 +70,9 @@ public class Subscription extends BaseEntity {
      * The end date of the trial period, if applicable.
      */
     private LocalDateTime trialEndDate;
+
+    /**
+     * The email token for this subscription in the Paystack payment gateway, used for actions like cancellation.
+     */
+    private String paystackEmailToken;
 }

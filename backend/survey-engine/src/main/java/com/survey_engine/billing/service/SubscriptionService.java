@@ -6,7 +6,6 @@ import com.survey_engine.billing.models.enums.SubscriptionStatus;
 import com.survey_engine.billing.repository.PlanRepository;
 import com.survey_engine.billing.repository.SubscriptionRepository;
 import com.survey_engine.user.UserApi;
-import com.survey_engine.user.models.User;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -57,14 +56,20 @@ public class SubscriptionService {
         }
 
         // Get user details for customer creation
-        User user = userApi.findUserById(tenantId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found for tenantId: " + tenantId));
+        Map<String, String> userDetails = userApi.findUserDetailsMapById(tenantId);
+        if (userDetails.isEmpty()) {
+            throw new EntityNotFoundException("User not found for tenantId: " + tenantId);
+        }
 
-        // Create customer in Paystack if not exists
-        String customerCode = paystackSubscriptionService.createCustomer(user.getEmail(), user.getName(), user.getName(), user.getEmail()); // Assuming name as first/last and email as phone for now
+        String name = userDetails.get("name");
+        String[] nameParts = name.split(" ", 2);
+        String firstName = nameParts[0];
+        String lastName = nameParts.length > 1 ? nameParts[1] : "";
 
-        // Create subscription in Paystack
-        String paystackSubscriptionCode = paystackSubscriptionService.createSubscription(customerCode, plan.getPaystackPlanCode());
+        // Create customer and then subscription in Paystack
+        var paystackSubscriptionData = paystackSubscriptionService.createCustomer(userDetails.get("email"), firstName, lastName, userDetails.get("phone"))
+                .flatMap(customerCode -> paystackSubscriptionService.createSubscription(customerCode, plan.getPaystackPlanCode()))
+                .block(); // Block to get the result in a transactional context
 
         Subscription subscription = new Subscription();
         subscription.setTenantId(tenantId);
@@ -72,7 +77,8 @@ public class SubscriptionService {
         subscription.setStatus(SubscriptionStatus.ACTIVE);
         subscription.setCurrentPeriodStart(LocalDateTime.now());
         subscription.setCurrentPeriodEnd(LocalDateTime.now().plusMonths(1)); // Placeholder, will be updated by webhook
-        subscription.setPaystackSubscriptionId(paystackSubscriptionCode);
+        subscription.setPaystackSubscriptionId(paystackSubscriptionData.subscriptionCode());
+        subscription.setPaystackEmailToken(paystackSubscriptionData.emailToken());
 
         return subscriptionRepository.save(subscription);
     }
@@ -90,15 +96,11 @@ public class SubscriptionService {
         Subscription subscription = subscriptionRepository.findById(subscriptionId)
                 .orElseThrow(() -> new EntityNotFoundException("Subscription not found with ID: " + subscriptionId));
 
-        // TODO: Get email token for cancellation if required by Paystack
-        boolean cancelledInPaystack = paystackSubscriptionService.cancelSubscription(subscription.getPaystackSubscriptionId(), ""); // Empty token for now
+        paystackSubscriptionService.cancelSubscription(subscription.getPaystackSubscriptionId(), subscription.getPaystackEmailToken())
+                .block(); // Block for result. Throws exception on failure, rolling back the transaction.
 
-        if (cancelledInPaystack) {
-            subscription.setStatus(SubscriptionStatus.CANCELED);
-            return subscriptionRepository.save(subscription);
-        } else {
-            throw new RuntimeException("Failed to cancel subscription in Paystack.");
-        }
+        subscription.setStatus(SubscriptionStatus.CANCELED);
+        return subscriptionRepository.save(subscription);
     }
 
     /**
