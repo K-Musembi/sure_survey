@@ -83,7 +83,8 @@ public class BillingController {
     public ResponseEntity<Void> cancelSubscription(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID subscriptionId) {
-        subscriptionService.cancelSubscription(subscriptionId);
+        Long tenantId = userApi.getTenantId();
+        subscriptionService.cancelSubscription(subscriptionId, tenantId);
         return ResponseEntity.noContent().build();
     }
 

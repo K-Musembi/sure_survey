@@ -9,6 +9,7 @@ import com.survey_engine.user.UserApi;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -68,9 +69,8 @@ public class SubscriptionService {
         String lastName = nameParts.length > 1 ? nameParts[1] : "";
 
         // Create customer and then subscription in Paystack
-        var paystackSubscriptionData = paystackSubscriptionService.createCustomer(userDetails.get("email"), firstName, lastName, userDetails.get("phone"))
-                .flatMap(customerCode -> paystackSubscriptionService.createSubscription(customerCode, plan.getPaystackPlanCode()))
-                .block(); // Block to get the result in a transactional context
+        String customerCode = paystackSubscriptionService.createCustomer(userDetails.get("email"), firstName, lastName, userDetails.get("phone"));
+        var paystackSubscriptionData = paystackSubscriptionService.createSubscription(customerCode, plan.getPaystackPlanCode());
 
         if (paystackSubscriptionData == null) {
             throw new IllegalStateException("Failed to create subscription on Paystack, response was null.");
@@ -97,13 +97,15 @@ public class SubscriptionService {
      * @throws EntityNotFoundException if the subscription is not found.
      */
     @Transactional
-    public Subscription cancelSubscription(UUID subscriptionId) {
+    public Subscription cancelSubscription(UUID subscriptionId, Long tenantId) {
         Subscription subscription = subscriptionRepository.findById(subscriptionId)
                 .orElseThrow(() -> new EntityNotFoundException("Subscription not found with ID: " + subscriptionId));
 
-        Boolean cancelledSuccessfully = paystackSubscriptionService.cancelSubscription(subscription.getPaystackSubscriptionId(), subscription.getPaystackEmailToken())
-                .block(); // Block for result. Throws exception on failure, rolling back the transaction.
+        if (!subscription.getTenantId().equals(tenantId)) {
+            throw new AccessDeniedException("You do not have permission to cancel this subscription.");
+        }
 
+        Boolean cancelledSuccessfully = paystackSubscriptionService.cancelSubscription(subscription.getPaystackSubscriptionId(), subscription.getPaystackEmailToken());
         log.info("Paystack subscription cancellation status for subscription {}: {}", subscriptionId, cancelledSuccessfully);
 
         subscription.setStatus(SubscriptionStatus.CANCELED);
