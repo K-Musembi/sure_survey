@@ -6,14 +6,11 @@ const useAuthStore = create()(
     persist(
       (set, get) => ({
         user: null,
-        tenant: null,
         isAuthenticated: false,
         isLoading: false,
         
         // Actions
         setUser: (user) => set({ user, isAuthenticated: !!user }, false, 'setUser'),
-        
-        setTenant: (tenant) => set({ tenant }, false, 'setTenant'),
         
         setLoading: (isLoading) => set({ isLoading }, false, 'setLoading'),
         
@@ -34,7 +31,6 @@ const useAuthStore = create()(
         logout: () => {
           set({ 
             user: null, 
-            tenant: null,
             isAuthenticated: false, 
             isLoading: false 
           }, false, 'logout')
@@ -42,14 +38,12 @@ const useAuthStore = create()(
         
         // Getters
         getUser: () => get().user,
-        getTenant: () => get().tenant,
         isUserAuthenticated: () => get().isAuthenticated,
       }),
       {
         name: 'auth-storage',
         partialize: (state) => ({
           user: state.user,
-          tenant: state.tenant,
           isAuthenticated: state.isAuthenticated,
         }),
       }

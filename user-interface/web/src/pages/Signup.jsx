@@ -110,8 +110,8 @@ const Signup = () => {
                 )}
               </div>
               <div>
-                <Label htmlFor="department">Department</Label>
-                <TextInput id="department" placeholder="Optional" value={department} onChange={(e) => setDepartment(e.target.value)} />
+                <Label htmlFor="department">Department (Optional)</Label>
+                <TextInput id="department" placeholder="Your department" value={department} onChange={(e) => setDepartment(e.target.value)} />
               </div>
             </>
           )}

@@ -3,8 +3,6 @@ import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { Label, TextInput, Button, Checkbox, Alert } from 'flowbite-react'
 import NavBar from '../components/NavBar'
 import { useLogin } from '../hooks/useApi'
-import { authAPI } from '../services/apiServices'
-import useAuthStore from '../stores/authStore'
 import { HiExclamationCircle } from 'react-icons/hi'
 
 const Login = () => {
@@ -15,56 +13,17 @@ const Login = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(false)
-  const [organization, setOrganization] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
-  const [similarTenants, setSimilarTenants] = useState([])
 
   const loginMutation = useLogin()
-
-  const handleOrganizationChange = (e) => {
-    setOrganization(e.target.value)
-    setErrorMessage('')
-    setSimilarTenants([])
-  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setErrorMessage('')
-    setSimilarTenants([])
-
-    // If organization is entered, check it first.
-    if (organization) {
-      try {
-        const response = await authAPI.checkTenant(organization)
-        const tenants = response.data
-
-        if (tenants && tenants.length > 0) {
-          // Perform a case-insensitive check for an exact match
-          const exactMatchFound = tenants.some(
-            (tenant) => tenant.toLowerCase() === organization.toLowerCase()
-          )
-
-          if (!exactMatchFound) {
-            // No exact match, show suggestions
-            setSimilarTenants(tenants)
-            setErrorMessage('Did you mean one of these?')
-            return
-          }
-        } else {
-          // No tenants found
-          setErrorMessage('Organization not registered')
-          return
-        }
-      } catch (error) {
-        console.error('Login error during tenant check:', error)
-        setErrorMessage('Could not verify organization.')
-        return
-      }
-    }
 
     // Proceed with login
     try {
-      await loginMutation.mutateAsync({ email, password, remember, tenantName: organization })
+      await loginMutation.mutateAsync({ email, password, remember })
       navigate(from, { replace: true })
     } catch (error) {
       console.error('Login error:', error.response?.data || error.message)
@@ -108,36 +67,6 @@ const Login = () => {
               onChange={(e) => { setPassword(e.target.value); setErrorMessage(''); }}
               className="mt-1"
             />
-          </div>
-
-          <div className="border-t border-gray-200"></div>
-
-          <div>
-            <Label htmlFor="organization">Organization (For enterprise clients)</Label>
-            <TextInput
-              id="organization"
-              placeholder="Optional"
-              value={organization}
-              onChange={handleOrganizationChange}
-              className="mt-1"
-            />
-            {similarTenants.length > 0 && (
-              <div className="border border-gray-300 rounded-md mt-1">
-                {similarTenants.map((tenant) => (
-                  <div
-                    key={tenant}
-                    className="p-2 cursor-pointer hover:bg-gray-100"
-                    onClick={() => {
-                      setOrganization(tenant)
-                      setSimilarTenants([])
-                      setErrorMessage('')
-                    }}
-                  >
-                    {tenant}
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
 
           <div className="flex items-center justify-between">

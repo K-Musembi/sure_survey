@@ -50,17 +50,11 @@ api.interceptors.response.use(
 export const authAPI = {
   signup: (userData) => api.post('/auth/signup', userData),
   login: (credentials) => {
-    const { tenantName, ...rest } = credentials
-    const headers = {}
-    if (tenantName) {
-      headers['X-Tenant-Organization'] = tenantName
-    }
-    return api.post('/auth/login', rest, { headers })
+    return api.post('/auth/login', credentials)
   },
   logout: () => api.post('/auth/logout'),
   me: () => api.get('/auth/me'),
   refreshToken: () => api.post('/auth/refresh'),
-  checkTenant: (tenantName) => api.post('/auth/check-tenant', { tenantName }),
 }
 
 // Survey API calls
