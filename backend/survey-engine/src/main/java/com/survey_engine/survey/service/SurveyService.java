@@ -57,6 +57,7 @@ public class SurveyService {
 
         Survey survey = new Survey();
         survey.setTenantId(tenantId);
+        survey.setUserId(userId);
         Survey savedSurvey = getSurvey(survey, surveyRequest);
 
         String userName = userApi.getUserNameById(userId);

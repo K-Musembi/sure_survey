@@ -7,8 +7,12 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -20,10 +24,27 @@ import java.util.Optional;
  * tenant ID in the {@link TenantContext} for the duration of the request.
  */
 @Component
-@RequiredArgsConstructor
 public class TenantResolverFilter extends OncePerRequestFilter {
 
     private final TenantRepository tenantRepository;
+    private final JwtDecoder jwtDecoder;
+
+    /**
+     * Constructs a new {@code TenantResolverFilter}.
+     * This constructor is used for dependency injection by Spring.
+     *
+     * @param tenantRepository The repository for accessing tenant data.
+     * @param jwtDecoder The {@link JwtDecoder} used for decoding JWTs to extract tenant information.
+     * The {@code @Lazy} annotation is used here to break a potential circular dependency during bean initialization.
+     * It ensures that a proxy for {@code JwtDecoder} is injected initially, and the actual {@code JwtDecoder}
+     * bean is only fully initialized and resolved when it's first accessed,
+     * thereby preventing a deadlock during application startup.
+     */
+    @Autowired
+    public TenantResolverFilter(TenantRepository tenantRepository, @Lazy JwtDecoder jwtDecoder) {
+        this.tenantRepository = tenantRepository;
+        this.jwtDecoder = jwtDecoder;
+    }
 
     /**
      * Determines whether the filter should not be applied to the current request.
@@ -56,30 +77,54 @@ public class TenantResolverFilter extends OncePerRequestFilter {
      */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        String host = request.getServerName();
-        String[] parts = host.split("\\.");
-        Optional<Tenant> tenantOptional = Optional.empty();
+        Long tenantId = null;
 
-        // 1. Try to resolve tenant by subdomain slug
-        if (parts.length > 1) {
-            String slug = parts[0];
-            tenantOptional = tenantRepository.findBySlug(slug);
-        }
-
-        // 2. If not found, try to resolve by "X-Tenant-Organization" header
-        if (tenantOptional.isEmpty()) {
-            String tenantName = request.getHeader("X-Tenant-Organization");
-            if (tenantName != null && !tenantName.isEmpty()) {
-                tenantOptional = tenantRepository.findByName(tenantName);
+        // 1. Try to resolve from JWT
+        String header = request.getHeader("Authorization");
+        if (StringUtils.hasText(header) && header.startsWith("Bearer ")) {
+            String token = header.substring(7);
+            try {
+                tenantId = jwtDecoder.decode(token).getClaim("tenantId");
+            } catch (JwtException e) {
+                // Invalid token, security filter will handle it.
             }
         }
 
-        // 3. If still not found, fall back to the default "www" tenant
-        if (tenantOptional.isEmpty()) {
-            tenantOptional = tenantRepository.findBySlug("www");
+        // 2. If not in JWT, try subdomain
+        if (tenantId == null) {
+            String host = request.getServerName();
+            String[] parts = host.split("\\.");
+            if (parts.length > 1) {
+                String slug = parts[0];
+                Optional<Tenant> tenantOptional = tenantRepository.findBySlug(slug);
+                if (tenantOptional.isPresent()) {
+                    tenantId = tenantOptional.get().getId();
+                }
+            }
         }
 
-        tenantOptional.ifPresent(tenant -> TenantContext.setTenantId(tenant.getId()));
+        // 3. If not found, try "X-Tenant-Organization" header
+        if (tenantId == null) {
+            String tenantName = request.getHeader("X-Tenant-Organization");
+            if (tenantName != null && !tenantName.isEmpty()) {
+                Optional<Tenant> tenantOptional = tenantRepository.findByName(tenantName);
+                if (tenantOptional.isPresent()) {
+                    tenantId = tenantOptional.get().getId();
+                }
+            }
+        }
+
+        // 4. If still not found, fall back to "www"
+        if (tenantId == null) {
+            Optional<Tenant> tenantOptional = tenantRepository.findBySlug("www");
+            if (tenantOptional.isPresent()) {
+                tenantId = tenantOptional.get().getId();
+            }
+        }
+
+        if (tenantId != null) {
+            TenantContext.setTenantId(tenantId);
+        }
 
         try {
             filterChain.doFilter(request, response);
