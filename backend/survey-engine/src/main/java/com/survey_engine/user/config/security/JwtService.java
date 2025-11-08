@@ -50,6 +50,7 @@ public class JwtService {
                 .subject(user.getId().toString())
                 .claim("scope", scope)
                 .claim("tenantId", user.getTenantId())
+                .claim("role", user.getRole())
                 .build();
 
         return this.jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();

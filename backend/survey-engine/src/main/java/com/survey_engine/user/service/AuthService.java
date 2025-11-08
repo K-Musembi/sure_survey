@@ -10,6 +10,7 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -169,7 +170,7 @@ public class AuthService {
                 .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_SUPER_ADMIN"));
 
         if (!isSuperAdmin) {
-            throw new org.springframework.security.access.AccessDeniedException("Access Denied: User is not a system admin.");
+            throw new AccessDeniedException("Access Denied: User is not a system admin.");
         }
 
         String token = jwtService.generateToken(authentication);

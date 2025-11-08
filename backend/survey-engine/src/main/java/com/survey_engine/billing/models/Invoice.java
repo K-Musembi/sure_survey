@@ -39,8 +39,11 @@ public class Invoice extends BaseEntity {
     private Subscription subscription;
 
     /**
-     * The unique identifier for this invoice in the Paystack payment gateway.
+     * The ID of the user this invoice belongs to.
      */
+    @Column(name = "user_id")
+    private Long userId;
+
     /**
      * The unique identifier for this invoice in the Paystack payment gateway.
      */

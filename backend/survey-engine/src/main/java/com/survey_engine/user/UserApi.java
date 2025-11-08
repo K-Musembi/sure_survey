@@ -38,11 +38,18 @@ public interface UserApi {
     Long getTenantId();
 
     /**
-     * Finds a {@link com.survey_engine.user.models.Tenant} by its ID.
+     * Finds a {@link Tenant} by its ID.
      * @param tenantId The ID of the tenant to find.
-     * @return An {@link Optional} containing the {@link com.survey_engine.user.models.Tenant}, or empty if not found.
+     * @return An {@link Optional} containing the {@link Tenant}, or empty if not found.
      */
     Optional<Tenant> findTenantById(Long tenantId);
+
+    /**
+     * Finds a tenant name by tenant ID.
+     * @param tenantId The ID of the tenant.
+     * @return A {@link Optional} containing the name of tenant
+     */
+    Optional<String> findTenantNameById(Long tenantId);
 
     /**
      * Finds a user by their ID.
@@ -87,6 +94,13 @@ public interface UserApi {
      * @return An {@link Optional} containing the tenant ID, or empty if not found.
      */
     Optional<Long> findTenantIdByEmail(String email);
+
+    /**
+     * Finds a user ID by user email.
+     * @param email The email of the user.
+     * @return An {@link Optional} containing the user ID, or empty if not found.
+     */
+    Optional<Long> findUserIdByEmail(String email);
 
     /**
      * Returns the name of a user given their ID.

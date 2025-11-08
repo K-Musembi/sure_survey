@@ -38,10 +38,6 @@ public class Plan {
      * The code for the corresponding plan in the Paystack payment gateway.
      * This is used to identify the plan when creating subscriptions with Paystack.
      */
-    /**
-     * The code for the corresponding plan in the Paystack payment gateway.
-     * This is used to identify the plan when creating subscriptions with Paystack.
-     */
     @Column(nullable = false, unique = true)
     private String paystackPlanCode;
 

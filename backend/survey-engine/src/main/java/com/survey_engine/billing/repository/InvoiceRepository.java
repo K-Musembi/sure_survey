@@ -23,6 +23,15 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
     List<Invoice> findByTenantId(Long tenantId);
 
     /**
+     * Finds all Invoice entities for a given tenant ID and user ID.
+     *
+     * @param tenantId The ID of the tenant.
+     * @param userId The ID of the user.
+     * @return A list of invoices for that tenant and user.
+     */
+    List<Invoice> findByTenantIdAndUserId(Long tenantId, Long userId);
+
+    /**
      * Finds an Invoice entity by its Paystack invoice ID.
      *
      * @param paystackInvoiceId The Paystack invoice ID.

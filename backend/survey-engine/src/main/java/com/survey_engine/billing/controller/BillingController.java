@@ -1,15 +1,13 @@
 package com.survey_engine.billing.controller;
 
+import com.survey_engine.billing.dto.InvoiceResponse;
 import com.survey_engine.billing.dto.PlanResponse;
 import com.survey_engine.billing.dto.SubscriptionRequest;
 import com.survey_engine.billing.dto.SubscriptionResponse;
-import com.survey_engine.billing.dto.InvoiceResponse;
-import com.survey_engine.billing.models.Plan;
-import com.survey_engine.billing.models.Subscription;
 import com.survey_engine.billing.models.Invoice;
-import com.survey_engine.billing.service.SubscriptionService;
+import com.survey_engine.billing.models.Subscription;
 import com.survey_engine.billing.service.InvoiceService;
-import com.survey_engine.user.UserApi;
+import com.survey_engine.billing.service.SubscriptionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,25 +37,25 @@ public class BillingController {
 
     private final SubscriptionService subscriptionService;
     private final InvoiceService invoiceService;
-    private final UserApi userApi;
 
     /**
-     * Retrieves the current active subscription for the authenticated tenant.
+     * Retrieves the current active subscription for the authenticated user.
      *
      * @param jwt The authenticated user's JWT.
      * @return A {@link ResponseEntity} containing the {@link SubscriptionResponse} or 404 if not found.
      */
     @GetMapping("/subscription")
     public ResponseEntity<SubscriptionResponse> getSubscription(@AuthenticationPrincipal Jwt jwt) {
-        Long tenantId = userApi.getTenantId();
-        Optional<Subscription> subscription = subscriptionService.getActiveSubscriptionForTenant(tenantId);
+        Long tenantId = jwt.getClaim("tenantId");
+        Long userId = Long.valueOf(jwt.getSubject());
+        Optional<Subscription> subscription = subscriptionService.getActiveSubscriptionForUser(tenantId, userId);
         return subscription.map(this::mapToSubscriptionResponse)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     /**
-     * Creates a new subscription for the authenticated tenant.
+     * Creates a new subscription for the authenticated user.
      *
      * @param jwt The authenticated user's JWT.
      * @param request The {@link SubscriptionRequest} containing the plan ID.
@@ -67,13 +65,14 @@ public class BillingController {
     public ResponseEntity<SubscriptionResponse> createSubscription(
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody SubscriptionRequest request) {
-        Long tenantId = userApi.getTenantId();
-        Subscription newSubscription = subscriptionService.createSubscription(tenantId, request.planId());
+        Long tenantId = jwt.getClaim("tenantId");
+        Long userId = Long.valueOf(jwt.getSubject());
+        Subscription newSubscription = subscriptionService.createSubscription(tenantId, userId, request.planId());
         return ResponseEntity.status(HttpStatus.CREATED).body(mapToSubscriptionResponse(newSubscription));
     }
 
     /**
-     * Cancels the active subscription for the authenticated tenant.
+     * Cancels the active subscription for the authenticated user.
      *
      * @param jwt The authenticated user's JWT.
      * @param subscriptionId The ID of the subscription to cancel.
@@ -83,21 +82,23 @@ public class BillingController {
     public ResponseEntity<Void> cancelSubscription(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID subscriptionId) {
-        Long tenantId = userApi.getTenantId();
-        subscriptionService.cancelSubscription(subscriptionId, tenantId);
+        Long tenantId = jwt.getClaim("tenantId");
+        Long userId = Long.valueOf(jwt.getSubject());
+        subscriptionService.cancelSubscription(subscriptionId, tenantId, userId);
         return ResponseEntity.noContent().build();
     }
 
     /**
-     * Retrieves all invoices for the authenticated tenant.
+     * Retrieves all invoices for the authenticated user.
      *
      * @param jwt The authenticated user's JWT.
      * @return A {@link ResponseEntity} containing a list of {@link InvoiceResponse}.
      */
     @GetMapping("/invoices")
     public ResponseEntity<List<InvoiceResponse>> getInvoices(@AuthenticationPrincipal Jwt jwt) {
-        Long tenantId = userApi.getTenantId();
-        List<Invoice> invoices = invoiceService.findInvoicesByTenantId(tenantId);
+        Long tenantId = jwt.getClaim("tenantId");
+        Long userId = Long.valueOf(jwt.getSubject());
+        List<Invoice> invoices = invoiceService.findInvoicesForUser(tenantId, userId);
         List<InvoiceResponse> invoiceResponses = invoices.stream()
                 .map(this::mapToInvoiceResponse)
                 .collect(Collectors.toList());

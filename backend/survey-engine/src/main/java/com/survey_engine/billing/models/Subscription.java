@@ -38,6 +38,14 @@ public class Subscription extends BaseEntity {
     private Plan plan;
 
     /**
+     * The ID of the user who owns this subscription.
+     * For individual plans, this is the subscriber.
+     * For enterprise plans, this is the admin who created the subscription.
+     */
+    @Column(name = "user_id")
+    private Long userId;
+
+    /**
      * The unique identifier for this subscription in the Paystack payment gateway.
      */
     @Column(unique = true)

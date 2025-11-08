@@ -71,11 +71,6 @@ public class User extends BaseEntity implements UserDetails {
     private Tenant tenant;
 
     /**
-     * Returns the authorities granted to the user.
-     *
-     * @return A collection of {@link GrantedAuthority} objects.
-     */
-    /**
      * Returns the authorities granted to the user. The role is prefixed with "ROLE_"
      * to integrate with Spring Security's role-based authorization.
      *

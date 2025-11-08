@@ -78,6 +78,16 @@ public class UserApiImpl implements UserApi {
         return tenantRepository.findById(tenantId);
     }
 
+    /**
+     * Finds tenant name by tenant ID.
+     * @param tenantId The ID of the user to find.
+     * @return A {@link Optional} containing the name of the tenant
+     */
+    @Override
+    public Optional<String> findTenantNameById(Long tenantId) {
+        return tenantRepository.findById(tenantId).map(Tenant::getName);
+    }
+
     @Override
     public Optional<User> findUserById(String userId) {
         if (userId.matches("\\d+")) {
@@ -133,6 +143,16 @@ public class UserApiImpl implements UserApi {
     @Override
     public Optional<Long> findTenantIdByEmail(String email) {
         return userRepository.findByEmail(email).map(User::getTenantId);
+    }
+
+    /**
+     * Finds a user ID by user email.
+     * @param email The email of the user.
+     * @return An {@link Optional} containing the user ID, or empty if not found.
+     */
+    @Override
+    public Optional<Long> findUserIdByEmail(String email) {
+        return userRepository.findByEmail(email).map(User::getId);
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.survey_engine.billing.service;
 
+import com.survey_engine.billing.dto.SubscriberInfo;
 import com.survey_engine.billing.models.Invoice;
 import com.survey_engine.billing.models.enums.InvoiceStatus;
 import com.survey_engine.billing.repository.InvoiceRepository;
@@ -32,32 +33,36 @@ public class InvoiceService {
     private final InvoiceRepository invoiceRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final UserApi userApi;
-    private final WebhookTenantFinder webhookTenantFinder;
+    private final WebhookSubscriberFinder webhookSubscriberFinder;
 
     /**
-     * Finds an invoice by its ID for the current tenant.
+     * Finds an invoice by its ID for the current user.
      *
      * @param invoiceId The ID of the invoice to find.
+     * @param tenantId The ID of the current tenant.
+     * @param userId The ID of the current user.
      * @return The {@link Invoice} entity.
-     * @throws EntityNotFoundException if the invoice is not found or does not belong to the current tenant.
+     * @throws EntityNotFoundException if the invoice is not found or does not belong to the current user/tenant.
      */
     @Transactional(readOnly = true)
-    public Invoice findInvoiceById(UUID invoiceId) {
-        Long tenantId = userApi.getTenantId();
+    public Invoice findInvoiceById(UUID invoiceId, Long tenantId, Long userId) {
         return invoiceRepository.findById(invoiceId)
-                .filter(invoice -> invoice.getTenantId().equals(tenantId))
+                .filter(invoice -> invoice.getTenantId().equals(tenantId) && (invoice.getUserId() == null || invoice.getUserId().equals(userId)))
                 .orElseThrow(() -> new EntityNotFoundException("Invoice not found with ID: " + invoiceId));
     }
 
     /**
-     * Finds all invoices for a given tenant ID.
+     * Finds all invoices for a given user, scoped to their tenant.
      *
      * @param tenantId The ID of the tenant.
+     * @param userId The ID of the user.
      * @return A list of {@link Invoice} entities.
      */
     @Transactional(readOnly = true)
-    public List<Invoice> findInvoicesByTenantId(Long tenantId) {
-        return invoiceRepository.findByTenantId(tenantId);
+    public List<Invoice> findInvoicesForUser(Long tenantId, Long userId) {
+        // This logic can be customized. For example, an admin might see all tenant invoices.
+        // For now, we assume users only see their own invoices.
+        return invoiceRepository.findByTenantIdAndUserId(tenantId, userId);
     }
 
     /**
@@ -92,14 +97,15 @@ public class InvoiceService {
         String status = (String) eventData.get("status");
         String subscriptionCode = (String) eventData.get("subscription_code");
 
-        Long tenantId = webhookTenantFinder.findTenantId(eventData);
+        SubscriberInfo subscriberInfo = webhookSubscriberFinder.findSubscriber(eventData);
 
         Invoice invoice = invoiceRepository.findByPaystackInvoiceId(paystackInvoiceId)
                 .orElseGet(() -> {
                     log.info("Creating new invoice from webhook for Paystack ID: {}", paystackInvoiceId);
                     Invoice newInvoice = new Invoice();
                     newInvoice.setPaystackInvoiceId(paystackInvoiceId);
-                    newInvoice.setTenantId(tenantId);
+                    newInvoice.setTenantId(subscriberInfo.tenantId());
+                    newInvoice.setUserId(subscriberInfo.userId());
                     newInvoice.setAmount(extractAmountFromWebhook(eventData));
 
                     String dueDateStr = (String) eventData.get("due_date");
