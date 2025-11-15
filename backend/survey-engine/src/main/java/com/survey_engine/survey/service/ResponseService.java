@@ -70,6 +70,7 @@ public class ResponseService {
 
         Response response = new Response();
         response.setSurvey(survey);
+        response.setTenantId(survey.getTenantId());
         response.setParticipantId(payload.participantId());
         response.setSessionId(payload.sessionId()); // Set the session ID
         response.setStatus(ResponseStatus.COMPLETE);
