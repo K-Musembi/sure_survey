@@ -70,7 +70,7 @@ const SurveySession = () => {
     try {
       const answersData = Object.entries(responses).map(([questionId, answer]) => ({
         questionId: parseInt(questionId),
-        answer: typeof answer === 'string' ? answer : answer.toString()
+        answerValue: typeof answer === 'string' ? answer : answer.toString()
       }))
 
       await submitResponseMutation.mutateAsync({
