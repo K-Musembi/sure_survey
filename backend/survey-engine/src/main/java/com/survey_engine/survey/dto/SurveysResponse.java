@@ -31,6 +31,8 @@ public record SurveysResponse(
         AccessType accessType,
         LocalDateTime startDate,
         LocalDateTime endDate,
+        Integer targetRespondents,
+        java.math.BigDecimal budget,
         LocalDateTime createdAt,
         List<QuestionResponse> questions
 ) {

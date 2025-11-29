@@ -69,6 +69,12 @@ public class Survey extends BaseEntity {
     @Column(name = "end_date")
     private LocalDateTime endDate;
 
+    @Column(name = "target_respondents")
+    private Integer targetRespondents;
+
+    @Column(name = "budget", precision = 19, scale = 4)
+    private java.math.BigDecimal budget;
+
     @OneToMany(mappedBy = "survey", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Question> questions = new ArrayList<>();
 

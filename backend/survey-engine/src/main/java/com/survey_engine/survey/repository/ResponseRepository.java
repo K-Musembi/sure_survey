@@ -18,4 +18,11 @@ public interface ResponseRepository extends JpaRepository<Response, Long> {
      * @return A list of Responses.
      */
     List<Response> findBySurveyId(Long surveyId);
+
+    /**
+     * Counts the number of responses for a given survey.
+     * @param surveyId The ID of the Survey.
+     * @return The count of responses.
+     */
+    long countBySurveyId(Long surveyId);
 }

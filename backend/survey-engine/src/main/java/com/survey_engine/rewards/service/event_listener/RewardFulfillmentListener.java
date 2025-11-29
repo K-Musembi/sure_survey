@@ -1,5 +1,6 @@
 package com.survey_engine.rewards.service.event_listener;
 
+import com.survey_engine.billing.BillingApi;
 import com.survey_engine.common.events.RewardDistributionEvent;
 import com.survey_engine.rewards.models.Reward;
 import com.survey_engine.rewards.models.enums.RewardType;
@@ -29,6 +30,7 @@ public class RewardFulfillmentListener {
     private final List<RewardProvider> rewardProviders;
     private final RewardRepository rewardRepository;
     private final UserApi userApi;
+    private final BillingApi billingApi;
 
     /**
      * Handles the {@link RewardDistributionEvent} event to initiate reward disbursement.
@@ -44,14 +46,18 @@ public class RewardFulfillmentListener {
 
         // For loyalty points, the responderId is the participantId, which is what the provider needs.
         if (reward.getRewardType() == RewardType.LOYALTY_POINTS) {
-            disburseReward(reward.getId(), event.responderId(), reward.getRewardType());
+            disburseReward(reward, event.responderId(), reward.getRewardType());
             return;
         }
 
         // For other types like Airtime, we need to resolve the responderId to a phone number.
         resolvePhoneNumber(event.responderId()).ifPresentOrElse(
-            phoneNumber -> disburseReward(reward.getId(), phoneNumber, reward.getRewardType()),
-            () -> log.error("Could not resolve phone number for responderId: {}. Cannot disburse rewardId: {}", event.responderId(), reward.getId())
+            phoneNumber -> disburseReward(reward, phoneNumber, reward.getRewardType()),
+            () -> {
+                log.error("Could not resolve phone number for responderId: {}. Cannot disburse rewardId: {}", event.responderId(), reward.getId());
+                // TODO: Logic to rollback reservation would technically be needed here, but since we can't deliver, we might want to keep it pending or fail it.
+                // For now, just logging.
+            }
         );
     }
 
@@ -74,11 +80,11 @@ public class RewardFulfillmentListener {
     /**
      * Delegates the actual reward disbursement to the appropriate {@link RewardProvider}.
      *
-     * @param rewardId The ID of the reward configuration.
+     * @param reward The reward configuration object.
      * @param recipientIdentifier The identifier of the recipient (e.g., phone number or user ID).
      * @param rewardType The type of reward to disburse.
      */
-    private void disburseReward(UUID rewardId, String recipientIdentifier, RewardType rewardType) {
+    private void disburseReward(Reward reward, String recipientIdentifier, RewardType rewardType) {
         RewardProvider provider = rewardProviders.stream()
                 .filter(p -> p.supports(rewardType))
                 .findFirst()
@@ -86,12 +92,30 @@ public class RewardFulfillmentListener {
 
         if (provider == null) {
             log.error("No RewardProvider found for reward type: {}. Cannot disburse rewardId: {}",
-                    rewardType, rewardId);
+                    rewardType, reward.getId());
             return;
         }
 
         log.info("Found provider {} for reward type {}. Disbursing to {}",
                 provider.getClass().getSimpleName(), rewardType, recipientIdentifier);
-        provider.disburse(rewardId, recipientIdentifier);
-    }
-}
+                        try {
+                            provider.disburse(reward.getId(), recipientIdentifier);
+
+                            // If successful (sync providers), commit reservation
+                            if (rewardType != RewardType.LOYALTY_POINTS) {
+                                String walletType = rewardType == RewardType.AIRTIME ? "AIRTIME_STOCK" : "DATA_BUNDLE_STOCK";
+                                billingApi.commitSystemReservation(walletType, reward.getAmountPerRecipient());
+                            }
+                        } catch (Exception e) {
+                            log.error("Disbursement failed for rewardId {}. Rolling back reservation.", reward.getId(), e);
+                            if (rewardType != RewardType.LOYALTY_POINTS) {
+                                String walletType = rewardType == RewardType.AIRTIME ? "AIRTIME_STOCK" : "DATA_BUNDLE_STOCK";
+                                billingApi.rollbackSystemReservation(walletType, reward.getAmountPerRecipient());
+                            }
+                        }
+                    }
+                }
+        
+                
+        
+        

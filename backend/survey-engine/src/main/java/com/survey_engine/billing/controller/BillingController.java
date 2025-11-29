@@ -1,13 +1,11 @@
 package com.survey_engine.billing.controller;
 
-import com.survey_engine.billing.dto.InvoiceResponse;
-import com.survey_engine.billing.dto.PlanResponse;
-import com.survey_engine.billing.dto.SubscriptionRequest;
-import com.survey_engine.billing.dto.SubscriptionResponse;
+import com.survey_engine.billing.dto.*;
 import com.survey_engine.billing.models.Invoice;
 import com.survey_engine.billing.models.Subscription;
 import com.survey_engine.billing.service.InvoiceService;
 import com.survey_engine.billing.service.SubscriptionService;
+import com.survey_engine.billing.service.WalletService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +16,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -37,6 +36,31 @@ public class BillingController {
 
     private final SubscriptionService subscriptionService;
     private final InvoiceService invoiceService;
+    private final WalletService walletService;
+
+    /**
+     * Retrieves the current wallet balance for the authenticated tenant.
+     *
+     * @param jwt The authenticated user's JWT.
+     * @return A {@link ResponseEntity} containing the balance.
+     */
+    @GetMapping("/wallet/balance")
+    public ResponseEntity<BigDecimal> getWalletBalance(@AuthenticationPrincipal Jwt jwt) {
+        Long tenantId = jwt.getClaim("tenantId");
+        return ResponseEntity.ok(walletService.getBalance(tenantId));
+    }
+
+    /**
+     * Retrieves the wallet transaction history for the authenticated tenant.
+     *
+     * @param jwt The authenticated user's JWT.
+     * @return A {@link ResponseEntity} containing a list of transactions.
+     */
+    @GetMapping("/wallet/transactions")
+    public ResponseEntity<List<WalletTransactionResponse>> getWalletTransactions(@AuthenticationPrincipal Jwt jwt) {
+        Long tenantId = jwt.getClaim("tenantId");
+        return ResponseEntity.ok(walletService.getTransactions(tenantId));
+    }
 
     /**
      * Retrieves the current active subscription for the authenticated user.

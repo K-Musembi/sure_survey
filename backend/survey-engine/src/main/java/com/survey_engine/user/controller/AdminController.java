@@ -13,7 +13,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Controller for handling SUPER_ADMIN specific HTTP requests.
@@ -81,6 +83,59 @@ public class AdminController {
     public ResponseEntity<List<TenantSurveysResponse>> getSurveysForTenant(@PathVariable Long tenantId) {
         List<TenantSurveysResponse> surveys = adminService.getSurveysForTenant(tenantId);
         return ResponseEntity.ok(surveys);
+    }
+
+    /**
+     * Retrieves all system configuration settings.
+     *
+     * @return A ResponseEntity containing a list of SystemSettingResponse.
+     */
+    @GetMapping("/settings")
+    public ResponseEntity<List<SystemSettingResponse>> getSystemSettings() {
+        return ResponseEntity.ok(adminService.getAllSystemSettings());
+    }
+
+    /**
+     * Updates system configuration settings.
+     * This action is audited.
+     *
+     * @param requests A list of SystemSettingRequest.
+     * @return A ResponseEntity containing the updated settings.
+     */
+    @PutMapping("/settings")
+    @Auditable(action = "UPDATE_SYSTEM_SETTINGS")
+    public ResponseEntity<List<SystemSettingResponse>> updateSystemSettings(
+            @Valid @RequestBody List<SystemSettingRequest> requests) {
+        return ResponseEntity.ok(adminService.updateSystemSettings(requests));
+    }
+
+    /**
+     * Updates a subscription plan configuration.
+     */
+    @PutMapping("/plans")
+    @Auditable(action = "UPDATE_PLAN")
+    public ResponseEntity<Void> updatePlan(@RequestBody Map<String, Object> request) {
+        Long planId = ((Number) request.get("planId")).longValue();
+        BigDecimal price = request.get("price") != null ? new BigDecimal(request.get("price").toString()) : null;
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Object> features = (java.util.Map<String, Object>) request.get("features");
+
+        adminService.updatePlan(planId, price, features);
+        return ResponseEntity.ok().build();
+    }
+    
+    // NOTE: I need to change the parameter type of updatePlan in AdminController from PlanUpdateRequest to Map.
+
+    /**
+     * Restocks the system wallet (inventory) via external provider.
+     */
+    @PostMapping("/system-wallet/restock")
+    @Auditable(action = "RESTOCK_SYSTEM_WALLET")
+    public ResponseEntity<Void> restockSystemWallet(
+            @RequestParam String type,
+            @RequestParam BigDecimal amount) {
+        adminService.restockSystemWallet(type, amount);
+        return ResponseEntity.ok().build();
     }
 
     /**

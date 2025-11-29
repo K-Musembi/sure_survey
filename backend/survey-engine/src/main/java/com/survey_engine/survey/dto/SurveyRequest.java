@@ -39,6 +39,10 @@ public record SurveyRequest(
 
         LocalDateTime endDate,
 
+        Integer targetRespondents,
+
+        java.math.BigDecimal budget,
+
         @Valid
         @NotNull(message = "Questions list cannot be null")
         @Size(min = 1, message = "Survey must have at least one question")

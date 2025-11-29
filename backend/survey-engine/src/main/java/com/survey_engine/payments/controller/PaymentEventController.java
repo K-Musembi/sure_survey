@@ -3,6 +3,7 @@ package com.survey_engine.payments.controller;
 import com.survey_engine.payments.dto.PaymentEventDetails;
 import com.survey_engine.payments.dto.PaymentEventRequest;
 import com.survey_engine.payments.dto.PaymentEventResponse;
+import com.survey_engine.payments.dto.TopUpRequest;
 import com.survey_engine.payments.service.PaymentEventService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -47,6 +48,34 @@ public class PaymentEventController {
 
         log.info("Initializing payment for user {} and survey {}", userId, paymentRequest.surveyId());
         return paymentService.createPaymentEvent(paymentRequest, userId, userEmail)
+                .map(response -> ResponseEntity.status(HttpStatus.CREATED).body(response));
+    }
+
+    /**
+     * Initializes a wallet top-up payment.
+     *
+     * @param jwt          The authenticated user's JWT.
+     * @param topUpRequest The request body containing the amount and currency.
+     * @return A ResponseEntity containing the authorization URL.
+     */
+    @PostMapping("/top-up")
+    public Mono<ResponseEntity<PaymentEventResponse>> topUpWallet(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody TopUpRequest topUpRequest) {
+
+        String userId = jwt.getSubject();
+        String userEmail = jwt.getClaimAsString("email");
+
+        // Construct the internal PaymentEventRequest with the magic string
+        PaymentEventRequest internalRequest = new PaymentEventRequest(
+                topUpRequest.amount(),
+                topUpRequest.currency(),
+                "WALLET_TOPUP",
+                UUID.randomUUID().toString() // Generate a unique idempotency key for this top-up
+        );
+
+        log.info("Initializing wallet top-up for user {}", userId);
+        return paymentService.createPaymentEvent(internalRequest, userId, userEmail)
                 .map(response -> ResponseEntity.status(HttpStatus.CREATED).body(response));
     }
 

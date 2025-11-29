@@ -3,7 +3,7 @@
  */
 
 @ApplicationModule(
-        allowedDependencies = {"common :: *", "survey"}
+        allowedDependencies = {"common :: *", "survey", "billing"}
 )
 
 package com.survey_engine.user;

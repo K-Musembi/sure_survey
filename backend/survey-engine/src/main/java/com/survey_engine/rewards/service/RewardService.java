@@ -1,9 +1,13 @@
 package com.survey_engine.rewards.service;
 
+import com.survey_engine.billing.BillingApi;
+import com.survey_engine.common.enums.SettingKey;
+import com.survey_engine.common.repository.SystemSettingRepository;
 import com.survey_engine.rewards.dto.RewardRequest;
 import com.survey_engine.rewards.dto.RewardResponse;
 import com.survey_engine.rewards.models.Reward;
 import com.survey_engine.rewards.models.enums.RewardStatus;
+import com.survey_engine.rewards.models.enums.RewardType;
 import com.survey_engine.rewards.repository.RewardRepository;
 import com.survey_engine.user.UserApi;
 import jakarta.persistence.EntityNotFoundException;
@@ -13,6 +17,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -27,6 +32,8 @@ public class RewardService {
 
     private final RewardRepository rewardRepository;
     private final UserApi userApi;
+    private final BillingApi billingApi;
+    private final SystemSettingRepository systemSettingRepository;
 
     /**
      * Creates a new reward configuration for a survey, scoped by the current tenant.
@@ -43,10 +50,77 @@ public class RewardService {
             throw new DataIntegrityViolationException("A reward for survey " + rewardRequest.surveyId() + " already exists.");
         });
 
+        // 1. Determine Cost per Unit based on SystemSettings
+        BigDecimal costPerUnit = calculateCostPerUnit(rewardRequest);
+
+        // 2. Calculate Total Cost
+        BigDecimal totalCost = costPerUnit.multiply(new BigDecimal(rewardRequest.maxRecipients()));
+
+        // 3. Check & Debit Tenant Wallet (Cash)
+        try {
+            billingApi.debitWallet(tenantId, totalCost, "Funding for reward campaign on survey " + rewardRequest.surveyId());
+        } catch (IllegalStateException e) {
+            throw new IllegalStateException("Insufficient funds to create reward. Required: " + totalCost + ". Please top up your wallet.");
+        }
+
+        // 4. Check & Reserve System Inventory (Stock) if applicable
+        reserveSystemInventory(rewardRequest);
+
+        // 5. Save Reward
         Reward reward = getReward(rewardRequest, userId, tenantId);
+        reward.setTotal_amount(totalCost);
+        reward.setAmountPerRecipient(costPerUnit); // Persist the rate at time of creation
 
         Reward savedReward = rewardRepository.save(reward);
         return mapToRewardResponse(savedReward);
+    }
+
+    private BigDecimal calculateCostPerUnit(RewardRequest request) {
+        if (request.rewardType() == RewardType.LOYALTY_POINTS) {
+            return BigDecimal.ZERO; // Loyalty points are free to issue for the tenant (internal currency)
+        }
+        // For Airtime, the amount per recipient IS the value.
+        // For Data Bundles, we need to look up the price.
+        if (request.rewardType() == RewardType.AIRTIME) {
+             // Assuming standard 1:1 mapping for airtime value vs cost, or fetching a markup.
+             // Let's check if there are configured retail prices for specific amounts
+             if (request.amountPerRecipient().compareTo(new BigDecimal("20")) == 0) {
+                 return getSettingValue(SettingKey.AIRTIME_RETAIL_PRICE_20, request.amountPerRecipient());
+             }
+             return request.amountPerRecipient(); 
+        }
+        
+        // Map Data Bundle Types to Price Settings
+        // This is a bit simplified. Ideally RewardType might be more granular or we check description.
+        // Assuming we infer size from amount or separate field. 
+        // For prototype, we will assume 'amountPerRecipient' holds the MB value for data bundles.
+        if (request.rewardType() == RewardType.DATA_BUNDLE) {
+            if (request.amountPerRecipient().intValue() == 20) {
+                return getSettingValue(SettingKey.DATA_BUNDLE_PRICE_20MB, BigDecimal.ZERO);
+            } else if (request.amountPerRecipient().intValue() == 100) {
+                return getSettingValue(SettingKey.DATA_BUNDLE_PRICE_100MB, BigDecimal.ZERO);
+            }
+        }
+        
+        return request.amountPerRecipient();
+    }
+
+    private BigDecimal getSettingValue(SettingKey key, BigDecimal defaultValue) {
+        return systemSettingRepository.findByKey(key)
+                .map(s -> new BigDecimal(s.getValue()))
+                .orElse(defaultValue);
+    }
+
+    private void reserveSystemInventory(RewardRequest request) {
+        if (request.rewardType() == RewardType.LOYALTY_POINTS) return;
+
+        String walletType = request.rewardType() == RewardType.AIRTIME 
+                ? "AIRTIME_STOCK" 
+                : "DATA_BUNDLE_STOCK";
+        
+        // Reserve total value required
+        BigDecimal totalValueToReserve = request.amountPerRecipient().multiply(new BigDecimal(request.maxRecipients()));
+        billingApi.reserveSystemStock(walletType, totalValueToReserve);
     }
 
     /**
@@ -100,6 +174,14 @@ public class RewardService {
 
         if (reward.getStatus() == RewardStatus.DEPLETED) {
             throw new IllegalStateException("Cannot cancel a depleted reward.");
+        }
+
+        // Refund logic
+        if (reward.getStatus() == RewardStatus.ACTIVE && reward.getRemainingRewards() > 0) {
+            BigDecimal refundAmount = reward.getAmountPerRecipient().multiply(new BigDecimal(reward.getRemainingRewards()));
+            if (refundAmount.compareTo(BigDecimal.ZERO) > 0) {
+                billingApi.creditWallet(tenantId, refundAmount, "REFUND:CANCEL:" + rewardId, "Refund for cancelled reward campaign on survey " + reward.getSurveyId());
+            }
         }
 
         reward.setStatus(RewardStatus.CANCELLED);

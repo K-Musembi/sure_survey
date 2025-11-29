@@ -1,5 +1,8 @@
 package com.survey_engine.survey.service;
 
+import com.survey_engine.billing.BillingApi;
+import com.survey_engine.common.enums.SettingKey;
+import com.survey_engine.common.repository.SystemSettingRepository;
 import com.survey_engine.survey.common.enums.SurveyStatus;
 import com.survey_engine.survey.models.Question;
 import com.survey_engine.survey.dto.QuestionRequest;
@@ -20,6 +23,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -35,6 +39,8 @@ public class SurveyService {
 
     private final SurveyRepository surveyRepository;
     private final UserApi userApi;
+    private final BillingApi billingApi;
+    private final SystemSettingRepository systemSettingRepository;
 
     /**
      * Creates a new survey for the authenticated user.
@@ -51,6 +57,10 @@ public class SurveyService {
         if (tenantId == null) {
             throw new IllegalStateException("Tenant context not found. Cannot create survey without a tenant.");
         }
+        
+        // Check subscription limits via Billing API
+        billingApi.validateSurveyCreationLimit(tenantId);
+
         if (surveyRepository.findByNameAndTenantId(surveyRequest.name(), tenantId).isPresent()) {
             throw new DataIntegrityViolationException("A survey with this name already exists");
         }
@@ -185,6 +195,7 @@ public class SurveyService {
 
     /**
      * Activates a survey, changing its status from DRAFT to ACTIVE.
+     * Handles subscription checks and wallet debits for Enterprise surveys.
      *
      * @param surveyId The ID of the survey to activate.
      * @param userId The ID of the user performing the action.
@@ -211,6 +222,30 @@ public class SurveyService {
 
         if (survey.getQuestions() == null || survey.getQuestions().isEmpty()) {
             throw new IllegalStateException("Survey must have at least one question to be activated.");
+        }
+
+        // Enterprise Logic: If target respondents are set, calculate cost.
+        // We assume non-Enterprise surveys might have targetRespondents as null or 0, or we rely on the SubscriptionLimitService during response collection.
+        // Here we specifically handle the "Activation Fee" or "Budgeting" for enterprise style surveys if a budget/target is set.
+        
+        if (survey.getTargetRespondents() != null && survey.getTargetRespondents() > 0) {
+            BigDecimal costPerRespondent = systemSettingRepository.findByKey(SettingKey.ENTERPRISE_SURVEY_COST_PER_RESPONDENT)
+                    .map(s -> new BigDecimal(s.getValue()))
+                    .orElse(new BigDecimal("5.00"));
+
+            BigDecimal totalCost = costPerRespondent.multiply(new BigDecimal(survey.getTargetRespondents()));
+            
+            // Debit Wallet
+            try {
+                billingApi.debitWallet(tenantId, totalCost, "Activation fee for survey " + surveyId);
+                survey.setBudget(totalCost);
+            } catch (IllegalStateException e) {
+                throw new IllegalStateException("Insufficient funds to activate survey. Required: " + totalCost + ". Please top up your wallet.");
+            }
+        } else {
+            // For non-enterprise (or plans where you don't pay per respondent upfront), 
+            // we reset the budget. Limits are enforced by SubscriptionLimitService during response submission.
+            survey.setBudget(BigDecimal.ZERO);
         }
 
         survey.setStatus(SurveyStatus.ACTIVE);
@@ -351,6 +386,8 @@ public class SurveyService {
         survey.setAccessType(surveyRequest.accessType());
         survey.setStartDate(surveyRequest.startDate());
         survey.setEndDate(surveyRequest.endDate());
+        survey.setTargetRespondents(surveyRequest.targetRespondents());
+        survey.setBudget(surveyRequest.budget());
         survey.setStatus(SurveyStatus.DRAFT);
 
         if(survey.getQuestions() != null) {
@@ -395,6 +432,8 @@ public class SurveyService {
                 survey.getAccessType(),
                 survey.getStartDate(),
                 survey.getEndDate(),
+                survey.getTargetRespondents(),
+                survey.getBudget(),
                 survey.getCreatedAt(),
                 questions
         );

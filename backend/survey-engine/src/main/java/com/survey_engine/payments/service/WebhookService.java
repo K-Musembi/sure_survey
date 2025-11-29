@@ -92,6 +92,11 @@ public class WebhookService {
         );
         eventPublisher.publishEvent(eventPayload);
         log.info("Published PaymentSuccessEvent for surveyId: {}", paymentEvent.getSurveyId());
+
+        // Credit Wallet if this is a top-up
+        if ("WALLET_TOPUP".equals(paymentEvent.getSurveyId())) {
+            billingApi.creditWallet(paymentEvent.getTenantId(), paymentEvent.getAmount(), reference, "Wallet Top Up via Paystack");
+        }
     }
 
     /**

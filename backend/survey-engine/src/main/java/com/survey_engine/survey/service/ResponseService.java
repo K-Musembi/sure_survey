@@ -1,5 +1,6 @@
 package com.survey_engine.survey.service;
 
+import com.survey_engine.billing.BillingApi;
 import com.survey_engine.common.events.SurveyCompletedEvent;
 import com.survey_engine.survey.dto.ResponseRequest;
 import com.survey_engine.survey.dto.ResponseResponse;
@@ -41,6 +42,7 @@ public class ResponseService {
     private final QuestionRepository questionRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final UserApi userApi;
+    private final BillingApi billingApi;
 
     /**
      * Create survey response instance
@@ -56,9 +58,22 @@ public class ResponseService {
         if (survey.getStatus() != SurveyStatus.ACTIVE) {
             throw new IllegalStateException("Responses can only be submitted to ACTIVE surveys.");
         }
+
+        // Validate response limits based on subscription
+        billingApi.validateResponseLimit(survey.getTenantId(), surveyId);
+
         if (survey.getAccessType() == AccessType.PRIVATE && userId == null) {
             throw new AccessDeniedException("This survey is private and requires authentication to respond.");
         }
+
+        // Enforce configured target limits (if any)
+        if (survey.getTargetRespondents() != null && survey.getTargetRespondents() > 0) {
+            long currentResponseCount = responseRepository.countBySurveyId(surveyId);
+            if (currentResponseCount >= survey.getTargetRespondents()) {
+                throw new IllegalStateException("This survey has reached its maximum number of responses.");
+            }
+        }
+
         ResponseSubmissionPayload payload = new ResponseSubmissionPayload(surveyId, responseRequest, userId, sessionId);
         responseRabbitMqPublisher.publishResponse(payload);
     }
