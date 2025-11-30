@@ -30,7 +30,6 @@ public class RewardFulfillmentListener {
     private final List<RewardProvider> rewardProviders;
     private final RewardRepository rewardRepository;
     private final UserApi userApi;
-    private final BillingApi billingApi;
 
     /**
      * Handles the {@link RewardDistributionEvent} event to initiate reward disbursement.
@@ -98,23 +97,13 @@ public class RewardFulfillmentListener {
 
         log.info("Found provider {} for reward type {}. Disbursing to {}",
                 provider.getClass().getSimpleName(), rewardType, recipientIdentifier);
-                        try {
-                            provider.disburse(reward.getId(), recipientIdentifier);
-
-                            // If successful (sync providers), commit reservation
-                            if (rewardType != RewardType.LOYALTY_POINTS) {
-                                String walletType = rewardType == RewardType.AIRTIME ? "AIRTIME_STOCK" : "DATA_BUNDLE_STOCK";
-                                billingApi.commitSystemReservation(walletType, reward.getAmountPerRecipient());
-                            }
-                        } catch (Exception e) {
-                            log.error("Disbursement failed for rewardId {}. Rolling back reservation.", reward.getId(), e);
-                            if (rewardType != RewardType.LOYALTY_POINTS) {
-                                String walletType = rewardType == RewardType.AIRTIME ? "AIRTIME_STOCK" : "DATA_BUNDLE_STOCK";
-                                billingApi.rollbackSystemReservation(walletType, reward.getAmountPerRecipient());
-                            }
-                        }
-                    }
-                }
+        try {
+            provider.disburse(reward.getId(), recipientIdentifier);
+        } catch (Exception e) {
+            log.error("Disbursement failed for rewardId {}.", reward.getId(), e);
+        }
+    }
+}
         
                 
         
