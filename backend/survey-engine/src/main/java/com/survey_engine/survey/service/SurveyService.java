@@ -4,6 +4,7 @@ import com.survey_engine.billing.BillingApi;
 import com.survey_engine.common.enums.SettingKey;
 import com.survey_engine.common.repository.SystemSettingRepository;
 import com.survey_engine.survey.common.enums.SurveyStatus;
+import com.survey_engine.survey.models.DistributionListContact;
 import com.survey_engine.survey.models.Question;
 import com.survey_engine.survey.dto.QuestionRequest;
 import com.survey_engine.survey.dto.QuestionResponse;
@@ -364,12 +365,14 @@ public class SurveyService {
             throw new IllegalStateException("Survey must be ACTIVE to send.");
         }
 
-        if (survey.getDistributionList() == null || survey.getDistributionList().getPhoneNumbers().isEmpty()) {
+        if (survey.getDistributionList() == null || survey.getDistributionList().getContacts().isEmpty()) {
             throw new IllegalStateException("No distribution list linked to this survey or list is empty.");
         }
 
-        List<String> phoneNumbers = survey.getDistributionList().getPhoneNumbers();
-        logger.info("Sending survey {} to {} contacts in distribution list.", surveyId, phoneNumbers.size());
+        List<DistributionListContact> contacts = survey.getDistributionList().getContacts();
+        logger.info("Sending survey {} to {} contacts in distribution list.", surveyId, contacts.size());
+
+        List<String> phoneNumbers = contacts.stream().map(DistributionListContact::getPhoneNumber).toList();
 
         for (String phoneNumber : phoneNumbers) {
             // Initiate survey for each contact
