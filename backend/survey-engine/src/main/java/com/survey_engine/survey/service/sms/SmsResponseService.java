@@ -27,6 +27,46 @@ public class SmsResponseService {
     private final SmsResponseRedisSession sessionService;
     private final SurveyRepository surveyRepository;
     private final ResponseService responseService;
+    private final SmsSendingService smsSendingService;
+
+    /**
+     * Initiates a survey session for a specific user (phone number) via push (outbound).
+     * This is used when sending surveys to a distribution list or triggered by an event.
+     *
+     * @param phoneNumber The recipient's phone number.
+     * @param surveyId    The ID of the survey to start.
+     */
+    public void initiateSurvey(String phoneNumber, Long surveyId) {
+        try {
+            Survey survey = surveyRepository.findById(surveyId)
+                    .orElseThrow(() -> new IllegalArgumentException("Survey not found."));
+
+            if (survey.getStatus() != SurveyStatus.ACTIVE) {
+                return;
+            }
+
+            if (survey.getQuestions().isEmpty()) {
+                return;
+            }
+
+            // Sort questions by position
+            List<Question> questions = survey.getQuestions().stream()
+                    .sorted(Comparator.comparing(Question::getPosition))
+                    .toList();
+
+            // Create new session
+            SmsRedisSession newSession = new SmsRedisSession(phoneNumber, surveyId, 0, new HashMap<>());
+            sessionService.saveSession(newSession);
+
+            // Send first question
+            String firstQuestion = questions.get(0).getQuestionText();
+            smsSendingService.sendSms(phoneNumber, firstQuestion);
+
+        } catch (Exception e) {
+            // Log error in production
+            System.err.println("Failed to initiate survey for " + phoneNumber + ": " + e.getMessage());
+        }
+    }
 
     /**
      * Main entry point for handling an incoming SMS message.
@@ -105,7 +145,7 @@ public class SmsResponseService {
 
         List<Question> questions = survey.getQuestions().stream()
                 .sorted(Comparator.comparing(Question::getPosition))
-                .collect(Collectors.toList());
+                .toList();
 
         // Save the answer to the current question
         Question currentQuestion = questions.get(session.currentQuestionIndex());

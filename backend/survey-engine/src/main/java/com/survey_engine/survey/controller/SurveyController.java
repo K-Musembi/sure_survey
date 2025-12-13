@@ -149,4 +149,18 @@ public class SurveyController {
         surveyService.deleteSurvey(id, userId, roles);
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * Triggers sending the survey to all contacts in its linked distribution list.
+     * @param id The ID of the survey.
+     * @param jwt The JWT token of the authenticated user.
+     * @return A ResponseEntity with Accepted status.
+     */
+    @PostMapping("/{id}/send-to-distribution-list")
+    public ResponseEntity<Void> sendSurveyToDistributionList(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt.getSubject();
+        List<String> roles = jwt.getClaimAsStringList("roles");
+        surveyService.sendSurveyToDistributionList(id, userId, roles);
+        return ResponseEntity.accepted().build();
+    }
 }

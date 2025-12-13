@@ -13,6 +13,8 @@ import com.survey_engine.survey.dto.SurveyRequest;
 import com.survey_engine.survey.dto.SurveysResponse;
 import com.survey_engine.user.UserApi;
 
+import com.survey_engine.survey.service.sms.SmsResponseService;
+
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +43,7 @@ public class SurveyService {
     private final UserApi userApi;
     private final BillingApi billingApi;
     private final SystemSettingRepository systemSettingRepository;
+    private final SmsResponseService smsResponseService;
 
     /**
      * Creates a new survey for the authenticated user.
@@ -177,7 +180,7 @@ public class SurveyService {
                 .filter(s -> s.getTenantId().equals(tenantId))
                 .orElseThrow(() -> new EntityNotFoundException("Survey not found with id: " + id));
 
-        if (!survey.getUserId().equals(userId) && (roles == null || !roles.contains("ADMIN"))) {
+        if (!survey.getUserId().equals(userId)) {
             throw new AccessDeniedException("You do not have permission to update this survey.");
         }
 
@@ -337,6 +340,41 @@ public class SurveyService {
         }
 
         surveyRepository.delete(survey);
+    }
+
+    /**
+     * Sends the survey to all contacts in the linked distribution list.
+     *
+     * @param surveyId The ID of the survey.
+     * @param userId The ID of the user triggering send.
+     * @param roles The roles of the user.
+     */
+    @Transactional(readOnly = true)
+    public void sendSurveyToDistributionList(Long surveyId, String userId, List<String> roles) {
+        Long tenantId = userApi.getTenantId();
+        Survey survey = surveyRepository.findById(surveyId)
+                .filter(s -> s.getTenantId().equals(tenantId))
+                .orElseThrow(() -> new EntityNotFoundException("Survey not found with id: " + surveyId));
+
+        if (!survey.getUserId().equals(userId) && (roles == null || !roles.contains("ADMIN"))) {
+            throw new AccessDeniedException("You do not have permission to send this survey.");
+        }
+
+        if (survey.getStatus() != SurveyStatus.ACTIVE) {
+            throw new IllegalStateException("Survey must be ACTIVE to send.");
+        }
+
+        if (survey.getDistributionList() == null || survey.getDistributionList().getPhoneNumbers().isEmpty()) {
+            throw new IllegalStateException("No distribution list linked to this survey or list is empty.");
+        }
+
+        List<String> phoneNumbers = survey.getDistributionList().getPhoneNumbers();
+        logger.info("Sending survey {} to {} contacts in distribution list.", surveyId, phoneNumbers.size());
+
+        for (String phoneNumber : phoneNumbers) {
+            // Initiate survey for each contact
+            smsResponseService.initiateSurvey(phoneNumber, surveyId);
+        }
     }
 
     /**

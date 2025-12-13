@@ -4,18 +4,7 @@ import com.survey_engine.common.models.BaseEntity;
 import com.survey_engine.survey.common.enums.AccessType;
 import com.survey_engine.survey.common.enums.SurveyStatus;
 import com.survey_engine.survey.common.enums.SurveyType;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.NamedAttributeNode;
-import jakarta.persistence.NamedEntityGraph;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -80,4 +69,8 @@ public class Survey extends BaseEntity {
 
     @OneToMany(mappedBy = "survey", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Response> responses = new ArrayList<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "distribution_list_id")
+    private DistributionList distributionList;
 }
