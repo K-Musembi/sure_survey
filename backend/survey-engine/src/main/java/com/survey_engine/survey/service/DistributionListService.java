@@ -123,7 +123,7 @@ public class DistributionListService {
      * This is primarily used by external triggers (e.g., payments).
      */
     @Transactional
-    public void addContactToSurveyList(Long surveyId, String phoneNumber) {
+    public void addContactToSurveyList(Long surveyId, String phoneNumber, String firstName, String lastName) {
         Survey survey = surveyRepository.findById(surveyId)
                 .orElseThrow(() -> new EntityNotFoundException("Survey not found"));
 
@@ -145,6 +145,8 @@ public class DistributionListService {
             DistributionListContact contact = new DistributionListContact();
             contact.setDistributionList(list);
             contact.setPhoneNumber(sanitizedPhoneNumber);
+            contact.setFirstName(firstName);
+            contact.setLastName(lastName);
             // Name/Email unknown for pure phone triggers unless provided, leaving null for now
             list.getContacts().add(contact);
             distributionListRepository.save(list);
