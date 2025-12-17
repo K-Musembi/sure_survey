@@ -48,6 +48,16 @@ spring:
     publisher-confirm-type: correlated
     publisher-returns: true
 
+app:
+  base-url: http://localhost:8080
+  encryption:
+    password: dev_password_do_not_use_in_prod
+    salt: 5c074494c856c854 # hex encoded
+
+daraja:
+  api:
+    base-url: https://sandbox.safaricom.co.ke
+
 jwt:
   keystore:
     path: store/keystore.p12

@@ -52,6 +52,16 @@ spring:
     publisher-confirm-type: correlated
     publisher-returns: true
 
+app:
+  base-url: http://localhost:8080
+  encryption:
+    password: ${APP_ENCRYPTION_PASSWORD}
+    salt: ${APP_ENCRYPTION_SALT}
+
+daraja:
+  api:
+    base-url: ${DARAJA_API_BASE_URL}
+
 jwt:
   keystore:
     path: ${JWT_STORE_PATH}

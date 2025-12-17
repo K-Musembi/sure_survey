@@ -1,5 +1,6 @@
 package com.survey_engine.business_integration.models;
 
+import com.survey_engine.business_integration.config.security.AttributeEncryptor;
 import com.survey_engine.business_integration.models.enums.BusinessIntegrationType;
 import com.survey_engine.common.models.BaseEntity;
 import jakarta.persistence.*;
@@ -43,9 +44,11 @@ public class BusinessIntegration extends BaseEntity {
 
     // Optional: Encrypted credentials if user wants us to register URLs for them
     @Column(name = "consumer_key")
+    @Convert(converter = AttributeEncryptor.class)
     private String consumerKey;
 
     @Column(name = "consumer_secret")
+    @Convert(converter = AttributeEncryptor.class)
     private String consumerSecret;
 
     // --- Security ---

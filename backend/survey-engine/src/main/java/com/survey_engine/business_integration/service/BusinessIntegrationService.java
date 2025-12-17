@@ -33,6 +33,7 @@ public class BusinessIntegrationService {
     private final BusinessTransactionRepository transactionRepository;
     private final UserApi userApi;
     private final ApplicationEventPublisher eventPublisher;
+    private final DarajaApiClient darajaApiClient;
 
     @Value("${app.base-url}") // e.g., https://api.sure-survey.com
     private String baseUrl;
@@ -55,9 +56,7 @@ public class BusinessIntegrationService {
         
         if ("Main Tenant".equalsIgnoreCase(tenantName) || "www".equalsIgnoreCase(tenantName)) { // Assuming 'www' slug maps to 'Main Tenant' or similar default
              // A better check might be based on roles or subscription plan, but for now enforcing tenant structure
-             // If tenant is the default one, we might assume they are individual users. 
-             // However, the prompt says "Individual users (part of 'www' default group) won't be allowed".
-             // We can check if the tenant slug is 'www'.
+             // If tenant is the default one, we might assume they are individual users.
              userApi.findTenantById(tenantId).ifPresent(t -> {
                  if ("www".equals(t.getSlug())) {
                      throw new IllegalStateException("Individual users cannot create business integrations. Please upgrade to an Enterprise account.");
@@ -79,6 +78,32 @@ public class BusinessIntegrationService {
         integration.setCallbackSecretToken(secretToken);
 
         BusinessIntegration saved = integrationRepository.save(integration);
+
+        // Auto-register URLs if credentials are provided
+        if (request.consumerKey() != null && !request.consumerKey().isBlank() &&
+            request.consumerSecret() != null && !request.consumerSecret().isBlank()) {
+            
+            try {
+                log.info("Auto-registering Daraja URLs for integration {}", saved.getId());
+                String accessToken = darajaApiClient.getAccessToken(request.consumerKey(), request.consumerSecret());
+                
+                String validationUrl = String.format("%s/api/v1/integrations/webhook/daraja/%s/%s/validation", 
+                        baseUrl, saved.getId(), secretToken);
+                String confirmationUrl = String.format("%s/api/v1/integrations/webhook/daraja/%s/%s/confirmation", 
+                        baseUrl, saved.getId(), secretToken);
+                
+                darajaApiClient.registerUrl(accessToken, request.shortcode(), validationUrl, confirmationUrl);
+                log.info("Successfully registered URLs for integration {}", saved.getId());
+                
+            } catch (Exception e) {
+                log.error("Failed to auto-register URLs for integration {}: {}", saved.getId(), e.getMessage());
+                // We don't roll back the transaction because the integration itself is valid, 
+                // but the external registration failed. The user can retry or register manually.
+                // However, throwing an exception alerts the user immediately.
+                throw new RuntimeException("Integration created, but failed to register URLs with Daraja: " + e.getMessage());
+            }
+        }
+
         return mapToResponse(saved);
     }
 
