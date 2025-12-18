@@ -136,6 +136,12 @@ public class UserService {
         if (userRequest.department() != null) {
             user.setDepartment(userRequest.department());
         }
+        if (userRequest.region() != null) {
+            user.setRegion(userRequest.region());
+        }
+        if (userRequest.branch() != null) {
+            user.setBranch(userRequest.branch());
+        }
         if (userRequest.tenantId() != null) {
             Tenant tenant = tenantRepository.findById(userRequest.tenantId())
                     .orElseThrow(() -> new EntityNotFoundException("Tenant Not Found"));
@@ -161,6 +167,8 @@ public class UserService {
                 user.getName(),
                 user.getEmail(),
                 user.getDepartment(),
+                user.getRegion(),
+                user.getBranch(),
                 user.getTenantId(),
                 tenantName
         );

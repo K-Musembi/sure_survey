@@ -6,7 +6,7 @@ spring:
     name: survey-engine
 
   datasource:
-    url: jdbc:postgresql://localhost:${ MAIN_SURVEY_ENGINE_PORT}/${MAIN_SURVEY_ENGINE_DB}
+    url: jdbc:postgresql://localhost:${MAIN_SURVEY_ENGINE_PORT}/${MAIN_SURVEY_ENGINE_DB}
     username: ${MAIN_SURVEY_ENGINE_ADMIN}
     password: ${MAIN_SURVEY_ENGINE_PASSWORD}
     driver-class-name: org.postgresql.Driver
@@ -48,7 +48,7 @@ spring:
     publisher-confirm-type: correlated
     publisher-returns: true
 
-app:
+app-security:
   base-url: ${APP_BASE_URL}
   encryption:
     password: ${APP_ENCRYPTION_PASSWORD}
@@ -57,6 +57,10 @@ app:
 daraja:
   api:
     base-url: https://api.safaricom.co.ke
+
+safaricom:
+  api:
+    url: ${SAFARICOM_API_URL}
 
 jwt:
   keystore:

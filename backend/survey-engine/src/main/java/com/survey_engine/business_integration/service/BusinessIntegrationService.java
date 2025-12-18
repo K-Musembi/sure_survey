@@ -35,7 +35,7 @@ public class BusinessIntegrationService {
     private final ApplicationEventPublisher eventPublisher;
     private final DarajaApiClient darajaApiClient;
 
-    @Value("${app.base-url}") // e.g., https://api.sure-survey.com
+    @Value("${app-security.base-url}") // e.g., https://api.sure-survey.com
     private String baseUrl;
 
     /**

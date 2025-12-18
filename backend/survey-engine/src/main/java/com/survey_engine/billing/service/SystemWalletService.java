@@ -6,6 +6,7 @@ import com.survey_engine.billing.repository.SystemWalletRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -26,7 +27,8 @@ public class SystemWalletService {
     private final WebClient.Builder webClientBuilder;
 
     // Placeholder for Safaricom API URL - strictly for the refill logic
-    private static final String SAFARICOM_API_URL = "https://api.safaricom.co.ke/mpesa/b2c/v1/paymentrequest";
+    @Value("${safaricom.api.url}")
+    private String safaricomApiUrl;
 
     @PostConstruct
     public void initWallets() {
@@ -55,7 +57,7 @@ public class SystemWalletService {
         // 1. Perform External API Call (WebFlux)
         // This is a simplified simulation. In production, this would handle OAuth token generation,
         // request signing, and specific payloads for B2C or B2B API.
-        Boolean apiSuccess = WebClient.create(SAFARICOM_API_URL)
+        Boolean apiSuccess = WebClient.create(safaricomApiUrl)
                 .post()
                 .bodyValue(String.format("{\"command\": \"PURCHASE\", \"type\": \"%s\", \"amount\": %s}", type, amount))
                 .retrieve()

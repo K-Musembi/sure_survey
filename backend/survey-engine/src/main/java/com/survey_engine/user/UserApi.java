@@ -132,4 +132,15 @@ public interface UserApi {
      * @return A list of user IDs (String).
      */
     List<String> getUserIdsByTenantIdAndDepartment(Long tenantId, String department);
+
+    /**
+     * Returns a list of user IDs based on the hierarchical scope.
+     *
+     * @param tenantId   The ID of the tenant.
+     * @param department The department name (nullable).
+     * @param region     The region name (nullable).
+     * @param branch     The branch name (nullable).
+     * @return A list of user IDs (String) matching the scope.
+     */
+    List<String> findUserIdsByScope(Long tenantId, String department, String region, String branch);
 }

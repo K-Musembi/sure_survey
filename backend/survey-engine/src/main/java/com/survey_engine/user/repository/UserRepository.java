@@ -65,6 +65,16 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByTenantIdAndDepartment(Long tenantId, String department);
 
     /**
+     * Finds all User entities belonging to a specific tenant, department, and region.
+     */
+    List<User> findByTenantIdAndDepartmentAndRegion(Long tenantId, String department, String region);
+
+    /**
+     * Finds all User entities belonging to a specific tenant, department, region, and branch.
+     */
+    List<User> findByTenantIdAndDepartmentAndRegionAndBranch(Long tenantId, String department, String region, String branch);
+
+    /**
      * Counts users and groups them by tenant ID.
      *
      * @return A list of {@link TenantUserCount} projections.

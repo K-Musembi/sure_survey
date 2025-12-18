@@ -40,7 +40,7 @@ public class SecurityConfig {
     @Order(1)
     public SecurityFilterChain publicSecurityFilterChain(HttpSecurity http) throws Exception {
         http
-                .securityMatcher("/api/v1/auth/**", "/api/v1/integrations/webhook/**")
+                .securityMatcher("/api/v1/auth/**", "/api/v1/integrations/webhook/**", "/api/v1/webhooks/**")
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())

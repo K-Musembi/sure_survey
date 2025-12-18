@@ -48,7 +48,7 @@ spring:
     publisher-confirm-type: correlated
     publisher-returns: true
 
-app:
+app-security:
   base-url: http://localhost:8080
   encryption:
     password: dev_password_do_not_use_in_prod
@@ -57,6 +57,10 @@ app:
 daraja:
   api:
     base-url: https://sandbox.safaricom.co.ke
+
+safaricom:
+  api:
+    url: ${SAFARICOM_API_URL}
 
 jwt:
   keystore:

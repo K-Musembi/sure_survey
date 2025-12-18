@@ -60,6 +60,8 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setRole(userRole);
         user.setDepartment(request.department());
+        user.setRegion(request.region());
+        user.setBranch(request.branch());
         user.setTenantId(tenant.getId());
 
         User savedUser = userRepository.save(user);
@@ -69,6 +71,8 @@ public class AuthService {
                 savedUser.getName(),
                 savedUser.getEmail(),
                 savedUser.getDepartment(),
+                savedUser.getRegion(),
+                savedUser.getBranch(),
                 savedUser.getTenantId(),
                 tenant.getName()
         );

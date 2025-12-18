@@ -40,6 +40,14 @@ public record SignUpRequest(
         String department,
 
         @Sanitize
+        @Size(min = 3, max = 100, message = "Region must be between 3 and 100 characters")
+        String region,
+
+        @Sanitize
+        @Size(min = 3, max = 100, message = "Branch must be between 3 and 100 characters")
+        String branch,
+
+        @Sanitize
         @Size(min = 3, max = 100, message = "Organization must be between 3 and 100 characters")
         String organization
 ) {}

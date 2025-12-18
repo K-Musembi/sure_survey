@@ -63,6 +63,12 @@ public class User extends BaseEntity implements UserDetails {
     @Column(name = "department", length = 100)
     private String department;
 
+    @Column(name = "region", length = 100)
+    private String region;
+
+    @Column(name = "branch", length = 100)
+    private String branch;
+
     /**
      * The tenant this user belongs to.
      */

@@ -51,6 +51,8 @@ public class AdminController {
                 loginResponse.user().getName(),
                 loginResponse.user().getEmail(),
                 loginResponse.user().getDepartment(),
+                loginResponse.user().getRegion(),
+                loginResponse.user().getBranch(),
                 loginResponse.user().getTenantId(),
                 loginResponse.user().getTenant() != null ? loginResponse.user().getTenant().getName() : "SYSTEM"
         );

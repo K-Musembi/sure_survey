@@ -12,6 +12,8 @@ public record UserResponse(
         String name,
         String email,
         String department,
+        String region,
+        String branch,
         Long tenantId,
         String tenantName
 ) {}

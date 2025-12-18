@@ -191,4 +191,21 @@ public class UserApiImpl implements UserApi {
                 .collect(toList());
     }
 
+    @Override
+    public List<String> findUserIdsByScope(Long tenantId, String department, String region, String branch) {
+        List<User> users;
+        if (branch != null) {
+            users = userRepository.findByTenantIdAndDepartmentAndRegionAndBranch(tenantId, department, region, branch);
+        } else if (region != null) {
+            users = userRepository.findByTenantIdAndDepartmentAndRegion(tenantId, department, region);
+        } else if (department != null) {
+            users = userRepository.findByTenantIdAndDepartment(tenantId, department);
+        } else {
+            users = userRepository.findByTenantId(tenantId);
+        }
+        return users.stream()
+                .map(user -> String.valueOf(user.getId()))
+                .collect(toList());
+    }
+
 }

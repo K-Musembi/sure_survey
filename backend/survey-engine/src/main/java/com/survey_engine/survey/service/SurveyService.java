@@ -114,23 +114,33 @@ public class SurveyService {
     }
 
     /**
-     * Finds all surveys belonging to the department of the specified user.
+     * Finds all surveys belonging to the scope (Dept/Region/Branch) of the currently authenticated user.
      *
-     * @param userId The ID of the user whose department surveys are to be fetched.
-     * @return A list of {@link SurveysResponse} objects for the department.
+     * @param userId The ID of the user whose scoped surveys are to be fetched.
+     * @return A list of {@link SurveysResponse} objects for the team/scope.
      */
     @Transactional(readOnly = true)
     public List<SurveysResponse> findMyTeamSurveys(String userId) {
         Long tenantId = userApi.getTenantId();
-        String currentUserDepartment = userApi.getUserDepartmentById(userId);
 
-        if (currentUserDepartment == null || currentUserDepartment.isEmpty()) {
-            return Collections.emptyList(); // Or handle as an error, depending on requirements
+        var userOpt = userApi.findUserById(userId);
+        if (userOpt.isEmpty()) {
+             return Collections.emptyList();
+        }
+        var user = userOpt.get();
+
+        List<String> scopedUserIds = userApi.findUserIdsByScope(
+                tenantId, 
+                user.getDepartment(), 
+                user.getRegion(), 
+                user.getBranch()
+        );
+        
+        if (scopedUserIds.isEmpty()) {
+            return Collections.emptyList();
         }
 
-        List<String> departmentUserIds = userApi.getUserIdsByTenantIdAndDepartment(tenantId, currentUserDepartment);
-        Set<String> userIdsToFetch = new HashSet<>(departmentUserIds);
-
+        Set<String> userIdsToFetch = new HashSet<>(scopedUserIds);
         List<Survey> surveys = surveyRepository.findByTenantIdAndUserIdIn(tenantId, new ArrayList<>(userIdsToFetch));
 
         return getSurveyResponses(surveys, userIdsToFetch);
