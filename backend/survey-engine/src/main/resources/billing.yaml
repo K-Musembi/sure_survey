@@ -8,3 +8,8 @@ spring:
 safaricom:
   api:
     url: ${SAFARICOM_API_URL}
+
+logging:
+  level:
+    root: INFO
+    com.user_service.user_service: DEBUG

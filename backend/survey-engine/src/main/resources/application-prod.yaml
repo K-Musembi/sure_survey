@@ -67,6 +67,7 @@ jwt:
     path: ${JWT_STORE_PATH}
     password: ${JWT_STORE_PASSWORD}
     alias: ${JWT_STORE_ALIAS}
+  expiration: 60
 
 logging:
   level:

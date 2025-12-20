@@ -30,19 +30,6 @@ public class SystemWalletService {
     @Value("${safaricom.api.url}")
     private String safaricomApiUrl;
 
-    @PostConstruct
-    public void initWallets() {
-        for (SystemWalletType type : SystemWalletType.values()) {
-            if (systemWalletRepository.findByWalletType(type).isEmpty()) {
-                SystemWallet wallet = new SystemWallet();
-                wallet.setWalletType(type);
-                wallet.setCurrentBalance(BigDecimal.ZERO);
-                wallet.setReservedBalance(BigDecimal.ZERO);
-                systemWalletRepository.save(wallet);
-            }
-        }
-    }
-
     /**
      * Simulates an API call to Safaricom to purchase bulk airtime or data,
      * then credits the System Wallet.
@@ -55,26 +42,27 @@ public class SystemWalletService {
         log.info("Initiating restock for {} with amount {}", type, amount);
 
         // 1. Perform External API Call (WebFlux)
-        // This is a simplified simulation. In production, this would handle OAuth token generation,
-        // request signing, and specific payloads for B2C or B2B API.
-        Boolean apiSuccess = WebClient.create(safaricomApiUrl)
+        // Using the builder ensures we inherit any global configuration (logging, timeouts, etc.)
+        Boolean apiSuccess = webClientBuilder.baseUrl(safaricomApiUrl).build()
                 .post()
                 .bodyValue(String.format("{\"command\": \"PURCHASE\", \"type\": \"%s\", \"amount\": %s}", type, amount))
                 .retrieve()
                 .bodyToMono(String.class)
-                .map(response -> true) // Assume success for prototype
+                .map(response -> true) // Assume success if we get a response body
                 .onErrorResume(e -> {
                     log.error("Failed to call Safaricom API: {}", e.getMessage());
-                    return Mono.just(false); // In real app, throw or handle gracefully
+                    return Mono.just(false);
                 })
-                .block(); // Blocking here because the service method is transactional and synchronous for the admin
+                .block(); // Blocking here is acceptable for an administrative, low-throughput operation
 
-        // In a real scenario, we might wait for a callback/IPN from Safaricom before crediting.
-        // For this architecture, we assume immediate success or manual reconciliation.
-        
+        if (Boolean.FALSE.equals(apiSuccess)) {
+            throw new RuntimeException("Safaricom API call failed. Restock aborted to prevent funds mismatch.");
+        }
+
         // 2. Credit System Wallet
+        // findByWalletType uses a PESSIMISTIC_WRITE lock, ensuring thread safety during the update
         SystemWallet wallet = systemWalletRepository.findByWalletType(type)
-                .orElseThrow(); // Should exist due to @PostConstruct
+                .orElseThrow(() -> new IllegalStateException("System wallet not initialized for " + type));
 
         wallet.setCurrentBalance(wallet.getCurrentBalance().add(amount));
         systemWalletRepository.save(wallet);
