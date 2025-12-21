@@ -1,5 +1,6 @@
 package com.survey_engine.survey;
 
+import com.survey_engine.survey.models.Response;
 import com.survey_engine.survey.models.Survey;
 import com.survey_engine.survey.repository.ResponseRepository;
 import com.survey_engine.survey.repository.SurveyRepository;
@@ -57,6 +58,15 @@ class SurveyApiImpl implements SurveyApi {
                     surveyMap.put("createdAt", survey.getCreatedAt());
                     return surveyMap;
                 })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<String> getSurveyResponseTexts(Long surveyId) {
+        List<Response> responses = responseRepository.findBySurveyId(surveyId);
+        return responses.stream()
+                .flatMap(r -> r.getAnswers().stream())
+                .map(a -> "Q: " + a.getQuestion().getQuestionText() + " | A: " + a.getAnswerValue())
                 .collect(Collectors.toList());
     }
 }

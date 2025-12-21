@@ -48,6 +48,16 @@ spring:
     publisher-confirm-type: correlated
     publisher-returns: true
 
+  # Groq provides an OpenAI-compatible API, allowing us to use the standard Spring AI OpenAI starter.
+  # By pointing the base-url to Groq, we leverage their high-speed inference engine using the same client code.
+  ai:
+    openai:
+      api-key: ${AI_API_KEY}
+      base-url: https://api.groq.com/openai
+      chat:
+        options:
+          model: llama3-70b-8192
+
 app-security:
   base-url: http://localhost:8080
   encryption:
