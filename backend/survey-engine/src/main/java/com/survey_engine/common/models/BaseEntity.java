@@ -19,7 +19,7 @@ public abstract class BaseEntity {
     /**
      * The ID of the tenant this entity belongs to.
      */
-    @Column(name = "tenant_id", nullable = false)
+    @Column(name = "tenant_id", nullable = true)
     private Long tenantId;
 
     /**

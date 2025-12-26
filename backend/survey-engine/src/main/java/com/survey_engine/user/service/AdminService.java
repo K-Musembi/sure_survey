@@ -6,9 +6,11 @@ import com.survey_engine.common.repository.SystemSettingRepository;
 import com.survey_engine.survey.SurveyApi;
 import com.survey_engine.user.dto.*;
 import com.survey_engine.user.models.Tenant;
+import com.survey_engine.user.models.User;
 import com.survey_engine.user.repository.TenantRepository;
 import com.survey_engine.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,9 +34,42 @@ public class AdminService {
     private final SurveyApi surveyApi;
     private final SystemSettingRepository systemSettingRepository;
     private final BillingApi billingApi;
+    private final PasswordEncoder passwordEncoder;
 
     /**
-     * Updates a subscription plan's price and features.
+     * Registers a new system administrator (SUPER_ADMIN).
+     *
+     * @param request The sign-up request details.
+     * @return A UserResponse containing the new admin's details.
+     */
+    @Transactional
+    public UserResponse registerSystemAdmin(SignUpRequest request) {
+        if (userRepository.findByEmail(request.email()).isPresent()) {
+            throw new RuntimeException("Email already exists");
+        }
+
+        User user = new User();
+        user.setName(request.name());
+        user.setEmail(request.email());
+        user.setPassword(passwordEncoder.encode(request.password()));
+        user.setRole("SUPER_ADMIN");
+        user.setTenantId(null); // System admins do not belong to a specific tenant
+
+        User savedUser = userRepository.save(user);
+
+        return new UserResponse(
+                savedUser.getId(),
+                savedUser.getName(),
+                savedUser.getEmail(),
+                savedUser.getDepartment(),
+                savedUser.getRegion(),
+                savedUser.getBranch(),
+                null,
+                "SYSTEM"
+        );
+    }
+
+    /**
      * @param planId The ID of the plan to update.
      * @param price The new price of the plan.
      * @param features The new features of the plan.

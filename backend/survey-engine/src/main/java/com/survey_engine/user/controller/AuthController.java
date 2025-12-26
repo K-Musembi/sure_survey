@@ -1,5 +1,6 @@
 package com.survey_engine.user.controller;
 
+import com.survey_engine.common.auditing.Auditable;
 import com.survey_engine.user.dto.*;
 import com.survey_engine.user.service.AuthService;
 import jakarta.servlet.http.Cookie;
@@ -74,12 +75,34 @@ public class AuthController {
         return ResponseEntity.ok(userResponse);
     }
 
+    /**
+     * Method to logout user by clearing the access token cookie.
+     * @param response - The HTTP response to add the cleared cookie to.
+     * @return - A response indicating successful logout.
+     */
+    @PostMapping("/logout")
+    @Auditable(action = "USER_LOGOUT")
+    public ResponseEntity<Void> logout(HttpServletResponse response) {
+        authService.logout();
+        response.addCookie(clearCookie());
+        return ResponseEntity.ok().build();
+    }
+
     private Cookie createCookie(String token) {
         Cookie cookie = new Cookie("access_token", token);
         cookie.setHttpOnly(true);
         cookie.setPath("/");
         // cookie.setSecure(true); // Uncomment in production
         cookie.setMaxAge(60 * 60 * 24); // 1 day
+        return cookie;
+    }
+
+    private Cookie clearCookie() {
+        Cookie cookie = new Cookie("access_token", null);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/");
+        // cookie.setSecure(true); // Uncomment in production
+        cookie.setMaxAge(0);
         return cookie;
     }
 }

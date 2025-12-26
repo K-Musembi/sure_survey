@@ -8,6 +8,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -58,6 +59,20 @@ public class AdminController {
         );
 
         return ResponseEntity.ok(userResponse);
+    }
+
+    /**
+     * Endpoint to register a new system administrator.
+     * This action is audited.
+     *
+     * @param request The sign-up request details.
+     * @return A ResponseEntity containing the user response.
+     */
+    @PostMapping("/signup")
+    @Auditable(action = "SYSTEM_ADMIN_SIGNUP")
+    public ResponseEntity<UserResponse> registerSystemAdmin(@Valid @RequestBody SignUpRequest request) {
+        UserResponse responseObject = adminService.registerSystemAdmin(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseObject);
     }
 
     /**
