@@ -2,8 +2,12 @@ package com.survey_engine.billing;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.survey_engine.billing.models.enums.PlanInterval;
 import com.survey_engine.billing.models.Plan;
+import com.survey_engine.billing.models.PlanGatewayMapping;
+import com.survey_engine.billing.models.enums.PaymentGatewayType;
 import com.survey_engine.billing.models.enums.SystemWalletType;
+import com.survey_engine.billing.repository.PlanGatewayMappingRepository;
 import com.survey_engine.billing.repository.PlanRepository;
 import com.survey_engine.billing.service.InvoiceService;
 import com.survey_engine.billing.service.SubscriptionLimitService;
@@ -13,6 +17,7 @@ import com.survey_engine.billing.service.WalletService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -33,7 +38,47 @@ public class BillingApiImpl implements BillingApi {
     private final SubscriptionLimitService subscriptionLimitService;
     private final SystemWalletService systemWalletService;
     private final PlanRepository planRepository;
+    private final PlanGatewayMappingRepository planGatewayMappingRepository;
     private final ObjectMapper objectMapper;
+
+    @Override
+    @Transactional
+    public Long createPlan(String name, BigDecimal price, String interval, Map<String, Object> features) {
+        Plan plan = new Plan();
+        plan.setName(name);
+        plan.setPrice(price);
+        plan.setBillingInterval(PlanInterval.valueOf(interval));
+        
+        if (features != null) {
+            try {
+                String json = objectMapper.writeValueAsString(features);
+                plan.setFeatures(json);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException("Failed to serialize plan features", e);
+            }
+        }
+        
+        return planRepository.save(plan).getId();
+    }
+
+    @Override
+    @Transactional
+    public void configurePlanGateway(Long planId, String gatewayType, String gatewayCode) {
+        Plan plan = planRepository.findById(planId)
+                .orElseThrow(() -> new RuntimeException("Plan not found with ID: " + planId));
+
+        PaymentGatewayType type = PaymentGatewayType.valueOf(gatewayType);
+
+        PlanGatewayMapping mapping = planGatewayMappingRepository.findByPlanIdAndGatewayType(planId, type)
+                .orElse(new PlanGatewayMapping());
+        
+        mapping.setPlan(plan);
+        mapping.setGatewayType(type);
+        mapping.setGatewayPlanCode(gatewayCode);
+        mapping.setActive(true);
+        
+        planGatewayMappingRepository.save(mapping);
+    }
 
     /**
      * Handles incoming webhook events related to subscriptions from the payment gateway.

@@ -1,7 +1,7 @@
 package com.survey_engine.user.controller;
 
-import com.survey_engine.common.auditing.Auditable;
 import com.survey_engine.user.dto.*;
+import com.survey_engine.common.auditing.Auditable;
 import com.survey_engine.user.service.AdminService;
 import com.survey_engine.user.service.AuthService;
 import jakarta.servlet.http.Cookie;
@@ -124,6 +124,28 @@ public class AdminController {
     public ResponseEntity<List<SystemSettingResponse>> updateSystemSettings(
             @Valid @RequestBody List<SystemSettingRequest> requests) {
         return ResponseEntity.ok(adminService.updateSystemSettings(requests));
+    }
+
+    /**
+     * Creates a new subscription plan.
+     */
+    @PostMapping("/plans")
+    @Auditable(action = "CREATE_PLAN")
+    public ResponseEntity<Long> createPlan(@Valid @RequestBody PlanCreationRequest request) {
+        Long planId = adminService.createPlan(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(planId);
+    }
+
+    /**
+     * Configures a payment gateway for a plan.
+     */
+    @PostMapping("/plans/{planId}/gateways")
+    @Auditable(action = "CONFIGURE_PLAN_GATEWAY")
+    public ResponseEntity<Void> configurePlanGateway(
+            @PathVariable Long planId,
+            @Valid @RequestBody PlanGatewayConfigurationRequest request) {
+        adminService.configurePlanGateway(planId, request.gatewayType(), request.gatewayPlanCode());
+        return ResponseEntity.ok().build();
     }
 
     /**

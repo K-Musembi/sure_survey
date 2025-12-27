@@ -34,6 +34,9 @@ public class Survey extends BaseEntity {
     @Column(name = "name", nullable = false)
     private String name;
 
+    @Column(name = "url_code", nullable = false, unique = true)
+    private String urlCode;
+
     @Column(name = "introduction")
     private String introduction;
 

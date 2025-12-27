@@ -14,6 +14,24 @@ import java.util.Map;
 public interface BillingApi {
 
     /**
+     * Creates a new subscription plan.
+     * @param name The name of the plan.
+     * @param price The price of the plan.
+     * @param interval The billing interval (e.g., MONTHLY, YEARLY).
+     * @param features A map of features included in the plan.
+     * @return The ID of the created plan.
+     */
+    Long createPlan(String name, BigDecimal price, String interval, Map<String, Object> features);
+
+    /**
+     * Configures a payment gateway for a specific plan.
+     * @param planId The ID of the plan.
+     * @param gatewayType The type of gateway (e.g., "PAYSTACK").
+     * @param gatewayCode The code used by the gateway to identify this plan.
+     */
+    void configurePlanGateway(Long planId, String gatewayType, String gatewayCode);
+
+    /**
      * Handles incoming webhook events related to subscriptions from the payment gateway.
      * This method is responsible for processing events like subscription creation, updates, and cancellations.
      *

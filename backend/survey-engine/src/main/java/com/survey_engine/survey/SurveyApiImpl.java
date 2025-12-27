@@ -23,6 +23,9 @@ class SurveyApiImpl implements SurveyApi {
     private final ResponseRepository responseRepository;
     private final SurveyRepository surveyRepository;
 
+    @org.springframework.beans.factory.annotation.Value("${survey.web.base-url}")
+    private String webBaseUrl;
+
     /**
      * Retrieves the {@link ResponseRepository} instance.
      *
@@ -56,6 +59,8 @@ class SurveyApiImpl implements SurveyApi {
                     surveyMap.put("startDate", survey.getStartDate());
                     surveyMap.put("endDate", survey.getEndDate());
                     surveyMap.put("createdAt", survey.getCreatedAt());
+                    surveyMap.put("url_code", survey.getUrlCode());
+                    surveyMap.put("web_url", webBaseUrl + survey.getUrlCode());
                     return surveyMap;
                 })
                 .collect(Collectors.toList());

@@ -23,6 +23,7 @@ import java.util.List;
 public record SurveysResponse(
         Long id,
         String name,
+        String webUrl,
         String introduction,
         SurveyType type,
         String userId,

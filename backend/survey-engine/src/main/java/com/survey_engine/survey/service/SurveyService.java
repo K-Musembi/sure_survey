@@ -46,6 +46,9 @@ public class SurveyService {
     private final SystemSettingRepository systemSettingRepository;
     private final SmsResponseService smsResponseService;
 
+    @org.springframework.beans.factory.annotation.Value("${survey.web.base-url}")
+    private String webBaseUrl;
+
     /**
      * Creates a new survey for the authenticated user.
      *
@@ -72,6 +75,7 @@ public class SurveyService {
         Survey survey = new Survey();
         survey.setTenantId(tenantId);
         survey.setUserId(userId);
+        survey.setUrlCode(UUID.randomUUID().toString());
         Survey savedSurvey = getSurvey(survey, surveyRequest);
 
         String userName = userApi.getUserNameById(userId);
@@ -475,6 +479,7 @@ public class SurveyService {
         return new SurveysResponse(
                 survey.getId(),
                 survey.getName(),
+                webBaseUrl + survey.getUrlCode(),
                 survey.getIntroduction(),
                 survey.getType(),
                 survey.getUserId(),

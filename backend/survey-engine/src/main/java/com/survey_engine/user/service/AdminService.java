@@ -80,6 +80,23 @@ public class AdminService {
     }
 
     /**
+     * Creates a new subscription plan.
+     */
+    @Transactional
+    public Long createPlan(PlanCreationRequest request) {
+
+        return billingApi.createPlan(request.name(), request.price(), request.interval(), request.features());
+    }
+
+    /**
+     * Configures a gateway for a plan.
+     */
+    @Transactional
+    public void configurePlanGateway(Long planId, String gatewayType, String gatewayCode) {
+        billingApi.configurePlanGateway(planId, gatewayType, gatewayCode);
+    }
+
+    /**
      * Restocks the system inventory from an external provider.
      */
     @Transactional

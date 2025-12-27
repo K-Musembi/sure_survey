@@ -3,9 +3,12 @@ package com.survey_engine.billing.service;
 import com.survey_engine.billing.dto.SubscriberInfo;
 import com.survey_engine.billing.models.Plan;
 import com.survey_engine.billing.models.Subscription;
+import com.survey_engine.billing.models.PlanGatewayMapping;
 import com.survey_engine.billing.models.enums.SubscriptionStatus;
+import com.survey_engine.billing.models.enums.PaymentGatewayType;
 import com.survey_engine.billing.repository.PlanRepository;
 import com.survey_engine.billing.repository.SubscriptionRepository;
+import com.survey_engine.billing.repository.PlanGatewayMappingRepository;
 import com.survey_engine.user.UserApi;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +18,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
@@ -33,6 +37,7 @@ public class SubscriptionService {
 
     private final SubscriptionRepository subscriptionRepository;
     private final PlanRepository planRepository;
+    private final PlanGatewayMappingRepository planGatewayMappingRepository;
     private final UserApi userApi;
     private final PaystackSubscriptionService paystackSubscriptionService;
     private final WebhookSubscriberFinder webhookSubscriberFinder;
@@ -79,27 +84,51 @@ public class SubscriptionService {
             throw new EntityNotFoundException("User not found for ID: " + userId);
         }
 
-        String name = userDetails.get("name");
-        String[] nameParts = name.split(" ", 2);
-        String firstName = nameParts[0];
-        String lastName = nameParts.length > 1 ? nameParts[1] : "";
+        // If the plan is free or price is zero, we can skip Paystack logic if desired, 
+        // OR we still want to register them on Paystack if a mapping exists.
+        // Assuming strictly decoupling: if no mapping exists, handle as internal only.
+        
+        String paystackSubscriptionCode = null;
+        String paystackEmailToken = null;
+        SubscriptionStatus initialStatus = SubscriptionStatus.ACTIVE; // Default for free/internal plans
+        
+        // Check if there is a Paystack mapping for this plan
+        Optional<PlanGatewayMapping> gatewayMapping = planGatewayMappingRepository
+                .findByPlanIdAndGatewayType(planId, PaymentGatewayType.PAYSTACK);
 
-        String customerCode = paystackSubscriptionService.createCustomer(userDetails.get("email"), firstName, lastName, userDetails.get("phone"));
-        var paystackSubscriptionData = paystackSubscriptionService.createSubscription(customerCode, plan.getPaystackPlanCode());
+        if (gatewayMapping.isPresent()) {
+            String name = userDetails.get("name");
+            String[] nameParts = name.split(" ", 2);
+            String firstName = nameParts[0];
+            String lastName = nameParts.length > 1 ? nameParts[1] : "";
 
-        if (paystackSubscriptionData == null) {
-            throw new IllegalStateException("Failed to create subscription on Paystack, response was null.");
+            String customerCode = paystackSubscriptionService.createCustomer(userDetails.get("email"), firstName, lastName, userDetails.get("phone"));
+            var paystackSubscriptionData = paystackSubscriptionService.createSubscription(customerCode, gatewayMapping.get().getGatewayPlanCode());
+
+            if (paystackSubscriptionData == null) {
+                throw new IllegalStateException("Failed to create subscription on Paystack, response was null.");
+            }
+            paystackSubscriptionCode = paystackSubscriptionData.subscriptionCode();
+            paystackEmailToken = paystackSubscriptionData.emailToken();
+            initialStatus = SubscriptionStatus.TRIALING; // Wait for webhook to confirm
+        } else {
+            // No Paystack mapping. If price > 0, we can't process it (unless we support other gateways).
+            if (plan.getPrice().compareTo(BigDecimal.ZERO) > 0) {
+                 throw new IllegalStateException("This paid plan is not configured for online payment (Paystack). Please contact support.");
+            }
+            // If price is 0 (Free), we just create the subscription locally as ACTIVE.
         }
 
         Subscription subscription = new Subscription();
         subscription.setTenantId(tenantId);
         subscription.setUserId(userId);
         subscription.setPlan(plan);
-        subscription.setStatus(SubscriptionStatus.TRIALING); // Start with trialing, webhook will confirm active status
+        subscription.setStatus(initialStatus);
         subscription.setCurrentPeriodStart(LocalDateTime.now());
-        subscription.setCurrentPeriodEnd(LocalDateTime.now().plusDays(7)); // Example trial period
-        subscription.setPaystackSubscriptionId(paystackSubscriptionData.subscriptionCode());
-        subscription.setPaystackEmailToken(paystackSubscriptionData.emailToken());
+        // For internal/free plans, we might set a long duration or null. Setting 30 days for now or based on interval.
+        subscription.setCurrentPeriodEnd(LocalDateTime.now().plusDays(30)); 
+        subscription.setPaystackSubscriptionId(paystackSubscriptionCode);
+        subscription.setPaystackEmailToken(paystackEmailToken);
 
         return subscriptionRepository.save(subscription);
     }
@@ -130,7 +159,9 @@ public class SubscriptionService {
             throw new AccessDeniedException("You do not have permission to cancel this subscription.");
         }
 
-        paystackSubscriptionService.cancelSubscription(subscription.getPaystackSubscriptionId(), subscription.getPaystackEmailToken());
+        if (subscription.getPaystackSubscriptionId() != null) {
+            paystackSubscriptionService.cancelSubscription(subscription.getPaystackSubscriptionId(), subscription.getPaystackEmailToken());
+        }
 
         subscription.setStatus(SubscriptionStatus.CANCELED);
         return subscriptionRepository.save(subscription);
@@ -198,9 +229,12 @@ public class SubscriptionService {
                     newSubscription.setPaystackSubscriptionId(paystackSubscriptionId);
                     newSubscription.setTenantId(subscriberInfo.tenantId());
                     newSubscription.setUserId(subscriberInfo.userId());
-                    Plan plan = planRepository.findByPaystackPlanCode(planCode)
-                            .orElseThrow(() -> new EntityNotFoundException("Plan not found for Paystack plan code: " + planCode));
-                    newSubscription.setPlan(plan);
+                    
+                    // Resolve Plan via Mapping
+                    PlanGatewayMapping mapping = planGatewayMappingRepository.findByGatewayPlanCodeAndGatewayType(planCode, PaymentGatewayType.PAYSTACK)
+                            .orElseThrow(() -> new EntityNotFoundException("Plan mapping not found for Paystack code: " + planCode));
+                    
+                    newSubscription.setPlan(mapping.getPlan());
                     return newSubscription;
                 });
 

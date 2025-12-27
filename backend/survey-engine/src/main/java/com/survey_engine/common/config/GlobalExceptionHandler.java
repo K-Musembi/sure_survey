@@ -38,7 +38,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErrorResponse> handleAuthenticationException(AuthenticationException ex) {
         logger.error("AuthenticationException: {}", ex.getMessage());
-        ErrorResponse errorResponse = new ErrorResponse("Authentication Failed", "UNAUTHORIZED");
+        ErrorResponse errorResponse = new ErrorResponse(ex.getMessage(), "UNAUTHORIZED");
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
     }
 
@@ -48,7 +48,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex) {
         logger.error("AccessDeniedException: {}", ex.getMessage());
-        ErrorResponse errorResponse = new ErrorResponse("ACCESS DENIED", "FORBIDDEN");
+        ErrorResponse errorResponse = new ErrorResponse(ex.getMessage(), "FORBIDDEN");
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
     }
 
@@ -58,8 +58,28 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFound(EntityNotFoundException ex) {
         logger.error("EntityNotFoundException: {}", ex.getMessage());
-        ErrorResponse errorResponse = new ErrorResponse("RESOURCE NOT FOUND", "NOT_FOUND");
+        ErrorResponse errorResponse = new ErrorResponse(ex.getMessage(), "NOT_FOUND");
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
+    /**
+     * Handle business logic exceptions
+     */
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalState(IllegalStateException ex) {
+        logger.warn("Illegal State: {}", ex.getMessage());
+        ErrorResponse errorResponse = new ErrorResponse(ex.getMessage(), "INVALID_STATE");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    /**
+     * Handle invalid argument exceptions
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
+        logger.warn("Illegal Argument: {}", ex.getMessage());
+        ErrorResponse errorResponse = new ErrorResponse(ex.getMessage(), "INVALID_ARGUMENT");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
     /**

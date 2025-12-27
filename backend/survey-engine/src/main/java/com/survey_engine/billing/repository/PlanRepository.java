@@ -20,11 +20,4 @@ public interface PlanRepository extends JpaRepository<Plan, Long> {
      */
     Optional<Plan> findByName(String name);
 
-    /**
-     * Finds a Plan entity by its Paystack plan code.
-     *
-     * @param paystackPlanCode The Paystack plan code.
-     * @return An {@link Optional} containing the found Plan or empty if not found.
-     */
-    Optional<Plan> findByPaystackPlanCode(String paystackPlanCode);
 }

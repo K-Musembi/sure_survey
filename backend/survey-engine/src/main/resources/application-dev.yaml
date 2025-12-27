@@ -52,11 +52,11 @@ spring:
   # By pointing the base-url to Groq, we leverage their high-speed inference engine using the same client code.
   ai:
     openai:
-      api-key: ${AI_API_KEY}
+      api-key: ${GROQ_API_KEY}
       base-url: https://api.groq.com/openai
       chat:
         options:
-          model: llama3-70b-8192
+          model: llama-3.1-8b-instant
 
 app-security:
   base-url: http://localhost:8080
@@ -71,6 +71,11 @@ daraja:
 safaricom:
   api:
     url: ${SAFARICOM_API_URL}
+
+survey:
+  web:
+    base-url: http://localhost:5173/s/
+
 
 jwt:
   keystore:
