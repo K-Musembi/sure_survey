@@ -13,6 +13,9 @@ import DashboardLayout from './components/DashboardLayout'
 import DashboardAnalytics from './pages/DashboardAnalytics'
 import Settings from './pages/Settings'
 import Subscriptions from './pages/Subscriptions'
+import SurveyDetails from './pages/SurveyDetails'
+import AdminLogin from './pages/admin/AdminLogin'
+import AdminDashboard from './pages/admin/AdminDashboard'
 import useAuthStore from './stores/authStore'
 
 export default function App() {
@@ -25,6 +28,13 @@ export default function App() {
   const AppPublicRoute = ({ children }) => {
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
     return isAuthenticated ? <Navigate to="/dashboard" replace /> : children
+  }
+  
+  const AppAdminRoute = ({ children }) => {
+    const { isAuthenticated, isAdmin } = useAuthStore()
+    if (!isAuthenticated) return <Navigate to="/admin" replace />
+    if (!isAdmin()) return <Navigate to="/dashboard" replace />
+    return children
   }
 
   return (
@@ -46,10 +56,19 @@ export default function App() {
             <Signup />
           </AppPublicRoute>
         } />
+        
+        {/* Admin Routes */}
+        <Route path="/admin" element={<AdminLogin />} />
+        <Route path="/admin/dashboard" element={
+          <AppAdminRoute>
+            <AdminDashboard />
+          </AppAdminRoute>
+        } />
 
         {/* Protected Routes using DashboardLayout */}
         <Route path="/dashboard" element={<AppProtectedRoute><DashboardLayout><Dashboard /></DashboardLayout></AppProtectedRoute>} />
         <Route path="/dashboard/analytics" element={<AppProtectedRoute><DashboardLayout><DashboardAnalytics /></DashboardLayout></AppProtectedRoute>} />
+        <Route path="/dashboard/survey/:surveyId" element={<AppProtectedRoute><DashboardLayout><SurveyDetails /></DashboardLayout></AppProtectedRoute>} />
         <Route path="/profile" element={<AppProtectedRoute><DashboardLayout><Profile /></DashboardLayout></AppProtectedRoute>} />
         <Route path="/survey-builder" element={<AppProtectedRoute><DashboardLayout><SurveyBuilder /></DashboardLayout></AppProtectedRoute>} />
         <Route path="/settings" element={<AppProtectedRoute><DashboardLayout><Settings /></DashboardLayout></AppProtectedRoute>} />

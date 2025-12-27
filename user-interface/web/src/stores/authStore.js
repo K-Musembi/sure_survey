@@ -6,6 +6,7 @@ const useAuthStore = create()(
     persist(
       (set, get) => ({
         user: null,
+        token: null,
         isAuthenticated: false,
         isLoading: false,
         
@@ -17,9 +18,23 @@ const useAuthStore = create()(
         login: async (userData) => {
           set({ isLoading: true }, false, 'login/start')
           try {
+            // Attempt to find the token in common fields
+            const token = userData?.token || 
+                          userData?.accessToken || 
+                          userData?.access_token || 
+                          userData?.jwt
+            
+            // Determine user object: if userData.user exists use it, otherwise assume userData is the user object (excluding the token if possible, but keeping it is harmless)
+            const user = userData?.user || userData
+            
+            if (!token) {
+              console.log('No token found in response body. Assuming cookie-based authentication.')
+            }
+            
             set({ 
-              user: userData?.user || userData,
-              isAuthenticated: true, 
+              user: user,
+              token: token, // Might be null/undefined if using cookies
+              isAuthenticated: !!user, 
               isLoading: false 
             }, false, 'login/success')
           } catch (error) {
@@ -31,6 +46,7 @@ const useAuthStore = create()(
         logout: () => {
           set({ 
             user: null, 
+            token: null,
             isAuthenticated: false, 
             isLoading: false 
           }, false, 'logout')
@@ -38,12 +54,16 @@ const useAuthStore = create()(
         
         // Getters
         getUser: () => get().user,
+        getToken: () => get().token,
         isUserAuthenticated: () => get().isAuthenticated,
+        isAdmin: () => get().user?.role === 'SYSTEM_ADMIN' || get().user?.roles?.includes('SYSTEM_ADMIN'), // Handle both string or list scenarios
       }),
       {
         name: 'auth-storage',
         partialize: (state) => ({
           user: state.user,
+          // token is NOT persisted to avoid stale token issues. 
+          // Browser cookies are used for session persistence.
           isAuthenticated: state.isAuthenticated,
         }),
       }

@@ -2,8 +2,12 @@ import axios from 'axios'
 import useAuthStore from '../stores/authStore'
 
 // Create axios instance with base configuration
+// Force relative path to use Vite proxy, solving cookie/CORS issues
+const API_BASE_URL = '' 
+const API_VERSION = import.meta.env.VITE_API_VERSION || 'v1'
+
 const api = axios.create({
-  baseURL: `${import.meta.env.VITE_API_BASE_URL}/api/${import.meta.env.VITE_API_VERSION}`,
+  baseURL: `${API_BASE_URL}/api/${API_VERSION}`,
   timeout: 30000,
   withCredentials: true, // Enable httpOnly cookies
   headers: {
@@ -16,6 +20,11 @@ api.interceptors.request.use(
   (config) => {
     // Add any request modifications here
     console.log(`[API] ${config.method?.toUpperCase()} ${config.url}`)
+    
+    // Authorization header is NOT attached here. 
+    // The application relies on HttpOnly cookies set by the backend.
+    // Previous logic for Bearer token attachment has been removed to avoid sending stale tokens.
+    
     return config
   },
   (error) => {
@@ -48,72 +57,198 @@ api.interceptors.response.use(
 
 // Auth API calls
 export const authAPI = {
-  signup: (userData) => api.post('/auth/signup', userData),
-  login: (credentials) => {
-    return api.post('/auth/login', credentials)
+  signup: (userData) => api.post('/auth/signup', userData, { withCredentials: false }),
+  login: async (credentials) => {
+    // We must allow credentials (cookies) to be included/set.
+    // Using 'omit' prevents the browser from saving the new Set-Cookie from the backend.
+    const response = await fetch(`${API_BASE_URL}/api/${API_VERSION}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(credentials),
+      // credentials: 'omit' REMOVED to ensure Set-Cookie is processed
+    })
+
+    if (!response.ok) {
+       // mimic axios error structure for consistency
+       const errorData = await response.json().catch(() => ({}));
+       const error = new Error('Login failed');
+       error.response = { status: response.status, data: errorData };
+       throw error;
+    }
+
+    const data = await response.json();
+    return { data }; // mimic axios response structure
   },
   logout: () => api.post('/auth/logout'),
   me: () => api.get('/auth/me'),
+  checkTenant: (tenantName) => api.post('/auth/check-tenant', { tenantName }, { withCredentials: false }),
   refreshToken: () => api.post('/auth/refresh'),
+}
+
+// User & Tenant API calls
+export const userAPI = {
+  getUser: (id) => api.get(`/users/${id}`),
+  updateUser: (id, data) => api.put(`/users/${id}`, data),
+  getUserByEmail: (email) => api.get(`/users/email/${email}`),
+  getTenantUsers: (tenantId) => api.get(`/users/tenant`, { params: { tenantId } }),
+  deleteUser: (id) => api.delete(`/users/${id}`),
+}
+
+export const tenantAPI = {
+  createTenant: (data) => api.post('/tenants', data),
+  getTenant: (id) => api.get(`/tenants/${id}`),
+  updateTenant: (id, data) => api.put(`/tenants/${id}`, data),
+  getAllTenants: () => api.get('/tenants'),
+  deleteTenant: (id) => api.delete(`/tenants/${id}`),
+}
+
+// Admin API calls
+export const adminAPI = {
+  login: (credentials) => api.post('/admin/login', credentials, { withCredentials: false }),
+  getAllTenants: () => api.get('/admin/tenants'),
+  getTenantSurveys: (tenantId) => api.get(`/admin/tenants/${tenantId}/surveys`),
+  getSettings: () => api.get('/admin/settings'),
+  updateSettings: (settings) => api.put('/admin/settings', settings),
+  updatePlan: (planData) => api.put('/admin/plans', planData),
+  restockSystemWallet: (type, amount) => api.post('/admin/system-wallet/restock', null, { params: { type, amount } }),
 }
 
 // Survey API calls
 export const surveyAPI = {
   getMySurveys: () => api.get('/surveys/my-surveys'),
+  getTeamSurveys: () => api.get('/surveys/my-team'),
   createSurvey: (surveyData) => api.post('/surveys', surveyData),
   getSurvey: (surveyId) => api.get(`/surveys/${surveyId}`),
   updateSurvey: (surveyId, surveyData) => api.put(`/surveys/${surveyId}`, surveyData),
   deleteSurvey: (surveyId) => api.delete(`/surveys/${surveyId}`),
   activateSurvey: (surveyId) => api.post(`/surveys/${surveyId}/activate`),
-  deactivateSurvey: (surveyId) => api.post(`/surveys/${surveyId}/deactivate`),
+  closeSurvey: (surveyId) => api.post(`/surveys/${surveyId}/close`),
+  sendToDistributionList: (surveyId) => api.post(`/surveys/${surveyId}/send-to-distribution-list`),
+  
+  // Questions
+  addQuestion: (surveyId, questionData) => api.post(`/surveys/${surveyId}/questions`, questionData),
+  getQuestions: (surveyId) => api.get(`/surveys/${surveyId}/questions`),
+  getQuestion: (surveyId, questionId) => api.get(`/surveys/${surveyId}/questions/${questionId}`),
+  updateQuestion: (surveyId, questionId, data) => api.put(`/surveys/${surveyId}/questions/${questionId}`, data),
+  deleteQuestion: (surveyId, questionId) => api.delete(`/surveys/${surveyId}/questions/${questionId}`),
 }
 
 // Template API calls
 export const templateAPI = {
-  getTemplatesByType: (type) => api.get('/templates/filter/type', { params: { type } }),
+  createTemplate: (data) => api.post('/templates', data),
   getAllTemplates: () => api.get('/templates'),
+  getTemplate: (id) => api.get(`/templates/${id}`),
+  getTemplatesByType: (type) => api.get('/templates/filter/type', { params: { type } }),
+  getTemplatesBySector: (sector) => api.get('/templates/filter/sector', { params: { sector } }),
+  updateTemplate: (id, data) => api.put(`/templates/${id}`, data),
+  deleteTemplate: (id) => api.delete(`/templates/${id}`),
+  
+  // Template Questions
+  addQuestion: (templateId, data) => api.post(`/templates/${templateId}/questions`, data),
+  getQuestions: (templateId) => api.get(`/templates/${templateId}/questions`),
+  updateQuestion: (templateId, questionId, data) => api.put(`/templates/${templateId}/questions/${questionId}`, data),
+  deleteQuestion: (templateId, questionId) => api.delete(`/templates/${templateId}/questions/${questionId}`),
 }
 
 // Response API calls
 export const responseAPI = {
   submitResponse: (surveyId, responseData) => api.post(`/surveys/${surveyId}/responses`, responseData),
-  getAnalytics: (surveyId) => api.get(`/responses/analytics`, { params: { surveyId } }),
+  getSurveyResponses: (surveyId) => api.get(`/surveys/${surveyId}/responses`),
+  getResponse: (surveyId, responseId) => api.get(`/surveys/${surveyId}/responses/${responseId}`),
+  deleteResponse: (surveyId, responseId) => api.delete(`/surveys/${surveyId}/responses/${responseId}`),
+  getAnalytics: (surveyId) => api.get(`/responses/analytics`, { params: { surveyId } }), // Assuming this exists or using AI analysis
   streamResponses: () => {
     // SSE connection for real-time responses
     const eventSource = new EventSource(
-      `${import.meta.env.VITE_API_BASE_URL}/api/${import.meta.env.VITE_API_VERSION}/responses/stream`,
+      `${API_BASE_URL}/api/${API_VERSION}/responses/stream`,
       { withCredentials: true }
     )
     return eventSource
   },
+  getAnswers: (responseId) => api.get(`/responses/${responseId}/answers`),
 }
 
-// Reward API calls
+// Distribution List API calls
+export const distributionAPI = {
+  createList: (data) => api.post('/distribution-lists', data),
+  uploadCsv: (file, name) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('name', name);
+    return api.post('/distribution-lists/upload-csv', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  getLists: () => api.get('/distribution-lists'),
+  getList: (id) => api.get(`/distribution-lists/${id}`),
+  addContacts: (id, contacts) => api.post(`/distribution-lists/${id}/contacts`, contacts),
+}
+
+// AI Analysis API calls
+export const aiAPI = {
+  generateQuestions: (data) => api.post('/ai/generate', data),
+  analyzeSurvey: (data) => api.post('/ai/analyze', data),
+}
+
+// Billing & Wallet API calls
+export const billingAPI = {
+  getWalletBalance: () => api.get('/billing/wallet/balance'),
+  getWalletTransactions: () => api.get('/billing/wallet/transactions'),
+  getSubscription: () => api.get('/billing/subscription'),
+  createSubscription: (data) => api.post('/billing/subscription', data),
+  cancelSubscription: (id) => api.delete(`/billing/subscription/${id}`),
+  getInvoices: () => api.get('/billing/invoices'),
+}
+
+// Payment API calls
+export const paymentAPI = {
+  initiatePayment: (data) => api.post('/payments', data),
+  topUpWallet: (data) => api.post('/payments/top-up', data),
+  getMyPayments: () => api.get('/payments/my-payments'),
+  getPaymentDetails: (id) => api.get(`/payments/${id}`),
+  getTransaction: (id) => api.get(`/transactions/${id}`),
+  getTransactionsByPayment: (paymentId) => api.get(`/transactions/by-payment/${paymentId}`),
+  // Kept for backward compatibility if used elsewhere, but prefer endpoints above
+  createPayment: (paymentData) => api.post('/payments', paymentData), 
+  verifyPayment: (reference) => api.get(`/payments/verify/${reference}`), // NOTE: Check if this exists in backend, otherwise might need removal
+}
+
+// Rewards API calls
 export const rewardAPI = {
-  createReward: (rewardData) => api.post('/rewards', rewardData),
-  getRewards: (surveyId) => api.get(`/rewards`, { params: { surveyId } }),
-  updateReward: (rewardId, rewardData) => api.put(`/rewards/${rewardId}`, rewardData),
-  deleteReward: (rewardId) => api.delete(`/rewards/${rewardId}`),
+  configureReward: (data) => api.post('/rewards', data),
+  getSurveyReward: (surveyId) => api.get(`/rewards/survey/${surveyId}`),
+  getMyRewards: () => api.get('/rewards/my-rewards'),
+  cancelReward: (id) => api.post(`/rewards/${id}/cancel`),
+  getRewardTransactions: (rewardId) => api.get(`/rewards/reward-transactions/reward/${rewardId}`),
+  
+  // Loyalty
+  getUserLoyalty: (userId) => api.get(`/rewards/loyalty-accounts/user/${userId}`),
+  getUserBalance: (userId) => api.get(`/rewards/loyalty-accounts/user/${userId}/balance`),
+  redeemPoints: (data) => api.post('/rewards/loyalty-accounts/me/debit', data),
+  getLoyaltyTransactions: (accountId) => api.get(`/rewards/loyalty-transactions/account/${accountId}`),
+}
+
+// Business Integration API calls
+export const integrationAPI = {
+  createIntegration: (data) => api.post('/integrations', data),
+  getIntegrations: () => api.get('/integrations'),
+  getTransactions: (integrationId) => api.get(`/business-transactions/integration/${integrationId}`),
 }
 
 // Participant API calls
 export const participantAPI = {
   register: (participantData) => api.post('/participants', participantData),
   getParticipant: (participantId) => api.get(`/participants/${participantId}`),
+  deleteParticipant: (id) => api.delete(`/participants/${id}`),
 }
 
-// Payment API calls
-export const paymentAPI = {
-  createPayment: (paymentData) => api.post('/payments', paymentData),
-  verifyPayment: (reference) => api.get(`/payments/verify/${reference}`),
-  getPaymentHistory: () => api.get('/payments/history'),
-}
-
-// Subscription API calls (for future implementation)
+// Subscription API calls (Legacy/Wrapper for consistency)
 export const subscriptionAPI = {
-  getSubscription: () => api.get('/subscriptions/current'),
-  createSubscription: (subscriptionData) => api.post('/subscriptions', subscriptionData),
-  cancelSubscription: () => api.delete('/subscriptions/current'),
+  getSubscription: billingAPI.getSubscription,
+  createSubscription: billingAPI.createSubscription,
+  cancelSubscription: billingAPI.cancelSubscription,
 }
 
 // Generic API utility functions

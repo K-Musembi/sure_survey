@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Button, Card, Label, TextInput, Radio, Textarea, Progress } from 'flowbite-react'
+import { Button, Card, Label, TextInput, Radio, Textarea, Progress, Alert } from 'flowbite-react'
 import { useSurvey, useSubmitResponse } from '../hooks/useApi'
 import { participantAPI } from '../services/apiServices'
-import { HiCheckCircle, HiGift } from 'react-icons/hi'
+import { HiCheckCircle, HiGift, HiExclamationCircle } from 'react-icons/hi'
 
 const SurveySession = () => {
   const { surveyId, shortCode } = useParams()
@@ -18,6 +18,7 @@ const SurveySession = () => {
     email: ''
   })
   const [isCompleted, setIsCompleted] = useState(false)
+  const [submissionError, setSubmissionError] = useState('')
 
   // Fetch survey by ID or short code
   const { data: survey, isLoading } = useSurvey(surveyId || shortCode)
@@ -56,6 +57,7 @@ const SurveySession = () => {
 
   const handleParticipantSubmit = async (e) => {
     e.preventDefault()
+    setSubmissionError('')
     try {
       const response = await participantAPI.register(participantForm)
       setParticipant(response.data)
@@ -63,10 +65,12 @@ const SurveySession = () => {
       handleSubmitSurvey()
     } catch (error) {
       console.error('Failed to register participant:', error)
+      setSubmissionError('Failed to register details: ' + (error.response?.data?.message || error.message))
     }
   }
 
   const handleSubmitSurvey = async () => {
+    setSubmissionError('')
     try {
       const answersData = Object.entries(responses).map(([questionId, answer]) => ({
         questionId: parseInt(questionId),
@@ -81,6 +85,7 @@ const SurveySession = () => {
       setIsCompleted(true)
     } catch (error) {
       console.error('Failed to submit survey:', error)
+      setSubmissionError('Failed to submit survey: ' + (error.response?.data?.message || error.message))
     }
   }
 
@@ -273,6 +278,12 @@ const SurveySession = () => {
             </p>
           </div>
 
+          {submissionError && (
+            <Alert color="failure" icon={HiExclamationCircle} className="mb-4">
+              {submissionError}
+            </Alert>
+          )}
+
           <form onSubmit={handleParticipantSubmit} className="space-y-4">
             <div>
               <Label htmlFor="fullName">Full Name</Label>
@@ -333,6 +344,12 @@ const SurveySession = () => {
           <h1 className="text-2xl font-bold text-gray-900 mb-2">{survey.name}</h1>
           <p className="text-gray-600">Question {currentQuestionIndex + 1} of {survey.questions?.length || 0}</p>
         </div>
+
+        {submissionError && (
+          <Alert color="failure" icon={HiExclamationCircle} className="mb-4">
+            {submissionError}
+          </Alert>
+        )}
 
         {/* Progress Bar */}
         <div className="mb-8">

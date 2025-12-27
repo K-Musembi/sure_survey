@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Modal, Button, Label, TextInput, Select, Alert } from 'flowbite-react'
 import { useCreatePayment, useVerifyPayment } from '../hooks/useApi'
+import { paymentAPI } from '../services/apiServices'
 import { HiCreditCard, HiCheckCircle, HiExclamationCircle } from 'react-icons/hi'
 
-const PaymentModal = ({ show, onClose, survey, onPaymentSuccess }) => {
+const PaymentModal = ({ show, onClose, survey, mode = 'SURVEY_ACTIVATION', onPaymentSuccess }) => {
   const [step, setStep] = useState(1) // 1: Details, 2: Processing, 3: Success/Error
   const [paymentData, setPaymentData] = useState({
     amount: '',
@@ -13,38 +14,67 @@ const PaymentModal = ({ show, onClose, survey, onPaymentSuccess }) => {
   })
   const [paymentReference, setPaymentReference] = useState('')
   const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
-  const createPaymentMutation = useCreatePayment()
-  const { data: verificationData } = useVerifyPayment(paymentReference)
+  // Use raw API for flexibility based on mode
+  // const createPaymentMutation = useCreatePayment() // Legacy hook
 
   const generateIdempotencyKey = () => {
     return `pay_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   }
+  
+  // Reset form when modal opens
+  useEffect(() => {
+    if (show) {
+      setStep(1)
+      setPaymentData({
+        amount: '',
+        currency: 'USD',
+        surveyId: survey?.id || (mode === 'WALLET_TOPUP' ? 'WALLET_TOPUP' : ''),
+        idempotencyKey: ''
+      })
+      setError('')
+    }
+  }, [show, survey, mode])
 
   const handlePaymentSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    setIsLoading(true)
     
     try {
       const payload = {
-        ...paymentData,
-        surveyId: survey.id.toString(),
+        amount: paymentData.amount,
+        currency: paymentData.currency,
+        surveyId: mode === 'WALLET_TOPUP' ? 'WALLET_TOPUP' : survey?.id?.toString(),
         idempotencyKey: generateIdempotencyKey()
       }
       
-      setStep(2)
-      const response = await createPaymentMutation.mutateAsync(payload)
+      let response;
+      if (mode === 'WALLET_TOPUP') {
+        response = await paymentAPI.topUpWallet(payload)
+      } else {
+        response = await paymentAPI.initiatePayment(payload)
+      }
       
       // Redirect to Paystack payment page
-      if (response.data.authorization_url) {
+      if (response.data.authorizationUrl) {
+        window.location.href = response.data.authorizationUrl
+        setStep(2) // In case they come back, though page reload happens usually
+      } else if (response.data.authorization_url) {
+        // Handle snake_case response if API differs
         window.location.href = response.data.authorization_url
+        setStep(2)
       } else {
-        setError('Payment initialization failed')
+        setError('Payment initialization failed: No authorization URL returned.')
         setStep(1)
       }
     } catch (error) {
-      setError(error.response?.data?.message || 'Payment failed')
+      console.error("Payment error", error)
+      setError(error.response?.data?.message || 'Payment initialization failed')
       setStep(1)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -56,8 +86,8 @@ const PaymentModal = ({ show, onClose, survey, onPaymentSuccess }) => {
   }
 
   // Calculate estimated survey cost
-  const estimatedCost = survey?.targetRespondents 
-    ? survey.targetRespondents * (survey.rewardAmount || 5)
+  const estimatedCost = survey?.targetRespondents && survey?.rewardAmount
+    ? survey.targetRespondents * survey.rewardAmount
     : 0
 
   return (
@@ -65,7 +95,7 @@ const PaymentModal = ({ show, onClose, survey, onPaymentSuccess }) => {
       <Modal.Header>
         <div className="flex items-center">
           <HiCreditCard className="w-5 h-5 mr-2 text-primary-600" />
-          Survey Payment
+          {mode === 'WALLET_TOPUP' ? 'Wallet Top Up' : 'Survey Payment'}
         </div>
       </Modal.Header>
 
@@ -79,20 +109,30 @@ const PaymentModal = ({ show, onClose, survey, onPaymentSuccess }) => {
               </Alert>
             )}
 
-            <div className="bg-gray-50 rounded-lg p-4 mb-4">
-              <h3 className="font-medium mb-2">Survey Details</h3>
-              <div className="text-sm space-y-1">
-                <div><span className="font-medium">Name:</span> {survey?.name}</div>
-                <div><span className="font-medium">Type:</span> {survey?.type}</div>
-                <div><span className="font-medium">Target Responses:</span> {survey?.targetRespondents || 'Not set'}</div>
-                {estimatedCost > 0 && (
-                  <div><span className="font-medium">Estimated Cost:</span> ${estimatedCost}</div>
-                )}
+            {mode === 'SURVEY_ACTIVATION' && (
+              <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                <h3 className="font-medium mb-2">Survey Details</h3>
+                <div className="text-sm space-y-1">
+                  <div><span className="font-medium">Name:</span> {survey?.name}</div>
+                  <div><span className="font-medium">Type:</span> {survey?.type}</div>
+                  <div><span className="font-medium">Target Responses:</span> {survey?.targetRespondents || 'Not set'}</div>
+                  {estimatedCost > 0 && (
+                    <div><span className="font-medium">Estimated Cost:</span> ${estimatedCost}</div>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
+
+            {mode === 'WALLET_TOPUP' && (
+               <div className="bg-blue-50 rounded-lg p-4 mb-4">
+                 <p className="text-sm text-blue-800">
+                   Add funds to your wallet to pay for survey rewards and premium features.
+                 </p>
+               </div>
+            )}
 
             <div>
-              <Label htmlFor="amount">Payment Amount (USD)</Label>
+              <Label htmlFor="amount">Payment Amount</Label>
               <TextInput
                 id="amount"
                 type="number"
@@ -104,7 +144,9 @@ const PaymentModal = ({ show, onClose, survey, onPaymentSuccess }) => {
                 required
               />
               <p className="text-xs text-gray-500 mt-1">
-                This covers survey activation and reward distribution costs
+                {mode === 'WALLET_TOPUP' 
+                  ? 'Enter the amount you wish to add to your wallet.' 
+                  : 'This covers survey activation and reward distribution costs.'}
               </p>
             </div>
 
@@ -116,6 +158,7 @@ const PaymentModal = ({ show, onClose, survey, onPaymentSuccess }) => {
                 onChange={(e) => setPaymentData(prev => ({...prev, currency: e.target.value}))}
               >
                 <option value="USD">USD - US Dollar</option>
+                <option value="KES">KES - Kenyan Shilling</option>
                 <option value="NGN">NGN - Nigerian Naira</option>
                 <option value="GHS">GHS - Ghanaian Cedi</option>
                 <option value="ZAR">ZAR - South African Rand</option>
@@ -138,10 +181,11 @@ const PaymentModal = ({ show, onClose, survey, onPaymentSuccess }) => {
               </Button>
               <Button 
                 type="submit" 
-                disabled={!paymentData.amount || createPaymentMutation.isLoading}
+                disabled={!paymentData.amount || isLoading}
                 className="bg-primary-500 hover:bg-primary-600"
+                isProcessing={isLoading}
               >
-                {createPaymentMutation.isLoading ? 'Processing...' : 'Continue to Payment'}
+                {isLoading ? 'Processing...' : 'Continue to Payment'}
               </Button>
             </div>
           </form>
@@ -155,48 +199,8 @@ const PaymentModal = ({ show, onClose, survey, onPaymentSuccess }) => {
             <p className="text-gray-600">Please wait while we redirect you to Paystack...</p>
           </div>
         )}
-
-        {/* Step 3: Success */}
-        {step === 3 && verificationData?.status === 'success' && (
-          <div className="text-center py-8">
-            <HiCheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">Payment Successful!</h3>
-            <p className="text-gray-600 mb-4">
-              Your survey has been activated and is ready to receive responses.
-            </p>
-            <Button 
-              onClick={() => {
-                onPaymentSuccess?.(survey)
-                handleModalClose()
-              }}
-              className="bg-primary-500 hover:bg-primary-600"
-            >
-              Continue to Dashboard
-            </Button>
-          </div>
-        )}
-
-        {/* Step 3: Error */}
-        {step === 3 && verificationData?.status !== 'success' && (
-          <div className="text-center py-8">
-            <HiExclamationCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">Payment Failed</h3>
-            <p className="text-gray-600 mb-4">
-              There was an issue processing your payment. Please try again.
-            </p>
-            <div className="flex justify-center space-x-3">
-              <Button color="gray" onClick={handleModalClose}>
-                Cancel
-              </Button>
-              <Button 
-                onClick={() => setStep(1)}
-                className="bg-primary-500 hover:bg-primary-600"
-              >
-                Try Again
-              </Button>
-            </div>
-          </div>
-        )}
+        
+        {/* NOTE: Success step is usually handled by callback URL page, but keeping basic structure just in case */}
       </Modal.Body>
     </Modal>
   )

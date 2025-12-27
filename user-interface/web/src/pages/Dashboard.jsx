@@ -1,37 +1,119 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { Button, Card, Badge, Dropdown, DropdownItem, DropdownDivider } from 'flowbite-react'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Button, Card, Badge, Dropdown, DropdownItem, DropdownDivider, Alert, Modal, Select, Label } from 'flowbite-react'
 import PaymentModal from '../components/PaymentModal'
 import { useMySurveys, useActivateSurvey } from '../hooks/useApi'
-import { HiPlus, HiEye, HiPencil, HiPlay, HiStop, HiCurrencyDollar, HiShare, HiDotsVertical } from 'react-icons/hi'
+import { billingAPI, distributionAPI, surveyAPI } from '../services/apiServices'
+import { HiPlus, HiEye, HiPencil, HiPlay, HiStop, HiCurrencyDollar, HiShare, HiDotsVertical, HiExclamationCircle, HiPaperAirplane } from 'react-icons/hi'
 
 const Dashboard = () => {
-  const { data: surveys, isLoading, refetch } = useMySurveys()
+  const navigate = useNavigate()
+  const { data: surveys, isLoading, refetch, error: surveysError } = useMySurveys()
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
   const [selectedSurvey, setSelectedSurvey] = useState(null)
+  const [activationError, setActivationError] = useState('')
   
+  // Financial State
+  const [subscription, setSubscription] = useState(null)
+  const [walletBalance, setWalletBalance] = useState(0)
+  
+  // Distribution State
+  const [showDistModal, setShowDistModal] = useState(false)
+  const [distLists, setDistLists] = useState([])
+  const [selectedListId, setSelectedListId] = useState('')
+  const [isSending, setIsSending] = useState(false)
+
   const activateSurveyMutation = useActivateSurvey()
 
+  useEffect(() => {
+    // Prefetch billing info for checks
+    billingAPI.getSubscription().then(res => setSubscription(res.data)).catch(console.error)
+    billingAPI.getWalletBalance().then(res => setWalletBalance(res.data)).catch(console.error)
+    distributionAPI.getLists().then(res => setDistLists(res.data)).catch(console.error)
+  }, [])
+
   const handleActivateSurvey = async (survey) => {
-    // Check if payment is required
-    if (survey.requiresPayment) {
-      setSelectedSurvey(survey)
-      setPaymentModalOpen(true)
-    } else {
-      try {
-        await activateSurveyMutation.mutateAsync(survey.id)
-        refetch()
-      } catch (error) {
-        console.error('Failed to activate survey:', error)
+    setActivationError('')
+    
+    // Check 1: Free Tier Limits
+    const isFreeTier = !subscription || subscription.plan?.name === 'Free' || subscription.status !== 'ACTIVE'
+    if (isFreeTier) {
+      if (survey.targetRespondents > 25) {
+        setActivationError('Free tier is limited to 25 respondents. Please upgrade your plan.')
+        return
+      }
+    }
+
+    // Check 2: Financials (Rewards)
+    const estimatedCost = (survey.targetRespondents || 0) * (survey.rewardAmount || 0)
+    
+    if (estimatedCost > 0) {
+      if (walletBalance < estimatedCost) {
+        // Prompt for payment/topup
+        setSelectedSurvey(survey)
+        setPaymentModalOpen(true)
+        return
+      }
+    }
+
+    // Attempt Activation
+    try {
+      await activateSurveyMutation.mutateAsync(survey.id)
+      refetch()
+    } catch (error) {
+      console.error('Failed to activate survey:', error)
+      const msg = error.response?.data?.message || 'Failed to activate survey.'
+      
+      // If backend says insufficient funds
+      if (msg.includes('fund') || msg.includes('wallet')) {
+         setSelectedSurvey(survey)
+         setPaymentModalOpen(true)
+      } else {
+         setActivationError(msg)
       }
     }
   }
 
   const handlePaymentSuccess = () => {
     setPaymentModalOpen(false)
-    setSelectedSurvey(null)
-    refetch()
+    // If we just paid/topped up, try activating again if survey is selected
+    if (selectedSurvey) {
+       // Refresh balance first
+       billingAPI.getWalletBalance().then(res => {
+         setWalletBalance(res.data)
+         // Then activate
+         activateSurveyMutation.mutateAsync(selectedSurvey.id)
+           .then(() => {
+             setSelectedSurvey(null)
+             refetch()
+           })
+           .catch(err => setActivationError(err.response?.data?.message || 'Activation failed after payment'))
+       })
+    } else {
+      refetch()
+    }
   }
+  
+  const openDistModal = (survey) => {
+    setSelectedSurvey(survey)
+    setShowDistModal(true)
+  }
+  
+  const handleSendToDistList = async () => {
+    if (!selectedSurvey || !selectedListId) return
+    setIsSending(true)
+        try {
+          await surveyAPI.sendToDistributionList(selectedSurvey.id)
+          setShowDistModal(false)
+          setSelectedListId('')
+          // Set a success state or just refetch
+          refetch()
+        } catch (error) {
+          console.error('Distribution failed', error)
+          setActivationError('Failed to send: ' + (error.response?.data?.message || error.message))
+        } finally {
+          setIsSending(false)
+        }  }
 
   const getSurveyStatusBadge = (status) => {
     const statusConfig = {
@@ -76,6 +158,21 @@ const Dashboard = () => {
         </Button>
       </div>
 
+      {activationError && (
+        <Alert color="failure" icon={HiExclamationCircle} onDismiss={() => setActivationError('')}>
+          {activationError}
+          {activationError.includes('upgrade') && (
+            <Link to="/subscriptions" className="font-bold underline ml-2">Go to Subscriptions</Link>
+          )}
+        </Alert>
+      )}
+
+      {surveysError && (
+        <Alert color="failure" icon={HiExclamationCircle}>
+          Failed to load surveys. Please try refreshing the page.
+        </Alert>
+      )}
+
       {/* Surveys List */}
       <div className="space-y-6">
         {isLoading ? (
@@ -117,10 +214,18 @@ const Dashboard = () => {
                         Activate
                       </DropdownItem>
                     ) : (
-                      <DropdownItem>
-                        <HiStop className="w-4 h-4 mr-2" />
-                        Pause
-                      </DropdownItem>
+                      <>
+                        <DropdownItem>
+                          <HiStop className="w-4 h-4 mr-2" />
+                          Pause
+                        </DropdownItem>
+                        {survey.status === 'ACTIVE' && (
+                           <DropdownItem onClick={() => openDistModal(survey)}>
+                             <HiPaperAirplane className="w-4 h-4 mr-2" />
+                             Send to List
+                           </DropdownItem>
+                        )}
+                      </>
                     )}
                   </Dropdown>
                 </div>
@@ -149,13 +254,13 @@ const Dashboard = () => {
                     <div className="flex gap-2">
                       <Button
                         as={Link}
-                        to={`/survey/${survey.id}`}
+                        to={`/dashboard/survey/${survey.id}`}
                         size="sm"
                         color="gray"
                         className="flex-1"
                       >
                         <HiEye className="w-4 h-4 mr-1" />
-                        View
+                        Manage
                       </Button>
                       
                       {survey.status === 'DRAFT' && (
@@ -164,6 +269,7 @@ const Dashboard = () => {
                           onClick={() => handleActivateSurvey(survey)}
                           disabled={activateSurveyMutation.isLoading}
                           className="bg-primary-500 hover:bg-primary-600 flex-1"
+                          isProcessing={activateSurveyMutation.isLoading && selectedSurvey?.id === survey.id}
                         >
                           <HiPlay className="w-4 h-4 mr-1" />
                           Activate
@@ -172,16 +278,15 @@ const Dashboard = () => {
                       
                       {!survey.rewardAmount && survey.status !== 'DRAFT' && (
                         <Button
+                          as={Link}
+                          to={`/dashboard/survey/${survey.id}`}
+                          state={{ tab: 'rewards' }}
                           size="sm"
                           color="warning"
-                          onClick={() => {
-                            setSelectedSurvey(survey)
-                            setPaymentModalOpen(true)
-                          }}
                           className="flex-1"
                         >
                           <HiCurrencyDollar className="w-4 h-4 mr-1" />
-                          Add Rewards
+                          Rewards
                         </Button>
                       )}
                     </div>
@@ -221,8 +326,38 @@ const Dashboard = () => {
           setSelectedSurvey(null)
         }}
         survey={selectedSurvey}
+        mode={selectedSurvey ? 'SURVEY_ACTIVATION' : 'WALLET_TOPUP'}
         onPaymentSuccess={handlePaymentSuccess}
       />
+      
+      {/* Distribution Modal */}
+      <Modal show={showDistModal} onClose={() => setShowDistModal(false)} size="md">
+        <Modal.Header>Send Survey</Modal.Header>
+        <Modal.Body>
+          <div className="space-y-4">
+             <p className="text-gray-600">Select a contact list to send SMS invitations to.</p>
+             <div>
+               <Label htmlFor="dList" value="Distribution List" />
+               <Select 
+                 id="dList"
+                 value={selectedListId}
+                 onChange={(e) => setSelectedListId(e.target.value)}
+               >
+                 <option value="">-- Select List --</option>
+                 {distLists.map(l => (
+                   <option key={l.id} value={l.id}>{l.name} ({l.contacts?.length} contacts)</option>
+                 ))}
+               </Select>
+             </div>
+             <div className="flex justify-end gap-2">
+               <Button color="gray" onClick={() => setShowDistModal(false)}>Cancel</Button>
+               <Button onClick={handleSendToDistList} disabled={!selectedListId || isSending} isProcessing={isSending}>
+                 <HiPaperAirplane className="mr-2 h-5 w-5" /> Send
+               </Button>
+             </div>
+          </div>
+        </Modal.Body>
+      </Modal>
     </div>
   )
 }

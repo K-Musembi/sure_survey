@@ -1,19 +1,26 @@
 import { useState } from 'react'
-import { Card, Button, Select, Badge } from 'flowbite-react'
+import { Card, Button, Select, Badge, TextInput, Spinner, Alert } from 'flowbite-react'
 import { 
   LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
 } from 'recharts'
 import { useSurveyAnalytics, useRealTimeResponses } from '../hooks/useApi'
+import { aiAPI } from '../services/apiServices'
 import useSurveyStore from '../stores/surveyStore'
-import { HiTrendingUp, HiUsers, HiClock, HiCurrencyDollar } from 'react-icons/hi'
+import { HiTrendingUp, HiUsers, HiClock, HiCurrencyDollar, HiSparkles, HiChat, HiExclamationCircle } from 'react-icons/hi'
 
 const AnalyticsDashboard = ({ surveys = [] }) => {
   const [selectedSurveyId, setSelectedSurveyId] = useState('')
   const [viewMode, setViewMode] = useState('real-time') // 'real-time' or 'historical'
   const { selectedSurveyForAnalytics, setSelectedSurveyForAnalytics } = useSurveyStore()
   
-  const { data: analyticsData, isLoading } = useSurveyAnalytics(selectedSurveyId)
+  // AI Analysis State
+  const [aiQuery, setAiQuery] = useState('')
+  const [aiResult, setAiResult] = useState('')
+  const [isAiAnalyzing, setIsAiAnalyzing] = useState(false)
+  const [aiError, setAiError] = useState('')
+  
+  const { data: analyticsData, isLoading, error: analyticsError } = useSurveyAnalytics(selectedSurveyId)
   
   // Use real-time hook for SSE connection
   useRealTimeResponses(selectedSurveyId)
@@ -22,9 +29,30 @@ const AnalyticsDashboard = ({ surveys = [] }) => {
     setSelectedSurveyId(surveyId)
     const survey = surveys.find(s => s.id === parseInt(surveyId))
     setSelectedSurveyForAnalytics(survey)
+    setAiResult('') // Reset AI result on survey change
+    setAiError('')
   }
 
-  // Mock data for demo purposes
+  const handleAiAnalyze = async () => {
+    if (!selectedSurveyId || !aiQuery) return
+    setIsAiAnalyzing(true)
+    setAiResult('')
+    setAiError('')
+    try {
+      const response = await aiAPI.analyzeSurvey({
+        surveyId: selectedSurveyId,
+        query: aiQuery
+      })
+      setAiResult(response.data.result)
+    } catch (error) {
+      console.error("AI Analysis failed", error)
+      setAiError("Failed to analyze. Please try again.")
+    } finally {
+      setIsAiAnalyzing(false)
+    }
+  }
+
+  // Mock data for demo purposes (keep existing mocks if real data not fully mapped)
   const mockResponseData = [
     { time: '09:00', responses: 45 },
     { time: '10:00', responses: 67 },
@@ -113,6 +141,55 @@ const AnalyticsDashboard = ({ surveys = [] }) => {
         </Card>
       ) : (
         <>
+          {analyticsError && (
+             <Alert color="failure" icon={HiExclamationCircle} className="mb-4">
+               Failed to load analytics data.
+             </Alert>
+          )}
+
+          {/* AI Analysis Section */}
+          <Card className="bg-gradient-to-r from-purple-50 to-white border-purple-100">
+             <div className="flex items-start gap-4">
+               <div className="p-3 bg-purple-100 rounded-lg">
+                 <HiSparkles className="w-6 h-6 text-purple-600" />
+               </div>
+               <div className="flex-grow space-y-4">
+                 <div>
+                   <h3 className="text-lg font-bold text-gray-900">AI Analyst</h3>
+                   <p className="text-sm text-gray-600">Ask questions about your survey data in plain English.</p>
+                 </div>
+                 
+                 <div className="flex gap-2">
+                   <TextInput 
+                     className="flex-grow"
+                     placeholder="e.g. What is the general sentiment of the feedback?"
+                     value={aiQuery}
+                     onChange={(e) => setAiQuery(e.target.value)}
+                     onKeyDown={(e) => e.key === 'Enter' && handleAiAnalyze()}
+                   />
+                   <Button gradientDuoTone="purpleToBlue" onClick={handleAiAnalyze} disabled={isAiAnalyzing}>
+                     {isAiAnalyzing ? <Spinner size="sm" /> : 'Analyze'}
+                   </Button>
+                 </div>
+
+                 {aiError && (
+                   <Alert color="failure" icon={HiExclamationCircle} className="mt-4" onDismiss={() => setAiError('')}>
+                     {aiError}
+                   </Alert>
+                 )}
+
+                 {aiResult && (
+                   <div className="bg-white p-4 rounded-lg border border-purple-100 shadow-sm mt-4">
+                     <div className="flex items-start gap-2">
+                       <HiChat className="w-5 h-5 text-purple-500 mt-1" />
+                       <p className="text-gray-800 whitespace-pre-wrap">{aiResult}</p>
+                     </div>
+                   </div>
+                 )}
+               </div>
+             </div>
+          </Card>
+
           {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card>
@@ -253,31 +330,6 @@ const AnalyticsDashboard = ({ surveys = [] }) => {
               </div>
             </Card>
           </div>
-
-          {/* Additional Insights */}
-          <Card>
-            <h3 className="text-lg font-semibold mb-4">Key Insights</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                <span className="text-sm font-medium text-green-800">
-                  Response rate is 24% higher than average
-                </span>
-                <Badge color="success">+24%</Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                <span className="text-sm font-medium text-blue-800">
-                  Peak response time: 12:00 - 14:00
-                </span>
-                <Badge color="info">Peak</Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
-                <span className="text-sm font-medium text-yellow-800">
-                  Mobile responses: 67% of total
-                </span>
-                <Badge color="warning">67%</Badge>
-              </div>
-            </div>
-          </Card>
         </>
       )}
     </div>

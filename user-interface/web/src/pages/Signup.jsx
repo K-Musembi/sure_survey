@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Label, TextInput, Button, Radio } from 'flowbite-react'
+import { Label, TextInput, Button, Radio, Alert } from 'flowbite-react'
 import NavBar from '../components/NavBar'
 import { useSignup } from '../hooks/useApi'
 import { authAPI } from '../services/apiServices'
+import { HiExclamationCircle } from 'react-icons/hi'
 
 const Signup = () => {
   const navigate = useNavigate()
@@ -15,6 +16,7 @@ const Signup = () => {
   const [department, setDepartment] = useState('')
   const [similarTenants, setSimilarTenants] = useState([])
   const [debounceTimeout, setDebounceTimeout] = useState(null)
+  const [errorMessage, setErrorMessage] = useState('')
 
   const signupMutation = useSignup()
 
@@ -47,6 +49,7 @@ const Signup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setErrorMessage('')
     try {
       const payload = { name, email, password, role: 'USER' }
       if (mode === 'enterprise') {
@@ -59,6 +62,7 @@ const Signup = () => {
       navigate('/login')
     } catch (error) {
       console.error('Signup error:', error.response?.data || error.message)
+      setErrorMessage(error.response?.data?.message || 'Failed to create account. Please try again.')
     }
   }
 
@@ -67,6 +71,12 @@ const Signup = () => {
       <NavBar />
       <div className="max-w-lg w-full mx-auto mt-16 p-6">
         <h1 className="text-2xl font-bold mb-4 text-center">Sure Survey</h1>
+
+        {errorMessage && (
+          <Alert color="failure" icon={HiExclamationCircle} className="mb-4">
+            {errorMessage}
+          </Alert>
+        )}
 
         <div className="mb-4">
           <div className="flex items-center gap-4 justify-center">
