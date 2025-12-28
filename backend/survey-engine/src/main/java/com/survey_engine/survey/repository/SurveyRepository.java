@@ -42,6 +42,13 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
     List<Survey> findByTenantIdAndUserIdIn(Long tenantId, List<String> userIds);
 
     /**
+     * Finds surveys by user ID.
+     * @param userId The ID of the user.
+     * @return List of surveys.
+     */
+    List<Survey> findByUserId(String userId);
+
+    /**
      * Finds a survey by its ID, eagerly fetching the associated questions.
      *
      * @param id The ID of the survey.

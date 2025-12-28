@@ -66,7 +66,7 @@ public class SurveyService {
         }
         
         // Check subscription limits via Billing API
-        billingApi.validateSurveyCreationLimit(tenantId);
+        billingApi.validateSurveyCreationLimit(tenantId, Long.parseLong(userId));
 
         if (surveyRepository.findByNameAndTenantId(surveyRequest.name(), tenantId).isPresent()) {
             throw new DataIntegrityViolationException("A survey with this name already exists");

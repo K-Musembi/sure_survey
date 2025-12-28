@@ -76,6 +76,9 @@ public class User extends BaseEntity implements UserDetails {
     @JoinColumn(name = "tenant_id", insertable=false, updatable=false)
     private Tenant tenant;
 
+    @Column(name = "subscription_id")
+    private java.util.UUID subscriptionId;
+
     /**
      * Returns the authorities granted to the user. The role is prefixed with "ROLE_"
      * to integrate with Spring Security's role-based authorization.

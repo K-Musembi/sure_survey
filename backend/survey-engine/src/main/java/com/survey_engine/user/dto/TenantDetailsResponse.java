@@ -1,6 +1,7 @@
 package com.survey_engine.user.dto;
 
 import com.survey_engine.user.models.Tenant;
+import java.util.UUID;
 
 /**
  * A DTO representing detailed information about a tenant, including the number of associated users.
@@ -9,7 +10,7 @@ import com.survey_engine.user.models.Tenant;
  * @param name The human-readable name of the tenant.
  * @param slug A unique, URL-friendly identifier for the tenant.
  * @param status The current status of the tenant (e.g., ACTIVE, INACTIVE).
- * @param plan The subscription plan of the tenant.
+ * @param subscriptionId The unique identifier of the active subscription.
  * @param userCount The total number of users associated with this tenant.
  */
 public record TenantDetailsResponse(
@@ -17,7 +18,7 @@ public record TenantDetailsResponse(
         String name,
         String slug,
         String status,
-        String plan,
+        UUID subscriptionId,
         long userCount
 ) {
     /**
@@ -33,7 +34,7 @@ public record TenantDetailsResponse(
                 tenant.getName(),
                 tenant.getSlug(),
                 tenant.getStatus(),
-                tenant.getPlan(),
+                tenant.getSubscriptionId(),
                 userCount
         );
     }

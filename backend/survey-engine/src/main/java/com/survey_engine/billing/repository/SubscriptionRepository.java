@@ -52,10 +52,10 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, UUID
     Optional<Subscription> findByTenantIdAndUserIdAndStatus(Long tenantId, Long userId, SubscriptionStatus status);
 
     /**
-     * Finds a Subscription entity by its Paystack subscription ID.
+     * Finds a Subscription entity by its Gateway subscription ID.
      *
-     * @param paystackSubscriptionId The Paystack subscription ID.
+     * @param gatewaySubscriptionId The Gateway subscription ID.
      * @return An {@link Optional} containing the found Subscription or empty if not found.
      */
-    Optional<Subscription> findByPaystackSubscriptionId(String paystackSubscriptionId);
+    Optional<Subscription> findByGatewaySubscriptionId(String gatewaySubscriptionId);
 }

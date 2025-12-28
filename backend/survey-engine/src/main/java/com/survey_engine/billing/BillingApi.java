@@ -80,9 +80,10 @@ public interface BillingApi {
     /**
      * Validates if the tenant is allowed to create a new survey based on their subscription.
      * @param tenantId The ID of the tenant.
+     * @param userId The ID of the user creating the survey.
      * @throws IllegalStateException if the limit is reached.
      */
-    void validateSurveyCreationLimit(Long tenantId);
+    void validateSurveyCreationLimit(Long tenantId, Long userId);
 
     /**
      * Validates if a survey is allowed to accept more responses based on the subscription.

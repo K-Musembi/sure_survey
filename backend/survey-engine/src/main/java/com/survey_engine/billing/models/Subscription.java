@@ -1,5 +1,6 @@
 package com.survey_engine.billing.models;
 
+import com.survey_engine.billing.models.enums.PaymentGatewayType;
 import com.survey_engine.billing.models.enums.SubscriptionStatus;
 import com.survey_engine.common.models.BaseEntity;
 import jakarta.persistence.*;
@@ -46,10 +47,14 @@ public class Subscription extends BaseEntity {
     private Long userId;
 
     /**
-     * The unique identifier for this subscription in the Paystack payment gateway.
+     * The unique identifier for this subscription in the payment gateway.
      */
     @Column(unique = true)
-    private String paystackSubscriptionId;
+    private String gatewaySubscriptionId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "gateway_type")
+    private PaymentGatewayType gatewayType;
 
     /**
      * The current status of the subscription (e.g., ACTIVE, CANCELED, PAST_DUE).
@@ -74,7 +79,7 @@ public class Subscription extends BaseEntity {
     private LocalDateTime trialEndDate;
 
     /**
-     * The email token for this subscription in the Paystack payment gateway, used for actions like cancellation.
+     * The email token for this subscription in the payment gateway, used for actions like cancellation.
      */
-    private String paystackEmailToken;
+    private String gatewayEmailToken;
 }

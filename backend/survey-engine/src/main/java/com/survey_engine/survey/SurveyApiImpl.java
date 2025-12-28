@@ -46,6 +46,16 @@ class SurveyApiImpl implements SurveyApi {
     @Override
     public List<Map<String, Object>> findSurveysByTenantId(Long tenantId) {
         List<Survey> surveys = surveyRepository.findByTenantId(tenantId);
+        return mapSurveysToMaps(surveys);
+    }
+
+    @Override
+    public List<Map<String, Object>> findSurveysByUserId(String userId) {
+        List<Survey> surveys = surveyRepository.findByUserId(userId);
+        return mapSurveysToMaps(surveys);
+    }
+
+    private List<Map<String, Object>> mapSurveysToMaps(List<Survey> surveys) {
         return surveys.stream()
                 .map(survey -> {
                     Map<String, Object> surveyMap = new HashMap<>();

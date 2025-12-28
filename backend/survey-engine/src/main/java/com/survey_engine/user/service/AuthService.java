@@ -1,5 +1,6 @@
 package com.survey_engine.user.service;
 
+import com.survey_engine.common.events.UserRegisteredEvent;
 import com.survey_engine.user.config.security.JwtService;
 import com.survey_engine.user.dto.*;
 import com.survey_engine.user.models.Tenant;
@@ -39,6 +40,7 @@ public class AuthService {
     private final TenantService tenantService;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     /**
      * Registers new user and generates token
@@ -66,6 +68,10 @@ public class AuthService {
         user.setTenantId(tenant.getId());
 
         User savedUser = userRepository.save(user);
+
+        // Publish event for billing module to handle subscription creation
+        // The listener will determine if a new subscription is needed based on tenant type and existing subs
+        eventPublisher.publishEvent(new UserRegisteredEvent(savedUser.getId(), tenant.getId()));
 
         return new UserResponse(
                 savedUser.getId(),

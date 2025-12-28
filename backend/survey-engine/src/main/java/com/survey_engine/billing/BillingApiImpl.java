@@ -126,8 +126,8 @@ public class BillingApiImpl implements BillingApi {
     }
 
     @Override
-    public void validateSurveyCreationLimit(Long tenantId) {
-        subscriptionLimitService.validateSurveyCreationLimit(tenantId);
+    public void validateSurveyCreationLimit(Long tenantId, Long userId) {
+        subscriptionLimitService.validateSurveyCreationLimit(tenantId, userId);
     }
 
     @Override

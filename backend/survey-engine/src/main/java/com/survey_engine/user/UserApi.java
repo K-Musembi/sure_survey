@@ -5,10 +5,7 @@ import com.survey_engine.user.models.User;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.modulith.NamedInterface;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Public API for the User module, exposing tenant-aware user and participant information.
@@ -143,4 +140,32 @@ public interface UserApi {
      * @return A list of user IDs (String) matching the scope.
      */
     List<String> findUserIdsByScope(Long tenantId, String department, String region, String branch);
+
+    /**
+     * Updates the subscription ID for a specific user.
+     * @param userId The ID of the user.
+     * @param subscriptionId The UUID of the subscription.
+     */
+    void updateUserSubscriptionId(Long userId, UUID subscriptionId);
+
+    /**
+     * Updates the subscription ID for a specific tenant.
+     * @param tenantId The ID of the tenant.
+     * @param subscriptionId The UUID of the subscription.
+     */
+    void updateTenantSubscriptionId(Long tenantId, UUID subscriptionId);
+
+    /**
+     * Retrieves the subscription ID for a specific user.
+     * @param userId The ID of the user.
+     * @return An {@link Optional} containing the subscription UUID, or empty if not set.
+     */
+    Optional<UUID> getUserSubscriptionId(Long userId);
+
+    /**
+     * Retrieves the subscription ID for a specific tenant.
+     * @param tenantId The ID of the tenant.
+     * @return An {@link Optional} containing the subscription UUID, or empty if not set.
+     */
+    Optional<UUID> getTenantSubscriptionId(Long tenantId);
 }

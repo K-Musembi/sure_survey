@@ -121,7 +121,7 @@ public class InvoiceService {
                     newInvoice.setInvoicePdfUrl(invoicePdfUrl);
 
                     if (subscriptionCode != null) {
-                        subscriptionRepository.findByPaystackSubscriptionId(subscriptionCode)
+                        subscriptionRepository.findByGatewaySubscriptionId(subscriptionCode)
                                 .ifPresent(newInvoice::setSubscription);
                     }
                     return newInvoice;

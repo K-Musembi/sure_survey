@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 public class TenantService {
 
     private final TenantRepository tenantRepository;
+    private final org.springframework.context.ApplicationEventPublisher eventPublisher;
     private static final double SIMILARITY_THRESHOLD = 0.8;
 
     /**
@@ -89,9 +90,9 @@ public class TenantService {
         if (tenantRequest.slug() != null) {
             tenant.setSlug(tenantRequest.slug());
         }
-        // Default status and plan for new tenants
+        // Default status for new tenants
         tenant.setStatus("ACTIVE");
-        tenant.setPlan("FREE");
+
         return tenantRepository.save(tenant);
     }
 

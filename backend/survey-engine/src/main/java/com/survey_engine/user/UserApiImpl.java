@@ -10,13 +10,9 @@ import com.survey_engine.user.service.TenantContext;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
@@ -206,6 +202,34 @@ public class UserApiImpl implements UserApi {
         return users.stream()
                 .map(user -> String.valueOf(user.getId()))
                 .collect(toList());
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public void updateUserSubscriptionId(Long userId, java.util.UUID subscriptionId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+        user.setSubscriptionId(subscriptionId);
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
+    public void updateTenantSubscriptionId(Long tenantId, UUID subscriptionId) {
+        Tenant tenant = tenantRepository.findById(tenantId)
+                .orElseThrow(() -> new EntityNotFoundException("Tenant not found with id: " + tenantId));
+        tenant.setSubscriptionId(subscriptionId);
+        tenantRepository.save(tenant);
+    }
+
+    @Override
+    public Optional<UUID> getUserSubscriptionId(Long userId) {
+        return userRepository.findById(userId).map(User::getSubscriptionId);
+    }
+
+    @Override
+    public Optional<UUID> getTenantSubscriptionId(Long tenantId) {
+        return tenantRepository.findById(tenantId).map(Tenant::getSubscriptionId);
     }
 
 }

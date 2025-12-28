@@ -79,6 +79,41 @@ public class BillingController {
     }
 
     /**
+     * Retrieves all available subscription plans.
+     * @return A {@link ResponseEntity} containing a list of {@link PlanResponse}.
+     */
+    @GetMapping("/plans")
+    public ResponseEntity<List<PlanResponse>> getAllPlans() {
+        List<PlanResponse> plans = subscriptionService.getAllPlans().stream()
+                .map(plan -> new PlanResponse(
+                        plan.getId(),
+                        plan.getName(),
+                        plan.getPrice(),
+                        plan.getBillingInterval(),
+                        plan.getFeatures()
+                ))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(plans);
+    }
+
+    /**
+     * Changes the subscription plan for the authenticated user.
+     *
+     * @param jwt The authenticated user's JWT.
+     * @param request The {@link SubscriptionRequest} containing the new plan ID.
+     * @return A {@link ResponseEntity} containing the updated {@link SubscriptionResponse}.
+     */
+    @PutMapping("/subscription")
+    public ResponseEntity<SubscriptionResponse> changeSubscriptionPlan(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody SubscriptionRequest request) {
+        Long tenantId = jwt.getClaim("tenantId");
+        Long userId = Long.valueOf(jwt.getSubject());
+        Subscription updatedSubscription = subscriptionService.changePlan(tenantId, userId, request.planId());
+        return ResponseEntity.ok(mapToSubscriptionResponse(updatedSubscription));
+    }
+
+    /**
      * Creates a new subscription for the authenticated user.
      *
      * @param jwt The authenticated user's JWT.

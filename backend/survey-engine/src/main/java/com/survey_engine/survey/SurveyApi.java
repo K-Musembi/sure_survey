@@ -33,6 +33,14 @@ public interface SurveyApi {
     List<Map<String, Object>> findSurveysByTenantId(Long tenantId);
 
     /**
+     * Retrieves a list of survey data for a given user ID.
+     *
+     * @param userId The ID of the user.
+     * @return A list of Maps, where each Map represents a survey.
+     */
+    List<Map<String, Object>> findSurveysByUserId(String userId);
+
+    /**
      * Retrieves all text responses for a specific survey ID, formatted for consumption.
      *
      * @param surveyId The ID of the survey.

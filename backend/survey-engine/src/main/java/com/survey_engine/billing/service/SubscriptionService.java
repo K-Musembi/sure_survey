@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -57,46 +58,44 @@ public class SubscriptionService {
         Plan plan = planRepository.findById(planId)
                 .orElseThrow(() -> new EntityNotFoundException("Plan not found with ID: " + planId));
 
-        // For enterprise tenants, check if a subscription already exists.
         String tenantName = userApi.findTenantNameById(tenantId)
                 .orElseThrow(() -> new EntityNotFoundException("Tenant not found with ID: " + tenantId));
-
-        if (!tenantName.equals("Main Tenant")) {
-            subscriptionRepository.findFirstByTenantIdAndStatusOrderByIdAsc(tenantId, SubscriptionStatus.ACTIVE)
-                    .ifPresent(existingSub -> {
-                        String creatorName = userApi.getUserNameById(String.valueOf(existingSub.getUserId()));
-                        String createdAt = existingSub.getCreatedAt().format(DateTimeFormatter.ISO_DATE);
-                        throw new IllegalStateException(String.format(
-                                "Subscription for this enterprise client already created by %s on %s",
-                                creatorName, createdAt));
-                    });
+        
+        boolean isEnterprise = !tenantName.equals("Main Tenant");
+        
+        // Check for existing subscription
+        if (isEnterprise) {
+            userApi.getTenantSubscriptionId(tenantId).ifPresent(subId -> {
+                 Subscription existing = subscriptionRepository.findById(subId).orElse(null);
+                 if (existing != null && existing.getStatus() == SubscriptionStatus.ACTIVE) {
+                     throw new IllegalStateException("Tenant already has an active subscription.");
+                 }
+            });
         } else {
-            // For individual users on the default tenant, check if they have a subscription.
-            subscriptionRepository.findByTenantIdAndUserIdAndStatus(tenantId, userId, SubscriptionStatus.ACTIVE)
-                    .ifPresent(s -> {
-                        throw new IllegalStateException("You already have an active subscription.");
-                    });
+             userApi.getUserSubscriptionId(userId).ifPresent(subId -> {
+                 Subscription existing = subscriptionRepository.findById(subId).orElse(null);
+                 if (existing != null && existing.getStatus() == SubscriptionStatus.ACTIVE) {
+                     throw new IllegalStateException("User already has an active subscription.");
+                 }
+             });
         }
-
 
         Map<String, String> userDetails = userApi.findUserDetailsMapById(String.valueOf(userId));
         if (userDetails.isEmpty()) {
             throw new EntityNotFoundException("User not found for ID: " + userId);
         }
 
-        // If the plan is free or price is zero, we can skip Paystack logic if desired, 
-        // OR we still want to register them on Paystack if a mapping exists.
-        // Assuming strictly decoupling: if no mapping exists, handle as internal only.
-        
-        String paystackSubscriptionCode = null;
-        String paystackEmailToken = null;
+        String gatewaySubscriptionId = null;
+        String gatewayEmailToken = null;
+        PaymentGatewayType gatewayType = null;
         SubscriptionStatus initialStatus = SubscriptionStatus.ACTIVE; // Default for free/internal plans
         
-        // Check if there is a Paystack mapping for this plan
+        // Check if there is a Paystack mapping (or other gateway) for this plan
         Optional<PlanGatewayMapping> gatewayMapping = planGatewayMappingRepository
                 .findByPlanIdAndGatewayType(planId, PaymentGatewayType.PAYSTACK);
 
         if (gatewayMapping.isPresent()) {
+            gatewayType = PaymentGatewayType.PAYSTACK;
             String name = userDetails.get("name");
             String[] nameParts = name.split(" ", 2);
             String firstName = nameParts[0];
@@ -108,15 +107,14 @@ public class SubscriptionService {
             if (paystackSubscriptionData == null) {
                 throw new IllegalStateException("Failed to create subscription on Paystack, response was null.");
             }
-            paystackSubscriptionCode = paystackSubscriptionData.subscriptionCode();
-            paystackEmailToken = paystackSubscriptionData.emailToken();
+            gatewaySubscriptionId = paystackSubscriptionData.subscriptionCode();
+            gatewayEmailToken = paystackSubscriptionData.emailToken();
             initialStatus = SubscriptionStatus.TRIALING; // Wait for webhook to confirm
         } else {
             // No Paystack mapping. If price > 0, we can't process it (unless we support other gateways).
             if (plan.getPrice().compareTo(BigDecimal.ZERO) > 0) {
-                 throw new IllegalStateException("This paid plan is not configured for online payment (Paystack). Please contact support.");
+                 throw new IllegalStateException("This paid plan is not configured for online payment. Please contact support.");
             }
-            // If price is 0 (Free), we just create the subscription locally as ACTIVE.
         }
 
         Subscription subscription = new Subscription();
@@ -125,12 +123,21 @@ public class SubscriptionService {
         subscription.setPlan(plan);
         subscription.setStatus(initialStatus);
         subscription.setCurrentPeriodStart(LocalDateTime.now());
-        // For internal/free plans, we might set a long duration or null. Setting 30 days for now or based on interval.
         subscription.setCurrentPeriodEnd(LocalDateTime.now().plusDays(30)); 
-        subscription.setPaystackSubscriptionId(paystackSubscriptionCode);
-        subscription.setPaystackEmailToken(paystackEmailToken);
+        subscription.setGatewaySubscriptionId(gatewaySubscriptionId);
+        subscription.setGatewayEmailToken(gatewayEmailToken);
+        subscription.setGatewayType(gatewayType);
 
-        return subscriptionRepository.save(subscription);
+        subscription = subscriptionRepository.save(subscription);
+
+        // Link to User or Tenant
+        if (isEnterprise) {
+            userApi.updateTenantSubscriptionId(tenantId, subscription.getId());
+        } else {
+            userApi.updateUserSubscriptionId(userId, subscription.getId());
+        }
+
+        return subscription;
     }
 
     /**
@@ -146,11 +153,9 @@ public class SubscriptionService {
         Subscription subscription = subscriptionRepository.findById(subscriptionId)
                 .orElseThrow(() -> new EntityNotFoundException("Subscription not found with ID: " + subscriptionId));
 
-        // An enterprise user can cancel their tenant's subscription.
-        // An individual user can only cancel their own subscription.
         String tenantName = userApi.findTenantNameById(tenantId)
                 .orElseThrow(() -> new EntityNotFoundException("Tenant not found with ID: " + tenantId));
-
+        
         boolean isEnterprise = !tenantName.equals("Main Tenant");
         boolean hasPermission = isEnterprise ? subscription.getTenantId().equals(tenantId)
                                               : subscription.getUserId().equals(userId);
@@ -159,11 +164,19 @@ public class SubscriptionService {
             throw new AccessDeniedException("You do not have permission to cancel this subscription.");
         }
 
-        if (subscription.getPaystackSubscriptionId() != null) {
-            paystackSubscriptionService.cancelSubscription(subscription.getPaystackSubscriptionId(), subscription.getPaystackEmailToken());
+        if (subscription.getGatewaySubscriptionId() != null && subscription.getGatewayType() == PaymentGatewayType.PAYSTACK) {
+            paystackSubscriptionService.cancelSubscription(subscription.getGatewaySubscriptionId(), subscription.getGatewayEmailToken());
         }
 
         subscription.setStatus(SubscriptionStatus.CANCELED);
+        
+        // Unlink
+        if (isEnterprise) {
+            userApi.updateTenantSubscriptionId(tenantId, null);
+        } else {
+            userApi.updateUserSubscriptionId(userId, null);
+        }
+
         return subscriptionRepository.save(subscription);
     }
 
@@ -176,16 +189,54 @@ public class SubscriptionService {
      */
     @Transactional(readOnly = true)
     public Optional<Subscription> getActiveSubscriptionForUser(Long tenantId, Long userId) {
-        String tenantName = userApi.findTenantNameById(tenantId)
-                .orElseThrow(() -> new EntityNotFoundException("Tenant not found with ID: " + tenantId));
-
-        if (!tenantName.equals("Main Tenant")) {
-            // For enterprise users, find the subscription by tenantId
-            return subscriptionRepository.findFirstByTenantIdAndStatusOrderByIdAsc(tenantId, SubscriptionStatus.ACTIVE);
-        } else {
-            // For individual users, find the subscription by tenantId and userId
-            return subscriptionRepository.findByTenantIdAndUserIdAndStatus(tenantId, userId, SubscriptionStatus.ACTIVE);
+        // 1. Check if User has a subscription (Individual)
+        Optional<UUID> userSubId = userApi.getUserSubscriptionId(userId);
+        if (userSubId.isPresent()) {
+            return subscriptionRepository.findById(userSubId.get());
         }
+
+        // 2. Check if Tenant has a subscription (Enterprise)
+        Optional<UUID> tenantSubId = userApi.getTenantSubscriptionId(tenantId);
+        if (tenantSubId.isPresent()) {
+            return subscriptionRepository.findById(tenantSubId.get());
+        }
+
+        return Optional.empty();
+    }
+
+    /**
+     * Changes the plan of an active subscription.
+     *
+     * @param tenantId The ID of the tenant.
+     * @param userId The ID of the user.
+     * @param newPlanId The ID of the new plan.
+     * @return The updated {@link Subscription} entity.
+     */
+    @Transactional
+    public Subscription changePlan(Long tenantId, Long userId, Long newPlanId) {
+        Subscription subscription = getActiveSubscriptionForUser(tenantId, userId)
+                .orElseThrow(() -> new IllegalStateException("No active subscription found to change."));
+
+        Plan newPlan = planRepository.findById(newPlanId)
+                .orElseThrow(() -> new EntityNotFoundException("Plan not found with ID: " + newPlanId));
+
+        // Logic to handle gateway update would go here if we were fully integrated.
+        // For now, we update the local record.
+        subscription.setPlan(newPlan);
+        
+        // If upgrading to a paid plan from free, we might need to trigger payment flow.
+        // For this refactor, we assume the user has handled payment or it's an internal update.
+        
+        return subscriptionRepository.save(subscription);
+    }
+
+    /**
+     * Retrieves all available subscription plans.
+     * @return List of all plans.
+     */
+    @Transactional(readOnly = true)
+    public List<Plan> getAllPlans() {
+        return planRepository.findAll();
     }
 
     /**
@@ -222,11 +273,12 @@ public class SubscriptionService {
 
         SubscriberInfo subscriberInfo = webhookSubscriberFinder.findSubscriber(eventData);
 
-        Subscription subscription = subscriptionRepository.findByPaystackSubscriptionId(paystackSubscriptionId)
+        Subscription subscription = subscriptionRepository.findByGatewaySubscriptionId(paystackSubscriptionId)
                 .orElseGet(() -> {
                     log.info("Creating new subscription from webhook for Paystack ID: {}", paystackSubscriptionId);
                     Subscription newSubscription = new Subscription();
-                    newSubscription.setPaystackSubscriptionId(paystackSubscriptionId);
+                    newSubscription.setGatewaySubscriptionId(paystackSubscriptionId);
+                    newSubscription.setGatewayType(PaymentGatewayType.PAYSTACK);
                     newSubscription.setTenantId(subscriberInfo.tenantId());
                     newSubscription.setUserId(subscriberInfo.userId());
                     

@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Model class for Tenant entity
@@ -53,10 +54,10 @@ public class Tenant {
     private String branding_s3_key;
 
     /**
-     * The subscription plan of the tenant (e.g., FREE, BASIC, PREMIUM).
+     * Subscription id
      */
-    @Column
-    private String plan;
+    @Column(name = "subscription_id")
+    private UUID subscriptionId;
 
     /**
      * List of users belonging to this tenant.
