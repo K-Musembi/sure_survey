@@ -173,7 +173,9 @@ const SurveyIntegrations = ({ surveyId }) => {
             </div>
 
             <div className="flex justify-end">
-              <Button type="submit" isProcessing={isSubmitting}>Create Integration</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Creating...' : 'Create Integration'}
+              </Button>
             </div>
           </form>
         </Card>

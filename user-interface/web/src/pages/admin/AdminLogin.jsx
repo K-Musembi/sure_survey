@@ -73,7 +73,7 @@ const AdminLogin = () => {
             />
           </div>
 
-          <Button type="submit" className="w-full bg-gray-800 hover:bg-gray-700" isProcessing={isLoading}>
+          <Button type="submit" className="w-full bg-gray-800 hover:bg-gray-700" disabled={isLoading}>
             {isLoading ? 'Authenticating...' : 'Access Dashboard'}
           </Button>
         </form>

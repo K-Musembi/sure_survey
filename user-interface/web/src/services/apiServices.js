@@ -23,7 +23,6 @@ api.interceptors.request.use(
     
     // Authorization header is NOT attached here. 
     // The application relies on HttpOnly cookies set by the backend.
-    // Previous logic for Bearer token attachment has been removed to avoid sending stale tokens.
     
     return config
   },
@@ -59,19 +58,15 @@ api.interceptors.response.use(
 export const authAPI = {
   signup: (userData) => api.post('/auth/signup', userData, { withCredentials: false }),
   login: async (credentials) => {
-    // We must allow credentials (cookies) to be included/set.
-    // Using 'omit' prevents the browser from saving the new Set-Cookie from the backend.
     const response = await fetch(`${API_BASE_URL}/api/${API_VERSION}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(credentials),
-      // credentials: 'omit' REMOVED to ensure Set-Cookie is processed
     })
 
     if (!response.ok) {
-       // mimic axios error structure for consistency
        const errorData = await response.json().catch(() => ({}));
        const error = new Error('Login failed');
        error.response = { status: response.status, data: errorData };
@@ -79,10 +74,10 @@ export const authAPI = {
     }
 
     const data = await response.json();
-    return { data }; // mimic axios response structure
+    return { data }; 
   },
   logout: () => api.post('/auth/logout'),
-  me: () => api.get('/auth/me'),
+  me: () => api.get('/auth/me'), // Note: Backend implementation for /auth/me might be missing, usually we rely on login response or dedicated user endpoint
   checkTenant: (tenantName) => api.post('/auth/check-tenant', { tenantName }, { withCredentials: false }),
   refreshToken: () => api.post('/auth/refresh'),
 }
@@ -111,7 +106,9 @@ export const adminAPI = {
   getTenantSurveys: (tenantId) => api.get(`/admin/tenants/${tenantId}/surveys`),
   getSettings: () => api.get('/admin/settings'),
   updateSettings: (settings) => api.put('/admin/settings', settings),
+  createPlan: (planData) => api.post('/admin/plans', planData),
   updatePlan: (planData) => api.put('/admin/plans', planData),
+  configurePlanGateway: (planId, data) => api.post(`/admin/plans/${planId}/gateways`, data),
   restockSystemWallet: (type, amount) => api.post('/admin/system-wallet/restock', null, { params: { type, amount } }),
 }
 
@@ -158,9 +155,8 @@ export const responseAPI = {
   getSurveyResponses: (surveyId) => api.get(`/surveys/${surveyId}/responses`),
   getResponse: (surveyId, responseId) => api.get(`/surveys/${surveyId}/responses/${responseId}`),
   deleteResponse: (surveyId, responseId) => api.delete(`/surveys/${surveyId}/responses/${responseId}`),
-  getAnalytics: (surveyId) => api.get(`/responses/analytics`, { params: { surveyId } }), // Assuming this exists or using AI analysis
+  getAnalytics: (surveyId) => api.get(`/responses/analytics`, { params: { surveyId } }), // Mock or real depending on backend
   streamResponses: () => {
-    // SSE connection for real-time responses
     const eventSource = new EventSource(
       `${API_BASE_URL}/api/${API_VERSION}/responses/stream`,
       { withCredentials: true }
@@ -197,6 +193,7 @@ export const billingAPI = {
   getWalletBalance: () => api.get('/billing/wallet/balance'),
   getWalletTransactions: () => api.get('/billing/wallet/transactions'),
   getSubscription: () => api.get('/billing/subscription'),
+  getAllPlans: () => api.get('/billing/plans'),
   createSubscription: (data) => api.post('/billing/subscription', data),
   cancelSubscription: (id) => api.delete(`/billing/subscription/${id}`),
   getInvoices: () => api.get('/billing/invoices'),
@@ -210,9 +207,7 @@ export const paymentAPI = {
   getPaymentDetails: (id) => api.get(`/payments/${id}`),
   getTransaction: (id) => api.get(`/transactions/${id}`),
   getTransactionsByPayment: (paymentId) => api.get(`/transactions/by-payment/${paymentId}`),
-  // Kept for backward compatibility if used elsewhere, but prefer endpoints above
-  createPayment: (paymentData) => api.post('/payments', paymentData), 
-  verifyPayment: (reference) => api.get(`/payments/verify/${reference}`), // NOTE: Check if this exists in backend, otherwise might need removal
+  verifyPayment: (reference) => api.get(`/payments/verify/${reference}`),
 }
 
 // Rewards API calls
@@ -222,8 +217,6 @@ export const rewardAPI = {
   getMyRewards: () => api.get('/rewards/my-rewards'),
   cancelReward: (id) => api.post(`/rewards/${id}/cancel`),
   getRewardTransactions: (rewardId) => api.get(`/rewards/reward-transactions/reward/${rewardId}`),
-  
-  // Loyalty
   getUserLoyalty: (userId) => api.get(`/rewards/loyalty-accounts/user/${userId}`),
   getUserBalance: (userId) => api.get(`/rewards/loyalty-accounts/user/${userId}/balance`),
   redeemPoints: (data) => api.post('/rewards/loyalty-accounts/me/debit', data),
@@ -253,19 +246,10 @@ export const subscriptionAPI = {
 
 // Generic API utility functions
 export const apiUtils = {
-  // Generic GET request
   get: (url, config = {}) => api.get(url, config),
-  
-  // Generic POST request  
   post: (url, data = {}, config = {}) => api.post(url, data, config),
-  
-  // Generic PUT request
   put: (url, data = {}, config = {}) => api.put(url, data, config),
-  
-  // Generic DELETE request
   delete: (url, config = {}) => api.delete(url, config),
-  
-  // File upload utility
   uploadFile: (url, file, onProgress = null) => {
     const formData = new FormData()
     formData.append('file', file)

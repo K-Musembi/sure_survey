@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Button, Card, Label, TextInput, Radio, Textarea, Progress, Alert } from 'flowbite-react'
+import { Button, Card, Label, TextInput, Radio, Textarea, Progress, Alert, Spinner } from 'flowbite-react'
 import { useSurvey, useSubmitResponse } from '../hooks/useApi'
 import { participantAPI } from '../services/apiServices'
-import { HiCheckCircle, HiGift, HiExclamationCircle } from 'react-icons/hi'
+import { HiCheckCircle, HiGift, HiExclamationCircle, HiArrowLeft, HiArrowRight } from 'react-icons/hi'
 
 const SurveySession = () => {
   const { surveyId, shortCode } = useParams()
@@ -25,9 +25,8 @@ const SurveySession = () => {
   const submitResponseMutation = useSubmitResponse()
 
   const currentQuestion = survey?.questions?.[currentQuestionIndex]
-  const progress = survey?.questions?.length 
-    ? ((currentQuestionIndex + 1) / survey.questions.length) * 100 
-    : 0
+  const totalQuestions = survey?.questions?.length || 0
+  const progress = totalQuestions ? ((currentQuestionIndex + 1) / totalQuestions) * 100 : 0
 
   const handleResponseChange = (value) => {
     setResponses(prev => ({
@@ -37,11 +36,11 @@ const SurveySession = () => {
   }
 
   const handleNext = () => {
-    if (currentQuestionIndex < survey.questions.length - 1) {
+    if (currentQuestionIndex < totalQuestions - 1) {
       setCurrentQuestionIndex(prev => prev + 1)
     } else {
-      // Survey completed
-      if (survey.hasRewards && !participant) {
+      // Logic flow: If rewards -> Show Form -> Submit. If no rewards -> Submit.
+      if (survey.hasRewards || survey.rewardAmount) { // Check both potential flags from backend
         setShowRewardForm(true)
       } else {
         handleSubmitSurvey()
@@ -103,48 +102,74 @@ const SurveySession = () => {
             onChange={(e) => handleResponseChange(e.target.value)}
             placeholder="Type your answer here..."
             rows={4}
-            className="w-full"
+            className="w-full focus:ring-primary-500 focus:border-primary-500"
           />
         )
 
       case 'MULTIPLE_CHOICE_SINGLE':
-      case 'MULTIPLE_CHOICE_MULTI':
         return (
           <div className="space-y-3">
             {parsedOptions.map((option, index) => (
-              <div key={index} className="flex items-center">
+              <div key={index} className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer" onClick={() => handleResponseChange(option)}>
                 <Radio
                   id={`option-${index}`}
                   name={`question-${currentQuestion.id}`}
                   value={option}
                   checked={currentResponse === option}
                   onChange={(e) => handleResponseChange(e.target.value)}
+                  className="text-primary-600 focus:ring-primary-500"
                 />
-                <Label htmlFor={`option-${index}`} className="ml-2">
+                <Label htmlFor={`option-${index}`} className="ml-3 cursor-pointer w-full">
                   {option}
                 </Label>
               </div>
             ))}
           </div>
         )
+      
+      case 'MULTIPLE_CHOICE_MULTI':
+         return (
+            <div className="p-4 bg-yellow-50 text-yellow-800 rounded">
+               Multi-select support coming soon. Please select one best option.
+               <div className="space-y-3 mt-2">
+                {parsedOptions.map((option, index) => (
+                  <div key={index} className="flex items-center">
+                    <Radio
+                      id={`option-${index}`}
+                      name={`question-${currentQuestion.id}`}
+                      value={option}
+                      checked={currentResponse === option}
+                      onChange={(e) => handleResponseChange(e.target.value)}
+                    />
+                    <Label htmlFor={`option-${index}`} className="ml-2">{option}</Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+         )
 
       case 'RATING_LINEAR':
+      case 'NPS_SCALE':
+        const max = currentQuestion.questionType === 'NPS_SCALE' ? 10 : 10;
+        const min = currentQuestion.questionType === 'NPS_SCALE' ? 0 : 1;
+        const range = Array.from({length: (max - min) + 1}, (_, i) => i + min);
+        
         return (
           <div className="space-y-4">
-            <div className="flex justify-between text-sm text-gray-600">
-              <span>1 (Very Poor)</span>
-              <span>10 (Excellent)</span>
+            <div className="flex justify-between text-sm text-gray-500">
+              <span>{min} (Not Likely/Poor)</span>
+              <span>{max} (Very Likely/Excellent)</span>
             </div>
-            <div className="flex justify-between">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+            <div className="flex flex-wrap justify-center gap-2">
+              {range.map((num) => (
                 <button
                   key={num}
                   type="button"
                   onClick={() => handleResponseChange(num)}
-                  className={`w-10 h-10 rounded-full border-2 font-medium transition-colors ${
+                  className={`w-10 h-10 md:w-12 md:h-12 rounded-full border-2 font-bold transition-all transform hover:scale-110 ${
                     currentResponse === num
-                      ? 'border-primary-500 bg-primary-500 text-white'
-                      : 'border-gray-300 text-gray-700 hover:border-primary-300'
+                      ? 'border-primary-500 bg-primary-500 text-white shadow-lg'
+                      : 'border-gray-200 text-gray-600 hover:border-primary-300 hover:text-primary-600 bg-white'
                   }`}
                 >
                   {num}
@@ -156,12 +181,12 @@ const SurveySession = () => {
 
       case 'RATING_STAR':
         return (
-          <div className="flex items-center justify-center space-x-1">
+          <div className="flex items-center justify-center space-x-2 py-4">
             {[1, 2, 3, 4, 5].map((star) => (
               <svg
                 key={star}
-                className={`w-8 h-8 cursor-pointer ${
-                  currentResponse >= star ? 'text-yellow-400' : 'text-gray-300'
+                className={`w-10 h-10 cursor-pointer transition-colors ${
+                  currentResponse >= star ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-200'
                 }`}
                 fill="currentColor"
                 viewBox="0 0 20 20"
@@ -171,32 +196,6 @@ const SurveySession = () => {
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.538 1.118l-2.8-2.034a1 1 0 00-1.176 0l-2.8 2.034c-.783.57-1.838-.197-1.538-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.381-1.81.588-1.81h3.462a1 1 0 00.95-.69l1.07-3.292z"></path>
               </svg>
             ))}
-          </div>
-        )
-
-      case 'NPS_SCALE':
-        return (
-          <div className="space-y-4">
-            <div className="flex justify-between text-sm text-gray-600">
-              <span>0 (Not at all likely)</span>
-              <span>10 (Extremely likely)</span>
-            </div>
-            <div className="flex justify-between">
-              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                <button
-                  key={num}
-                  type="button"
-                  onClick={() => handleResponseChange(num)}
-                  className={`w-10 h-10 rounded-full border-2 font-medium transition-colors ${
-                    currentResponse === num
-                      ? 'border-primary-500 bg-primary-500 text-white'
-                      : 'border-gray-300 text-gray-700 hover:border-primary-300'
-                  }`}
-                >
-                  {num}
-                </button>
-              ))}
-            </div>
           </div>
         )
 
@@ -214,10 +213,10 @@ const SurveySession = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading survey...</p>
+          <Spinner size="xl" aria-label="Loading survey" />
+          <p className="mt-4 text-gray-500">Loading survey...</p>
         </div>
       </div>
     )
@@ -225,11 +224,13 @@ const SurveySession = () => {
 
   if (!survey) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Card className="max-w-md mx-auto">
           <div className="text-center">
+            <HiExclamationCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">Survey Not Found</h2>
-            <p className="text-gray-600">This survey may have been removed or is no longer available.</p>
+            <p className="text-gray-600 mb-6">This survey may have been removed or the link is incorrect.</p>
+            <Button color="gray" onClick={() => window.location.href = '/'}>Go Home</Button>
           </div>
         </Card>
       </div>
@@ -238,27 +239,31 @@ const SurveySession = () => {
 
   if (isCompleted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Card className="max-w-md mx-auto">
-          <div className="text-center">
-            <HiCheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold mb-4">Thank You!</h2>
-            <p className="text-gray-600 mb-6">
-              Your response has been submitted successfully.
+      <div className="min-h-screen flex items-center justify-center bg-green-50 p-4">
+        <Card className="max-w-md w-full shadow-lg border-t-4 border-green-500">
+          <div className="text-center py-6">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+               <HiCheckCircle className="w-12 h-12 text-green-600" />
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Thank You!</h2>
+            <p className="text-gray-600 mb-8">
+              Your response has been successfully recorded.
             </p>
-            {survey.hasRewards && participant && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-                <div className="flex items-center justify-center mb-2">
-                  <HiGift className="w-5 h-5 text-green-600 mr-2" />
-                  <span className="font-medium text-green-800">Reward Earned!</span>
+            
+            {survey.hasRewards && (
+              <div className="bg-white border border-green-200 rounded-xl p-6 mb-8 shadow-sm">
+                <div className="flex flex-col items-center">
+                  <HiGift className="w-10 h-10 text-primary-500 mb-2" />
+                  <h4 className="font-bold text-lg text-gray-900">Reward Unlocked!</h4>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Check your phone/email for your reward details.
+                  </p>
                 </div>
-                <p className="text-sm text-green-700">
-                  Your reward will be sent to the contact details you provided.
-                </p>
               </div>
             )}
-            <Button onClick={() => navigate('/')} className="bg-primary-500 hover:bg-primary-600">
-              Return Home
+            
+            <Button color="success" onClick={() => window.location.href = '/'}>
+              Back to Home
             </Button>
           </div>
         </Card>
@@ -268,13 +273,15 @@ const SurveySession = () => {
 
   if (showRewardForm) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Card className="max-w-md mx-auto">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <Card className="max-w-md w-full">
           <div className="text-center mb-6">
-            <HiGift className="w-12 h-12 text-primary-500 mx-auto mb-4" />
-            <h2 className="text-xl font-bold mb-2">Claim Your Reward</h2>
-            <p className="text-gray-600">
-              Provide your details to receive rewards for completing this survey.
+            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+               <HiGift className="w-8 h-8 text-primary-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900">Claim Your Reward</h2>
+            <p className="text-gray-600 mt-2">
+              You've completed the survey! Please provide your details to receive your reward.
             </p>
           </div>
 
@@ -286,9 +293,10 @@ const SurveySession = () => {
 
           <form onSubmit={handleParticipantSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="fullName">Full Name</Label>
+              <Label htmlFor="fullName" value="Full Name" />
               <TextInput
                 id="fullName"
+                placeholder="Jane Doe"
                 value={participantForm.fullName}
                 onChange={(e) => setParticipantForm(prev => ({...prev, fullName: e.target.value}))}
                 required
@@ -296,9 +304,10 @@ const SurveySession = () => {
             </div>
 
             <div>
-              <Label htmlFor="phoneNumber">Phone Number</Label>
+              <Label htmlFor="phoneNumber" value="Phone Number (for Airtime/M-Pesa)" />
               <TextInput
                 id="phoneNumber"
+                placeholder="+254..."
                 value={participantForm.phoneNumber}
                 onChange={(e) => setParticipantForm(prev => ({...prev, phoneNumber: e.target.value}))}
                 required
@@ -306,10 +315,11 @@ const SurveySession = () => {
             </div>
 
             <div>
-              <Label htmlFor="email">Email (Optional)</Label>
+              <Label htmlFor="email" value="Email Address (Optional)" />
               <TextInput
                 id="email"
                 type="email"
+                placeholder="jane@example.com"
                 value={participantForm.email}
                 onChange={(e) => setParticipantForm(prev => ({...prev, email: e.target.value}))}
               />
@@ -317,16 +327,18 @@ const SurveySession = () => {
 
             <div className="flex gap-3 pt-4">
               <Button
-                color="gray"
+                color="light"
                 onClick={() => {
-                  setShowRewardForm(false)
-                  handleSubmitSurvey()
+                  if(window.confirm("Are you sure? You will skip the reward.")) {
+                    setShowRewardForm(false)
+                    handleSubmitSurvey()
+                  }
                 }}
                 className="flex-1"
               >
-                Skip Rewards
+                Skip
               </Button>
-              <Button type="submit" className="bg-primary-500 hover:bg-primary-600 flex-1">
+              <Button type="submit" color="purple" className="flex-1">
                 Claim Reward
               </Button>
             </div>
@@ -337,56 +349,56 @@ const SurveySession = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">{survey.name}</h1>
-          <p className="text-gray-600">Question {currentQuestionIndex + 1} of {survey.questions?.length || 0}</p>
+        <div className="text-center mb-10">
+          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight sm:text-4xl">{survey.name}</h1>
+          {survey.introduction && <p className="mt-2 text-lg text-gray-600">{survey.introduction}</p>}
         </div>
 
         {submissionError && (
-          <Alert color="failure" icon={HiExclamationCircle} className="mb-4">
+          <Alert color="failure" icon={HiExclamationCircle} className="mb-6">
             {submissionError}
           </Alert>
         )}
 
-        {/* Progress Bar */}
-        <div className="mb-8">
-          <Progress progress={progress} color="green" className="mb-2" />
-          <div className="flex justify-between text-sm text-gray-600">
-            <span>{Math.round(progress)}% Complete</span>
-            {survey.hasRewards && (
-              <span className="flex items-center">
-                <HiGift className="w-4 h-4 mr-1" />
-                Rewards Available
-              </span>
-            )}
-          </div>
+        {/* Progress */}
+        <div className="bg-white rounded-full h-2.5 mb-8 overflow-hidden shadow-sm">
+          <div 
+            className="bg-primary-600 h-2.5 rounded-full transition-all duration-500 ease-out" 
+            style={{ width: `${progress}%` }}
+          ></div>
         </div>
 
         {/* Question Card */}
-        <Card className="mb-8">
+        <Card className="shadow-lg border-0">
           <div className="mb-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">
+            <div className="flex justify-between items-center mb-4">
+               <span className="text-xs font-semibold tracking-wide uppercase text-gray-500">
+                 Question {currentQuestionIndex + 1} of {totalQuestions}
+               </span>
+               {currentQuestion?.required && (
+                 <span className="text-xs font-medium text-red-500 bg-red-50 px-2 py-1 rounded-full">Required</span>
+               )}
+            </div>
+            <h2 className="text-xl font-medium text-gray-900 leading-relaxed">
               {currentQuestion?.questionText}
             </h2>
-            {currentQuestion?.required && (
-              <span className="text-sm text-red-600">* Required</span>
-            )}
           </div>
 
-          <div className="mb-6">
+          <div className="mb-8">
             {renderQuestionInput()}
           </div>
 
-          <div className="flex justify-between">
+          <div className="flex justify-between pt-6 border-t border-gray-100">
             <Button
-              color="gray"
+              color="light"
               onClick={handlePrevious}
               disabled={currentQuestionIndex === 0}
+              className={`transition-opacity ${currentQuestionIndex === 0 ? 'opacity-0' : 'opacity-100'}`}
             >
-              Previous
+              <HiArrowLeft className="mr-2 h-4 w-4" /> Previous
             </Button>
 
             <Button
@@ -395,12 +407,17 @@ const SurveySession = () => {
                 currentQuestion?.required && 
                 (!responses[currentQuestion.id] || responses[currentQuestion.id] === '')
               }
-              className="bg-primary-500 hover:bg-primary-600"
+              color="purple"
+              className="px-6"
             >
-              {currentQuestionIndex === survey.questions.length - 1 ? 'Complete' : 'Next'}
+              {currentQuestionIndex === totalQuestions - 1 ? 'Finish' : 'Next'} <HiArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
         </Card>
+        
+        <div className="mt-8 text-center text-sm text-gray-400">
+          Powered by Sure Survey
+        </div>
       </div>
     </div>
   )

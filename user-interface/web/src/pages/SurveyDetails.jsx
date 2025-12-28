@@ -16,7 +16,12 @@ const SurveyDetails = () => {
   const activateSurveyMutation = useActivateSurvey()
   
   const [showPaymentModal, setShowPaymentModal] = useState(false)
-  const [activeTab, setActiveTab] = useState(location.state?.tab === 'rewards' ? 3 : 0) // 0: Overview, 1: Contacts, 2: Integrations, 3: Rewards
+  const [activeTab, setActiveTab] = useState(0)
+
+  // Handle tab state from location state if present
+  useEffect(() => {
+    if (location.state?.tab === 'rewards') setActiveTab(3)
+  }, [location.state])
 
   // Need to wrap the survey in an array for AnalyticsDashboard
   const surveysForAnalytics = survey ? [survey] : []
@@ -76,17 +81,18 @@ const SurveyDetails = () => {
                <Button color="light" as={Link} to={`/survey-builder?edit=${survey.id}`}>
                  <HiPencil className="mr-2 h-4 w-4" /> Edit
                </Button>
-               <Button onClick={handleActivate} isProcessing={activateSurveyMutation.isLoading}>
-                 <HiPlay className="mr-2 h-4 w-4" /> Activate
+               <Button onClick={handleActivate} disabled={activateSurveyMutation.isLoading}>
+                 {activateSurveyMutation.isLoading ? <Spinner size="sm" className="mr-2" /> : <HiPlay className="mr-2 h-4 w-4" />} 
+                 Activate
                </Button>
              </>
            )}
         </div>
       </div>
 
-      <Tabs.Group 
+      <Tabs 
         aria-label="Survey details tabs" 
-        style="underline"
+        variant="underline"
         onActiveTabChange={(tab) => setActiveTab(tab)}
       >
         <Tabs.Item active={activeTab === 0} icon={HiChartPie} title="Overview">
@@ -112,7 +118,7 @@ const SurveyDetails = () => {
              <SurveyRewards survey={survey} onUpdate={refetch} />
            </div>
         </Tabs.Item>
-      </Tabs.Group>
+      </Tabs>
 
       {/* Payment Modal for Rewards/Activation */}
       <PaymentModal 

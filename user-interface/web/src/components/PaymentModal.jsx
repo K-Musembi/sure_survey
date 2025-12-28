@@ -183,7 +183,6 @@ const PaymentModal = ({ show, onClose, survey, mode = 'SURVEY_ACTIVATION', onPay
                 type="submit" 
                 disabled={!paymentData.amount || isLoading}
                 className="bg-primary-500 hover:bg-primary-600"
-                isProcessing={isLoading}
               >
                 {isLoading ? 'Processing...' : 'Continue to Payment'}
               </Button>

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Card, Table, Badge, Tabs, Modal, Label, TextInput, Select, Alert } from 'flowbite-react'
-import { adminAPI } from '../../services/apiServices'
+import { Button, Card, Table, Badge, Tabs, Modal, Label, TextInput, Select, Alert, Textarea } from 'flowbite-react'
+import { adminAPI, billingAPI } from '../../services/apiServices'
 import useAuthStore from '../../stores/authStore'
-import { HiLogout, HiRefresh, HiCash, HiOfficeBuilding, HiExclamationCircle } from 'react-icons/hi'
+import { HiLogout, HiRefresh, HiCash, HiOfficeBuilding, HiExclamationCircle, HiTemplate } from 'react-icons/hi'
 
 const AdminDashboard = () => {
   const navigate = useNavigate()
@@ -11,6 +11,7 @@ const AdminDashboard = () => {
   
   const [tenants, setTenants] = useState([])
   const [settings, setSettings] = useState([])
+  const [plans, setPlans] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   
@@ -24,7 +25,17 @@ const AdminDashboard = () => {
   const [settingValue, setSettingValue] = useState('')
   const [settingUpdateError, setSettingUpdateError] = useState('')
 
-  // Verify admin access
+  // Plan Edit/Create State
+  const [planModalOpen, setPlanModalOpen] = useState(false)
+  const [editingPlan, setEditingPlan] = useState(null)
+  const [planForm, setPlanForm] = useState({
+    name: '',
+    price: '',
+    interval: 'MONTHLY',
+    features: '' // JSON string
+  })
+  const [planMessage, setPlanMessage] = useState('')
+
   useEffect(() => {
     if (!isAdmin()) {
       navigate('/admin')
@@ -35,12 +46,14 @@ const AdminDashboard = () => {
     setIsLoading(true)
     setError(null)
     try {
-      const [tenantsRes, settingsRes] = await Promise.all([
+      const [tenantsRes, settingsRes, plansRes] = await Promise.all([
         adminAPI.getAllTenants(),
-        adminAPI.getSettings()
+        adminAPI.getSettings(),
+        billingAPI.getAllPlans()
       ])
       setTenants(tenantsRes.data)
       setSettings(settingsRes.data)
+      setPlans(plansRes.data)
     } catch (error) {
       console.error('Failed to fetch admin data', error)
       setError('Failed to load dashboard data. Please check your connection.')
@@ -84,13 +97,73 @@ const AdminDashboard = () => {
   const handleUpdateSetting = async () => {
     setSettingUpdateError('')
     try {
-      // API expects a list of settings to update
       await adminAPI.updateSettings([{ key: currentSetting.key, value: settingValue }])
       setEditSettingModalOpen(false)
       fetchData() // Refresh list
     } catch (error) {
       console.error('Failed to update setting', error)
       setSettingUpdateError('Update failed: ' + (error.response?.data?.message || error.message))
+    }
+  }
+
+  // Plan Handlers
+  const openCreatePlan = () => {
+    setEditingPlan(null)
+    setPlanForm({ name: '', price: '', interval: 'MONTHLY', features: `{
+  "maxSurveys": 10,
+  "maxResponses": 100
+}` })
+    setPlanMessage('')
+    setPlanModalOpen(true)
+  }
+
+  const openEditPlan = (plan) => {
+    setEditingPlan(plan)
+    setPlanForm({
+      name: plan.name,
+      price: plan.price,
+      interval: plan.billingInterval,
+      features: plan.features || '{}'
+    })
+    setPlanMessage('')
+    setPlanModalOpen(true)
+  }
+
+  const handlePlanSubmit = async (e) => {
+    e.preventDefault()
+    setPlanMessage('')
+    
+    try {
+      let parsedFeatures = {}
+      try {
+        parsedFeatures = JSON.parse(planForm.features)
+      } catch (err) {
+        throw new Error('Invalid JSON format in Features field')
+      }
+
+      const payload = {
+        name: planForm.name,
+        price: parseFloat(planForm.price),
+        interval: planForm.interval,
+        features: parsedFeatures
+      }
+
+      if (editingPlan) {
+        // Update
+        await adminAPI.updatePlan({ 
+          planId: editingPlan.id, 
+          price: payload.price, 
+          features: payload.features 
+        })
+      } else {
+        // Create
+        await adminAPI.createPlan(payload)
+      }
+      
+      setPlanModalOpen(false)
+      fetchData()
+    } catch (error) {
+      setPlanMessage('Error: ' + (error.message || 'Operation failed'))
     }
   }
 
@@ -130,7 +203,7 @@ const AdminDashboard = () => {
             <p className="font-normal text-gray-700">
               Manage global system resources.
             </p>
-            <Button gradientDuoTone="greenToBlue" onClick={() => setRestockModalOpen(true)}>
+            <Button color="success" onClick={() => setRestockModalOpen(true)}>
               <HiCash className="mr-2 h-5 w-5" />
               Restock Wallet
             </Button>
@@ -153,7 +226,7 @@ const AdminDashboard = () => {
           </Card>
         </div>
 
-        <Tabs.Group aria-label="Admin tabs" style="underline">
+        <Tabs aria-label="Admin tabs" variant="underline">
           <Tabs.Item active icon={HiOfficeBuilding} title="Tenants">
             <Card>
               <div className="flex items-center justify-between mb-4">
@@ -167,12 +240,11 @@ const AdminDashboard = () => {
                     <Table.HeadCell>Plan</Table.HeadCell>
                     <Table.HeadCell>Users</Table.HeadCell>
                     <Table.HeadCell>Status</Table.HeadCell>
-                    <Table.HeadCell>Actions</Table.HeadCell>
                   </Table.Head>
                   <Table.Body className="divide-y">
                     {tenants.map((tenant) => (
-                      <Table.Row key={tenant.id} className="bg-white dark:border-gray-700 dark:bg-gray-800">
-                        <Table.Cell className="whitespace-nowrap font-medium text-gray-900 dark:text-white">
+                      <Table.Row key={tenant.id} className="bg-white">
+                        <Table.Cell className="whitespace-nowrap font-medium text-gray-900">
                           {tenant.name}
                         </Table.Cell>
                         <Table.Cell>{tenant.slug}</Table.Cell>
@@ -184,11 +256,6 @@ const AdminDashboard = () => {
                           <Badge color={tenant.status === 'ACTIVE' ? 'success' : 'warning'}>
                             {tenant.status || 'ACTIVE'}
                           </Badge>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <a href="#" className="font-medium text-cyan-600 hover:underline dark:text-cyan-500">
-                            Edit
-                          </a>
                         </Table.Cell>
                       </Table.Row>
                     ))}
@@ -203,6 +270,41 @@ const AdminDashboard = () => {
             </Card>
           </Tabs.Item>
           
+          <Tabs.Item icon={HiTemplate} title="Subscription Plans">
+            <Card>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-gray-900">Manage Plans</h3>
+                <Button size="sm" onClick={openCreatePlan}>
+                  Create Plan
+                </Button>
+              </div>
+              <div className="overflow-x-auto">
+                <Table>
+                  <Table.Head>
+                    <Table.HeadCell>Name</Table.HeadCell>
+                    <Table.HeadCell>Price</Table.HeadCell>
+                    <Table.HeadCell>Interval</Table.HeadCell>
+                    <Table.HeadCell>Features</Table.HeadCell>
+                    <Table.HeadCell>Action</Table.HeadCell>
+                  </Table.Head>
+                  <Table.Body className="divide-y">
+                    {plans.map((plan) => (
+                      <Table.Row key={plan.id} className="bg-white">
+                        <Table.Cell className="font-bold">{plan.name}</Table.Cell>
+                        <Table.Cell>${plan.price}</Table.Cell>
+                        <Table.Cell>{plan.billingInterval}</Table.Cell>
+                        <Table.Cell className="max-w-xs truncate">{plan.features}</Table.Cell>
+                        <Table.Cell>
+                          <Button size="xs" color="gray" onClick={() => openEditPlan(plan)}>Edit</Button>
+                        </Table.Cell>
+                      </Table.Row>
+                    ))}
+                  </Table.Body>
+                </Table>
+              </div>
+            </Card>
+          </Tabs.Item>
+
           <Tabs.Item title="System Settings">
             <Card>
               <h3 className="text-xl font-bold text-gray-900 mb-4">Global Configuration</h3>
@@ -230,7 +332,7 @@ const AdminDashboard = () => {
               </div>
             </Card>
           </Tabs.Item>
-        </Tabs.Group>
+        </Tabs>
       </main>
 
       {/* Restock Modal */}
@@ -238,7 +340,7 @@ const AdminDashboard = () => {
         <Modal.Header>System Wallet Restock</Modal.Header>
         <Modal.Body>
           <div className="space-y-6">
-            <p className="text-base leading-relaxed text-gray-500 dark:text-gray-400">
+            <p className="text-base leading-relaxed text-gray-500">
               Purchase bulk Airtime or Data Bundles from Safaricom for the system inventory.
             </p>
             {restockMessage && (
@@ -281,7 +383,7 @@ const AdminDashboard = () => {
 
       {/* Edit Setting Modal */}
       <Modal show={editSettingModalOpen} onClose={() => setEditSettingModalOpen(false)}>
-        <Modal.Header>Edit Setting: {currentSetting?.key}</Modal.Header>
+        <Modal.Header>Edit Setting</Modal.Header>
         <Modal.Body>
            <div className="space-y-4">
              {settingUpdateError && (
@@ -289,6 +391,7 @@ const AdminDashboard = () => {
                  {settingUpdateError}
                </Alert>
              )}
+             <p className="text-sm text-gray-500 font-mono">{currentSetting?.key}</p>
              <p className="text-sm text-gray-500">{currentSetting?.description}</p>
              <div>
                <Label htmlFor="sValue" value="Value" />
@@ -304,6 +407,69 @@ const AdminDashboard = () => {
            <Button onClick={handleUpdateSetting}>Save Changes</Button>
            <Button color="gray" onClick={() => setEditSettingModalOpen(false)}>Cancel</Button>
         </Modal.Footer>
+      </Modal>
+
+      {/* Plan Modal */}
+      <Modal show={planModalOpen} onClose={() => setPlanModalOpen(false)}>
+        <Modal.Header>{editingPlan ? 'Edit Plan' : 'Create Plan'}</Modal.Header>
+        <Modal.Body>
+          <form onSubmit={handlePlanSubmit} className="space-y-4">
+            {planMessage && <Alert color="failure">{planMessage}</Alert>}
+            
+            <div>
+              <Label htmlFor="pName">Plan Name</Label>
+              <TextInput 
+                id="pName" 
+                value={planForm.name} 
+                onChange={e => setPlanForm({...planForm, name: e.target.value})}
+                disabled={!!editingPlan} // Name usually unique/immutable logic
+                required 
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="pPrice">Price</Label>
+                <TextInput 
+                  id="pPrice" 
+                  type="number" 
+                  value={planForm.price}
+                  onChange={e => setPlanForm({...planForm, price: e.target.value})}
+                  required 
+                />
+              </div>
+              <div>
+                <Label htmlFor="pInterval">Billing Interval</Label>
+                <Select 
+                  id="pInterval"
+                  value={planForm.interval}
+                  onChange={e => setPlanForm({...planForm, interval: e.target.value})}
+                  disabled={!!editingPlan}
+                >
+                  <option value="MONTHLY">Monthly</option>
+                  <option value="YEARLY">Yearly</option>
+                </Select>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="pFeatures">Features (JSON)</Label>
+              <Textarea 
+                id="pFeatures" 
+                rows={6}
+                className="font-mono text-sm"
+                value={planForm.features}
+                onChange={e => setPlanForm({...planForm, features: e.target.value})}
+                placeholder='{"key": "value"}'
+              />
+              <p className="text-xs text-gray-500 mt-1">Must be valid JSON.</p>
+            </div>
+
+            <div className="flex justify-end pt-4">
+              <Button type="submit">{editingPlan ? 'Update Plan' : 'Create Plan'}</Button>
+            </div>
+          </form>
+        </Modal.Body>
       </Modal>
     </div>
   )

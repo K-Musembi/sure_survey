@@ -175,11 +175,10 @@ const SurveyContacts = ({ surveyId }) => {
           <Button 
             onClick={handleSendToDistList} 
             disabled={!selectedListId || isSending}
-            isProcessing={isSending}
             gradientDuoTone="purpleToBlue"
           >
-            <HiPaperAirplane className="mr-2 h-5 w-5" />
-            Send Survey
+            {isSending ? <Spinner size="sm" className="mr-2" /> : <HiPaperAirplane className="mr-2 h-5 w-5" />}
+            {isSending ? 'Sending...' : 'Send Survey'}
           </Button>
         </div>
       </Card>
@@ -242,7 +241,10 @@ const SurveyContacts = ({ surveyId }) => {
                />
              </div>
              <div className="flex justify-end pt-4">
-               <Button type="submit" isProcessing={isUploading}>Upload & Process</Button>
+               <Button type="submit" disabled={isUploading}>
+                 {isUploading ? <Spinner size="sm" className="mr-2" /> : null}
+                 {isUploading ? 'Uploading...' : 'Upload & Process'}
+               </Button>
              </div>
            </form>
         </Modal.Body>

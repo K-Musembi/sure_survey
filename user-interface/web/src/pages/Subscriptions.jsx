@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Card, Button, Badge, Table, Tabs, Alert } from 'flowbite-react'
-import { billingAPI, paymentAPI } from '../services/apiServices'
+import { Card, Button, Badge, Table, Tabs, Alert, Spinner } from 'flowbite-react'
+import { billingAPI } from '../services/apiServices'
 import PaymentModal from '../components/PaymentModal'
 import { HiCheckCircle, HiCreditCard, HiCurrencyDollar, HiClock, HiExclamationCircle } from 'react-icons/hi'
 
@@ -9,6 +9,7 @@ const Subscriptions = () => {
   const [transactions, setTransactions] = useState([])
   const [subscription, setSubscription] = useState(null)
   const [invoices, setInvoices] = useState([])
+  const [plans, setPlans] = useState([])
   const [showTopUpModal, setShowTopUpModal] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -17,17 +18,21 @@ const Subscriptions = () => {
     setIsLoading(true)
     setError(null)
     try {
-      const [balanceRes, transRes, subRes, invRes] = await Promise.all([
+      // Fetch data in parallel for speed
+      const [balanceRes, transRes, subRes, invRes, plansRes] = await Promise.allSettled([
         billingAPI.getWalletBalance(),
         billingAPI.getWalletTransactions(),
         billingAPI.getSubscription(),
-        billingAPI.getInvoices()
+        billingAPI.getInvoices(),
+        billingAPI.getAllPlans()
       ])
       
-      setWalletBalance(balanceRes.data)
-      setTransactions(transRes.data)
-      setSubscription(subRes.data)
-      setInvoices(invRes.data)
+      if (balanceRes.status === 'fulfilled') setWalletBalance(balanceRes.value.data)
+      if (transRes.status === 'fulfilled') setTransactions(transRes.value.data)
+      if (subRes.status === 'fulfilled') setSubscription(subRes.value.data)
+      if (invRes.status === 'fulfilled') setInvoices(invRes.value.data)
+      if (plansRes.status === 'fulfilled') setPlans(plansRes.value.data)
+
     } catch (error) {
       console.error('Error fetching billing data', error)
       setError('Could not load billing information. Please try again later.')
@@ -43,25 +48,26 @@ const Subscriptions = () => {
   const [isUpgrading, setIsUpgrading] = useState(false)
   const [upgradeError, setUpgradeError] = useState('')
 
-  const availablePlans = [
-    { id: 1, name: 'Free', price: 0, features: ['25 Responses/mo', 'Web Surveys Only', 'Basic Analytics'] },
-    { id: 2, name: 'Pro', price: 29.99, features: ['1,000 Responses/mo', 'SMS Surveys', 'Advanced Analytics', 'Priority Support'] },
-    { id: 3, name: 'Enterprise', price: 99.99, features: ['Unlimited Responses', 'Custom Integrations', 'AI Analysis', 'Dedicated Manager'] }
-  ]
-
   const handleUpgrade = async (planId) => {
     setIsUpgrading(true)
     setUpgradeError('')
     try {
       await billingAPI.createSubscription({ planId })
       await fetchData() // Refresh data
-      // Maybe show success toast
     } catch (error) {
       console.error('Upgrade failed', error)
       setUpgradeError(error.response?.data?.message || 'Failed to update plan')
     } finally {
       setIsUpgrading(false)
     }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Spinner size="xl" />
+      </div>
+    )
   }
 
   return (
@@ -87,7 +93,7 @@ const Subscriptions = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Wallet Card */}
-        <Card className="bg-gradient-to-br from-primary-50 to-white">
+        <Card className="bg-gradient-to-br from-purple-50 to-white border border-purple-100">
           <div className="flex justify-between items-start">
             <div>
               <h5 className="text-xl font-bold tracking-tight text-gray-900">
@@ -95,18 +101,18 @@ const Subscriptions = () => {
               </h5>
               <p className="text-sm text-gray-500">Available for rewards & surveys</p>
             </div>
-            <div className="p-2 bg-primary-100 rounded-full">
-              <HiCurrencyDollar className="w-8 h-8 text-primary-600" />
+            <div className="p-2 bg-purple-100 rounded-full">
+              <HiCurrencyDollar className="w-8 h-8 text-purple-600" />
             </div>
           </div>
           
           <div className="mt-4 mb-4">
             <span className="text-4xl font-extrabold text-gray-900">
-              {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'KES' }).format(walletBalance || 0)}
+              {new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(walletBalance || 0)}
             </span>
           </div>
           
-          <Button onClick={() => setShowTopUpModal(true)} gradientDuoTone="purpleToBlue">
+          <Button onClick={() => setShowTopUpModal(true)} color="purple">
             Top Up Wallet
           </Button>
         </Card>
@@ -148,14 +154,23 @@ const Subscriptions = () => {
       <Card>
         <h3 className="text-xl font-bold text-gray-900 mb-4">Available Plans</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {availablePlans.map((plan) => {
+          {plans.length > 0 ? plans.map((plan) => {
             const isCurrent = subscription?.plan?.name === plan.name
+            let featuresList = []
+            try {
+               const parsed = JSON.parse(plan.features)
+               // Simple heuristic to display features
+               featuresList = Object.entries(parsed).map(([k, v]) => `${k}: ${v}`)
+            } catch (e) {
+               featuresList = ['Standard Features']
+            }
+
             return (
               <div key={plan.id} className={`border rounded-lg p-4 flex flex-col ${isCurrent ? 'border-primary-500 bg-primary-50' : 'border-gray-200'}`}>
                 <h4 className="font-bold text-lg">{plan.name}</h4>
-                <div className="text-2xl font-bold mt-2">${plan.price}<span className="text-sm font-normal text-gray-500">/mo</span></div>
+                <div className="text-2xl font-bold mt-2">${plan.price}<span className="text-sm font-normal text-gray-500">/{plan.billingInterval}</span></div>
                 <ul className="mt-4 space-y-2 flex-grow text-sm text-gray-600">
-                  {plan.features.map((f, i) => (
+                  {featuresList.map((f, i) => (
                     <li key={i} className="flex items-center">
                       <HiCheckCircle className="w-4 h-4 text-green-500 mr-2" />
                       {f}
@@ -172,12 +187,14 @@ const Subscriptions = () => {
                 </Button>
               </div>
             )
-          })}
+          }) : (
+            <div className="col-span-full text-center py-4 text-gray-500">No plans available.</div>
+          )}
         </div>
       </Card>
 
       {/* Tabs for History */}
-      <Tabs.Group aria-label="Billing tabs" style="underline">
+      <Tabs aria-label="Billing tabs" variant="underline">
         <Tabs.Item active icon={HiClock} title="Wallet Transactions">
           <Card>
              <div className="overflow-x-auto">
@@ -253,7 +270,7 @@ const Subscriptions = () => {
              </div>
            </Card>
         </Tabs.Item>
-      </Tabs.Group>
+      </Tabs>
 
       {/* Top Up Modal */}
       <PaymentModal 

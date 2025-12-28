@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { Button, Card, Badge, Dropdown, DropdownItem, DropdownDivider, Alert, Modal, Select, Label } from 'flowbite-react'
+import { Link } from 'react-router-dom'
+import { Button, Card, Badge, Dropdown, DropdownItem, DropdownDivider, Alert, Modal, Select, Label, Spinner } from 'flowbite-react'
 import PaymentModal from '../components/PaymentModal'
 import { useMySurveys, useActivateSurvey } from '../hooks/useApi'
 import { billingAPI, distributionAPI, surveyAPI } from '../services/apiServices'
 import { HiPlus, HiEye, HiPencil, HiPlay, HiStop, HiCurrencyDollar, HiShare, HiDotsVertical, HiExclamationCircle, HiPaperAirplane } from 'react-icons/hi'
 
 const Dashboard = () => {
-  const navigate = useNavigate()
   const { data: surveys, isLoading, refetch, error: surveysError } = useMySurveys()
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
   const [selectedSurvey, setSelectedSurvey] = useState(null)
@@ -100,7 +99,10 @@ const Dashboard = () => {
   }
   
   const handleSendToDistList = async () => {
-    if (!selectedSurvey || !selectedListId) return
+    if (!selectedSurvey) return
+    // Note: If backend requires list ID, pass it. Assuming current endpoint sends to *linked* list.
+    // If we need to link it first, we'd call an update endpoint.
+    // For now, assuming standard flow.
     setIsSending(true)
         try {
           await surveyAPI.sendToDistributionList(selectedSurvey.id)
@@ -120,6 +122,7 @@ const Dashboard = () => {
       DRAFT: { color: 'gray', text: 'Draft' },
       ACTIVE: { color: 'success', text: 'Active' },
       PAUSED: { color: 'warning', text: 'Paused' },
+      CLOSED: { color: 'failure', text: 'Closed' },
       COMPLETED: { color: 'info', text: 'Completed' },
       EXPIRED: { color: 'failure', text: 'Expired' }
     }
@@ -130,8 +133,8 @@ const Dashboard = () => {
 
   const getSurveyUrl = (survey) => {
     // Use short code if available, otherwise use ID
-    return survey.shortCode 
-      ? `${window.location.origin}/s/${survey.shortCode}`
+    return survey.url_code 
+      ? `${window.location.origin}/s/${survey.url_code}`
       : `${window.location.origin}/survey/${survey.id}`
   }
 
@@ -177,7 +180,8 @@ const Dashboard = () => {
       <div className="space-y-6">
         {isLoading ? (
           <div className="text-center py-8">
-            <p className="text-gray-500">Loading surveys...</p>
+            <Spinner size="xl" />
+            <p className="text-gray-500 mt-2">Loading surveys...</p>
           </div>
         ) : surveys?.length ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -185,7 +189,7 @@ const Dashboard = () => {
               <Card key={survey.id} className="hover:shadow-lg transition-shadow">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2 truncate" title={survey.name}>
                       {survey.name}
                     </h3>
                     <div className="flex items-center gap-2 mb-2">
@@ -199,10 +203,12 @@ const Dashboard = () => {
                     inline
                     label={<HiDotsVertical className="w-5 h-5 text-gray-400" />}
                   >
-                    <DropdownItem as={Link} to={`/survey/${survey.id}/edit`}>
-                      <HiPencil className="w-4 h-4 mr-2" />
-                      Edit
-                    </DropdownItem>
+                    {survey.status === 'DRAFT' && (
+                      <DropdownItem as={Link} to={`/survey-builder?edit=${survey.id}`}>
+                        <HiPencil className="w-4 h-4 mr-2" />
+                        Edit
+                      </DropdownItem>
+                    )}
                     <DropdownItem onClick={() => copyToClipboard(getSurveyUrl(survey))}>
                       <HiShare className="w-4 h-4 mr-2" />
                       Copy Link
@@ -237,13 +243,13 @@ const Dashboard = () => {
                   </div>
                   
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Completion Rate</span>
-                    <span className="font-medium">{survey.completionRate || 0}%</span>
+                    <span className="text-gray-600">Created</span>
+                    <span className="font-medium">{new Date(survey.createdAt).toLocaleDateString()}</span>
                   </div>
                   
                   {survey.rewardAmount && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Reward per Response</span>
+                      <span className="text-gray-600">Reward</span>
                       <span className="font-medium text-green-600">
                         ${survey.rewardAmount}
                       </span>
@@ -269,9 +275,12 @@ const Dashboard = () => {
                           onClick={() => handleActivateSurvey(survey)}
                           disabled={activateSurveyMutation.isLoading}
                           className="bg-primary-500 hover:bg-primary-600 flex-1"
-                          isProcessing={activateSurveyMutation.isLoading && selectedSurvey?.id === survey.id}
                         >
-                          <HiPlay className="w-4 h-4 mr-1" />
+                          {activateSurveyMutation.isLoading && selectedSurvey?.id === survey.id ? (
+                            <Spinner size="sm" className="mr-1" />
+                          ) : (
+                            <HiPlay className="w-4 h-4 mr-1" />
+                          )}
                           Activate
                         </Button>
                       )}
@@ -351,8 +360,9 @@ const Dashboard = () => {
              </div>
              <div className="flex justify-end gap-2">
                <Button color="gray" onClick={() => setShowDistModal(false)}>Cancel</Button>
-               <Button onClick={handleSendToDistList} disabled={!selectedListId || isSending} isProcessing={isSending}>
-                 <HiPaperAirplane className="mr-2 h-5 w-5" /> Send
+               <Button onClick={handleSendToDistList} disabled={!selectedListId || isSending}>
+                 {isSending ? <Spinner size="sm" className="mr-2" /> : <HiPaperAirplane className="mr-2 h-5 w-5" />}
+                 {isSending ? 'Sending...' : 'Send'}
                </Button>
              </div>
           </div>
