@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Card, Button, Table, Modal, Label, TextInput, FileInput, Badge, Alert, Select } from 'flowbite-react'
+import { Card, Button, Modal, ModalHeader, ModalBody, ModalContext, ModalFooter, modalTheme, Label, TextInput, FileInput, HelperText, Badge, Alert, Select, Spinner } from 'flowbite-react'
 import { distributionAPI, surveyAPI } from '../services/apiServices'
 import { HiUserGroup, HiUpload, HiPlus, HiEye, HiExclamationCircle, HiPaperAirplane } from 'react-icons/hi'
 
@@ -7,7 +7,6 @@ const SurveyContacts = ({ surveyId }) => {
   const [lists, setLists] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [showUploadModal, setShowUploadModal] = useState(false)
-  const [showCreateModal, setShowCreateModal] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   
@@ -16,10 +15,6 @@ const SurveyContacts = ({ surveyId }) => {
   const [uploadName, setUploadName] = useState('')
   const [isUploading, setIsUploading] = useState(false)
   
-  // Manual Create State
-  const [manualName, setManualName] = useState('')
-  const [manualContacts, setManualContacts] = useState([{ phoneNumber: '', firstName: '', email: '' }])
-
   // Sending State
   const [selectedListId, setSelectedListId] = useState('')
   const [isSending, setIsSending] = useState(false)
@@ -42,44 +37,75 @@ const SurveyContacts = ({ surveyId }) => {
     fetchLists()
   }, [])
 
+  const validateCsvFile = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target.result;
+        const lines = text.split('\n').filter(line => line.trim() !== '');
+        
+        if (lines.length === 0) {
+          reject('The CSV file is empty.');
+          return;
+        }
+
+        const header = lines[0].split(',').map(h => h.toLowerCase().trim());
+        let phoneIndex = -1;
+
+        // Try to find phone column by header
+        for (let i = 0; i < header.length; i++) {
+           if (header[i].includes('phone') || header[i].includes('mobile') || header[i].includes('number') || header[i].includes('tel')) {
+               phoneIndex = i;
+               break;
+           }
+        }
+
+        // Fallback to first column if no header match found (and assuming first row is header, so check data from row 1)
+        if (phoneIndex === -1) {
+            phoneIndex = 0;
+        }
+
+        // Check first few data rows
+        for (let i = 1; i < Math.min(lines.length, 6); i++) {
+            const columns = lines[i].split(',');
+            if (columns.length > phoneIndex) {
+                const phone = columns[phoneIndex].trim();
+                // Basic check: if it has letters, it's likely invalid
+                if (/[a-zA-Z]/.test(phone) && phone.length > 2) { 
+                    reject(`Row ${i+1}: The column '${header[phoneIndex] || 'Column ' + (phoneIndex+1)}' contains '${phone}', which does not appear to be a valid phone number.`);
+                    return;
+                }
+            }
+        }
+        resolve(true);
+      };
+      reader.onerror = () => reject('Failed to read file.');
+      reader.readAsText(file);
+    });
+  }
+
   const handleUpload = async (e) => {
     e.preventDefault()
     if (!uploadFile || !uploadName) return
 
+    setShowUploadModal(false) // Close modal immediately as requested
     setIsUploading(true)
     setError('')
+    
     try {
+      // Client-side validation
+      await validateCsvFile(uploadFile);
+
       await distributionAPI.uploadCsv(uploadFile, uploadName)
-      setShowUploadModal(false)
       setUploadFile(null)
       setUploadName('')
       fetchLists()
       setSuccess('List uploaded successfully!')
     } catch (error) {
       console.error('Upload failed', error)
-      setError('Upload failed: ' + (error.response?.data?.message || error.message))
+      setError('Upload failed: ' + (error.response?.data?.message || error.message || error))
     } finally {
       setIsUploading(false)
-    }
-  }
-
-  const handleManualCreate = async (e) => {
-    e.preventDefault()
-    setError('')
-    // Validation logic here...
-    try {
-       await distributionAPI.createList({
-         name: manualName,
-         contacts: manualContacts.filter(c => c.phoneNumber)
-       })
-       setShowCreateModal(false)
-       setManualName('')
-       setManualContacts([{ phoneNumber: '', firstName: '', email: '' }])
-       fetchLists()
-       setSuccess('List created successfully!')
-    } catch (error) {
-      console.error('Creation failed', error)
-      setError('Failed to create list: ' + (error.response?.data?.message || error.message))
     }
   }
 
@@ -89,33 +115,7 @@ const SurveyContacts = ({ surveyId }) => {
     setError('')
     setSuccess('')
     try {
-      // NOTE: The backend API /surveys/{id}/send-to-distribution-list currently triggers distribution.
-      // However, it doesn't seem to take a list ID in the URL.
-      // DTO says: Request Body: Void? 
-      // If the backend assumes a linked list, we might need a way to link it first.
-      // BUT, looking at Dashboard.jsx logic:
-      // const handleSendToDistList = async () => { ... await surveyAPI.sendToDistributionList(selectedSurvey.id) ... }
-      // It implies the backend knows.
-      // If the user selects a list here, we might need to "Link" it first if the API supports it.
-      // Or maybe the API expects query param?
-      // Since I cannot change the backend, I will assume for now we might need to just trigger it.
-      // Wait, Dashboard.jsx had a dropdown for lists but `handleSendToDistList` didn't use `selectedListId` in the API call.
-      // That looks like a bug or missing feature in the existing frontend code I read.
-      // "selectedListId" was state in Dashboard.jsx but `surveyAPI.sendToDistributionList(selectedSurvey.id)` takes no list ID.
-      // I will assume for this implementation that we just call the endpoint. 
-      // If the backend requires a list, it might be implicitly the one linked or we need to update the survey with the list ID first?
-      // For now, I will just call the endpoint. If I can't select a list, this UI is just for managing lists.
-      
-      // actually, let's look at `surveyAPI.sendToDistributionList`.
-      // It is a POST to `/surveys/{id}/send-to-distribution-list`.
-      // Maybe I should try to pass the list ID as query param or body even if not documented?
-      // Or maybe `updateSurvey` allows setting a `distributionListId`?
-      // I'll check DTO... SurveyRequest has no list ID.
-      // This is strange. Maybe the backend sends to ALL lists or the "Link" is missing.
-      // I'll provide the UI to select, and try to send it in body/query, 
-      // but primarily this component manages lists.
-      
-      await surveyAPI.sendToDistributionList(surveyId)
+      await surveyAPI.sendToDistributionList(surveyId, selectedListId)
       setSuccess('Survey distribution triggered!')
     } catch (error) {
       console.error('Distribution failed', error)
@@ -133,16 +133,18 @@ const SurveyContacts = ({ surveyId }) => {
            <p className="text-gray-600 text-sm">Manage and select contacts for this survey.</p>
         </div>
         <div className="flex gap-2">
-           <Button color="light" size="sm" onClick={() => setShowCreateModal(true)}>
-             <HiPlus className="mr-2 h-4 w-4" />
-             Create
-           </Button>
            <Button size="sm" onClick={() => setShowUploadModal(true)}>
              <HiUpload className="mr-2 h-4 w-4" />
              Upload CSV
            </Button>
         </div>
       </div>
+
+      {isUploading && (
+        <Alert color="info" icon={Spinner}>
+          <span className="ml-2 font-medium">Processing CSV upload... Please wait.</span>
+        </Alert>
+      )}
 
       {error && (
         <Alert color="failure" icon={HiExclamationCircle} onDismiss={() => setError('')}>
@@ -217,11 +219,11 @@ const SurveyContacts = ({ surveyId }) => {
 
       {/* Upload Modal */}
       <Modal show={showUploadModal} onClose={() => setShowUploadModal(false)}>
-        <Modal.Header>Upload CSV Contacts</Modal.Header>
-        <Modal.Body>
+        <ModalHeader>Upload CSV Contacts</ModalHeader>
+        <ModalBody>
            <form onSubmit={handleUpload} className="space-y-4">
              <div>
-               <Label htmlFor="listName" value="List Name" />
+               <Label htmlFor="listName" value="Contact List Name" />
                <TextInput 
                  id="listName" 
                  placeholder="e.g. Q1 Customers" 
@@ -230,65 +232,40 @@ const SurveyContacts = ({ surveyId }) => {
                  onChange={(e) => setUploadName(e.target.value)}
                />
              </div>
+             
              <div>
-               <Label htmlFor="file" value="CSV File" />
-               <FileInput 
-                 id="file" 
-                 helperText="CSV format: phoneNumber, firstName, lastName, email" 
-                 accept=".csv"
-                 required
-                 onChange={(e) => setUploadFile(e.target.files[0])}
-               />
+               <Label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-40 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-gray-500 dark:hover:bg-gray-600">
+                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                   <HiUpload className="w-10 h-10 mb-3 text-gray-400" />
+                   <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                     <span className="font-semibold">{uploadFile ? uploadFile.name : 'Click to upload'}</span> or drag and drop
+                   </p>
+                   <p className="text-xs text-gray-500 dark:text-gray-400">CSV files only</p>
+                 </div>
+                 <input 
+                   id="dropzone-file" 
+                   type="file" 
+                   className="hidden" 
+                   accept=".csv"
+                   required
+                   onChange={(e) => setUploadFile(e.target.files[0])}
+                 />
+               </Label>
+               
+               <HelperText className="mt-4 text-sm text-gray-600 bg-gray-50 p-3 rounded-md border border-gray-200 block">
+                 <span className="font-semibold block mb-1 text-purple-700">Recommended CSV Format:</span>
+                 <span className="block mb-2">Include a header row with columns like <strong>Phone</strong>, <strong>Name</strong>, <strong>Email</strong>.</span>
+                 <span className="font-mono text-xs text-gray-500">Default (if no headers): Phone, First Name, Last Name, Email</span>
+              </HelperText>
              </div>
-             <div className="flex justify-end pt-4">
-               <Button type="submit" disabled={isUploading}>
-                 {isUploading ? <Spinner size="sm" className="mr-2" /> : null}
-                 {isUploading ? 'Uploading...' : 'Upload & Process'}
+             
+             <div className="flex justify-end pt-2">
+               <Button type="submit" disabled={isUploading || !uploadFile}>
+                 Upload & Process List
                </Button>
              </div>
            </form>
-        </Modal.Body>
-      </Modal>
-
-      {/* Manual Create Modal */}
-      <Modal show={showCreateModal} onClose={() => setShowCreateModal(false)}>
-         <Modal.Header>Create New List</Modal.Header>
-         <Modal.Body>
-            <form onSubmit={handleManualCreate} className="space-y-4">
-               <div>
-                 <Label htmlFor="manualName" value="List Name" />
-                 <TextInput 
-                   id="manualName" 
-                   required
-                   value={manualName}
-                   onChange={(e) => setManualName(e.target.value)}
-                 />
-               </div>
-               <div className="grid grid-cols-2 gap-2">
-                 <TextInput 
-                   placeholder="Phone" 
-                   value={manualContacts[0].phoneNumber}
-                   onChange={(e) => {
-                     const newContacts = [...manualContacts];
-                     newContacts[0].phoneNumber = e.target.value;
-                     setManualContacts(newContacts);
-                   }}
-                 />
-                 <TextInput 
-                   placeholder="Name" 
-                   value={manualContacts[0].firstName}
-                   onChange={(e) => {
-                     const newContacts = [...manualContacts];
-                     newContacts[0].firstName = e.target.value;
-                     setManualContacts(newContacts);
-                   }}
-                 />
-               </div>
-               <div className="flex justify-end pt-4">
-                 <Button type="submit">Save List</Button>
-               </div>
-            </form>
-         </Modal.Body>
+        </ModalBody>
       </Modal>
     </div>
   )

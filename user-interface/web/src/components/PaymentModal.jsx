@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Modal, Button, Label, TextInput, Select, Alert } from 'flowbite-react'
+import { Modal, ModalHeader, ModalBody, ModalContext, ModalFooter, modalTheme, Button, Label, TextInput, Select, Alert } from 'flowbite-react'
 import { useCreatePayment, useVerifyPayment } from '../hooks/useApi'
 import { paymentAPI } from '../services/apiServices'
 import { HiCreditCard, HiCheckCircle, HiExclamationCircle } from 'react-icons/hi'
@@ -43,17 +43,20 @@ const PaymentModal = ({ show, onClose, survey, mode = 'SURVEY_ACTIVATION', onPay
     setIsLoading(true)
     
     try {
-      const payload = {
-        amount: paymentData.amount,
-        currency: paymentData.currency,
-        surveyId: mode === 'WALLET_TOPUP' ? 'WALLET_TOPUP' : survey?.id?.toString(),
-        idempotencyKey: generateIdempotencyKey()
-      }
-      
       let response;
       if (mode === 'WALLET_TOPUP') {
-        response = await paymentAPI.topUpWallet(payload)
+        const topUpPayload = {
+            amount: paymentData.amount,
+            currency: paymentData.currency
+        };
+        response = await paymentAPI.topUpWallet(topUpPayload)
       } else {
+        const payload = {
+            amount: paymentData.amount,
+            currency: paymentData.currency,
+            surveyId: survey?.id?.toString(),
+            idempotencyKey: generateIdempotencyKey()
+        }
         response = await paymentAPI.initiatePayment(payload)
       }
       
@@ -92,14 +95,14 @@ const PaymentModal = ({ show, onClose, survey, mode = 'SURVEY_ACTIVATION', onPay
 
   return (
     <Modal show={show} onClose={handleModalClose} size="md">
-      <Modal.Header>
+      <ModalHeader>
         <div className="flex items-center">
           <HiCreditCard className="w-5 h-5 mr-2 text-primary-600" />
           {mode === 'WALLET_TOPUP' ? 'Wallet Top Up' : 'Survey Payment'}
         </div>
-      </Modal.Header>
+      </ModalHeader>
 
-      <Modal.Body>
+      <ModalBody>
         {/* Step 1: Payment Details */}
         {step === 1 && (
           <form onSubmit={handlePaymentSubmit} className="space-y-4">
@@ -200,7 +203,7 @@ const PaymentModal = ({ show, onClose, survey, mode = 'SURVEY_ACTIVATION', onPay
         )}
         
         {/* NOTE: Success step is usually handled by callback URL page, but keeping basic structure just in case */}
-      </Modal.Body>
+      </ModalBody>
     </Modal>
   )
 }

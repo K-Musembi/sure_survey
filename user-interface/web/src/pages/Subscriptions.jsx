@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Card, Button, Badge, Table, Tabs, Alert, Spinner } from 'flowbite-react'
+import { Card, Button, Badge, Table, Tabs, TabItem, TableHead, TableBody, TableHeadCell, TableCell, Alert, Spinner, TableRow } from 'flowbite-react'
 import { billingAPI } from '../services/apiServices'
 import PaymentModal from '../components/PaymentModal'
 import { HiCheckCircle, HiCreditCard, HiCurrencyDollar, HiClock, HiExclamationCircle } from 'react-icons/hi'
@@ -74,7 +74,7 @@ const Subscriptions = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-           <h1 className="text-3xl font-bold text-gray-900">Billing & Subscriptions</h1>
+           <h1 className="text-2xl font-bold text-gray-900">Billing & Subscriptions</h1>
            <p className="text-gray-600 mt-1">Manage your plan and wallet</p>
         </div>
       </div>
@@ -107,7 +107,7 @@ const Subscriptions = () => {
           </div>
           
           <div className="mt-4 mb-4">
-            <span className="text-4xl font-extrabold text-gray-900">
+            <span className="text-xl font-extrabold text-gray-900">
               {new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(walletBalance || 0)}
             </span>
           </div>
@@ -168,7 +168,7 @@ const Subscriptions = () => {
             return (
               <div key={plan.id} className={`border rounded-lg p-4 flex flex-col ${isCurrent ? 'border-primary-500 bg-primary-50' : 'border-gray-200'}`}>
                 <h4 className="font-bold text-lg">{plan.name}</h4>
-                <div className="text-2xl font-bold mt-2">${plan.price}<span className="text-sm font-normal text-gray-500">/{plan.billingInterval}</span></div>
+                <div className="text-xl font-bold mt-2">Ksh {plan.price}<span className="text-sm font-normal text-gray-500">/{plan.billingInterval}</span></div>
                 <ul className="mt-4 space-y-2 flex-grow text-sm text-gray-600">
                   {featuresList.map((f, i) => (
                     <li key={i} className="flex items-center">
@@ -195,81 +195,81 @@ const Subscriptions = () => {
 
       {/* Tabs for History */}
       <Tabs aria-label="Billing tabs" variant="underline">
-        <Tabs.Item active icon={HiClock} title="Wallet Transactions">
+        <TabItem active icon={HiClock} title="Wallet Transactions">
           <Card>
              <div className="overflow-x-auto">
                 <Table>
-                  <Table.Head>
-                    <Table.HeadCell>Date</Table.HeadCell>
-                    <Table.HeadCell>Description</Table.HeadCell>
-                    <Table.HeadCell>Type</Table.HeadCell>
-                    <Table.HeadCell>Amount</Table.HeadCell>
-                    <Table.HeadCell>Reference</Table.HeadCell>
-                  </Table.Head>
-                  <Table.Body className="divide-y">
+                  <TableHead>
+                    <TableHeadCell>Date</TableHeadCell>
+                    <TableHeadCell>Description</TableHeadCell>
+                    <TableHeadCell>Type</TableHeadCell>
+                    <TableHeadCell>Amount</TableHeadCell>
+                    <TableHeadCell>Reference</TableHeadCell>
+                  </TableHead>
+                  <TableBody className="divide-y">
                     {transactions?.map((tx) => (
-                      <Table.Row key={tx.id} className="bg-white">
-                        <Table.Cell>{new Date(tx.createdAt).toLocaleDateString()}</Table.Cell>
-                        <Table.Cell>{tx.description}</Table.Cell>
-                        <Table.Cell>
+                      <TableRow key={tx.id} className="bg-white">
+                        <TableCell>{new Date(tx.createdAt).toLocaleDateString()}</TableCell>
+                        <TableCell>{tx.description}</TableCell>
+                        <TableCell>
                           <Badge color={tx.type === 'CREDIT' ? 'success' : 'failure'}>
                             {tx.type}
                           </Badge>
-                        </Table.Cell>
-                        <Table.Cell className={tx.type === 'CREDIT' ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
+                        </TableCell>
+                        <TableCell className={tx.type === 'CREDIT' ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
                           {tx.type === 'CREDIT' ? '+' : '-'}{tx.amount}
-                        </Table.Cell>
-                        <Table.Cell className="font-mono text-xs">{tx.referenceId}</Table.Cell>
-                      </Table.Row>
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">{tx.referenceId}</TableCell>
+                      </TableRow>
                     ))}
                     {(!transactions || transactions.length === 0) && (
-                       <Table.Row>
-                         <Table.Cell colSpan={5} className="text-center py-4">No transactions found</Table.Cell>
-                       </Table.Row>
+                       <TableRow>
+                         <TableCell colSpan={5} className="text-center py-4">No transactions found</TableCell>
+                       </TableRow>
                     )}
-                  </Table.Body>
+                  </TableBody>
                 </Table>
              </div>
           </Card>
-        </Tabs.Item>
+        </TabItem>
 
-        <Tabs.Item icon={HiCreditCard} title="Invoices">
+        <TabItem icon={HiCreditCard} title="Invoices">
            <Card>
              <div className="overflow-x-auto">
                 <Table>
-                  <Table.Head>
-                    <Table.HeadCell>Date</Table.HeadCell>
-                    <Table.HeadCell>Amount</Table.HeadCell>
-                    <Table.HeadCell>Status</Table.HeadCell>
-                    <Table.HeadCell>Download</Table.HeadCell>
-                  </Table.Head>
-                  <Table.Body className="divide-y">
+                  <TableHead>
+                    <TableHeadCell>Date</TableHeadCell>
+                    <TableHeadCell>Amount</TableHeadCell>
+                    <TableHeadCell>Status</TableHeadCell>
+                    <TableHeadCell>Download</TableHeadCell>
+                  </TableHead>
+                  <TableBody className="divide-y">
                     {invoices?.map((inv) => (
-                      <Table.Row key={inv.id} className="bg-white">
-                        <Table.Cell>{new Date(inv.createdAt).toLocaleDateString()}</Table.Cell>
-                        <Table.Cell>{inv.amount}</Table.Cell>
-                        <Table.Cell>
+                      <TableRow key={inv.id} className="bg-white">
+                        <TableCell>{new Date(inv.createdAt).toLocaleDateString()}</TableCell>
+                        <TableCell>{inv.amount}</TableCell>
+                        <TableCell>
                            <Badge color={inv.status === 'PAID' ? 'success' : 'warning'}>{inv.status}</Badge>
-                        </Table.Cell>
-                        <Table.Cell>
+                        </TableCell>
+                        <TableCell>
                           {inv.invoicePdfUrl && (
                             <a href={inv.invoicePdfUrl} target="_blank" rel="noreferrer" className="text-primary-600 hover:underline">
                               PDF
                             </a>
                           )}
-                        </Table.Cell>
-                      </Table.Row>
+                        </TableCell>
+                      </TableRow>
                     ))}
                      {(!invoices || invoices.length === 0) && (
-                       <Table.Row>
-                         <Table.Cell colSpan={4} className="text-center py-4">No invoices found</Table.Cell>
-                       </Table.Row>
+                       <TableRow>
+                         <TableCell colSpan={4} className="text-center py-4">No invoices found</TableCell>
+                       </TableRow>
                     )}
-                  </Table.Body>
+                  </TableBody>
                 </Table>
              </div>
            </Card>
-        </Tabs.Item>
+        </TabItem>
       </Tabs>
 
       {/* Top Up Modal */}

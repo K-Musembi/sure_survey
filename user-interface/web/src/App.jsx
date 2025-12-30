@@ -17,6 +17,7 @@ import SurveyDetails from './pages/SurveyDetails'
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import useAuthStore from './stores/authStore'
+import GlobalErrorModal from './components/GlobalErrorModal'
 
 export default function App() {
 
@@ -81,6 +82,7 @@ export default function App() {
         {/* Catch all - redirect to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <GlobalErrorModal />
     </div>
   )
 }

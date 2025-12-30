@@ -36,7 +36,7 @@ const DashboardLayout = ({ children }) => {
                 icon={HiChartPie} 
                 active={location.pathname === '/dashboard'}
               >
-                My Surveys
+                Surveys
               </SidebarItem>
               <SidebarItem 
                 as={Link} 

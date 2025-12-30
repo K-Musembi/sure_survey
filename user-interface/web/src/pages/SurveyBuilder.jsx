@@ -34,7 +34,6 @@ const SurveyBuilder = () => {
   const [distributionLists, setDistributionLists] = useState([])
   const [selectedListId, setSelectedListId] = useState('')
   const [subscription, setSubscription] = useState(null)
-  const [creationError, setCreationError] = useState('')
 
   const createSurveyMutation = useCreateSurvey()
   const { data: templates, isLoading: templatesLoading } = useTemplatesByType(surveyType)
@@ -115,7 +114,7 @@ const SurveyBuilder = () => {
       })
       setStep(3)
     } catch (error) {
-      console.error('AI Generation failed', error)
+      console.error('AI Generation failed', error);
       setAiError('Failed to generate questions. Please try again or refine your topic.')
     } finally {
       setIsGenerating(false)
@@ -149,7 +148,6 @@ const SurveyBuilder = () => {
   }
 
   const handleSave = async () => {
-    setCreationError('')
     try {
       const surveyData = {
         name: currentSurvey.name,
@@ -183,7 +181,7 @@ const SurveyBuilder = () => {
       navigate('/dashboard')
     } catch (err) {
       console.error('Failed to save survey:', err)
-      setCreationError(err.response?.data?.message || err.message || 'Failed to save survey')
+      // Global error handler will display the modal
     }
   }
 
@@ -205,7 +203,6 @@ const SurveyBuilder = () => {
 
       <div className="mb-6 flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900">{editSurveyId ? 'Edit Survey' : 'Create Survey'}</h1>
-        {creationError && <Alert color="failure">{creationError}</Alert>}
       </div>
 
       {/* Step 1: Method Selection */}
@@ -227,11 +224,11 @@ const SurveyBuilder = () => {
                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm group-hover:scale-110 transition-transform">
                   <HiPlus className="w-8 h-8 text-blue-600" />
                </div>
-               <h3 className="font-bold text-gray-900 text-lg">Start from Scratch</h3>
+               <h3 className="font-bold text-gray-900 text-lg">Build custom survey</h3>
                <p className="text-sm text-gray-600 mt-2">Choose a survey type and build your questions manually.</p>
-               <div className="mt-4 flex flex-wrap justify-center gap-2">
+               <div className="font-bold mt-4 flex flex-wrap justify-center gap-2">
                  {['NPS', 'CES', 'CSAT'].map(type => (
-                   <Badge key={type} color="gray" className="cursor-pointer" onClick={(e) => { e.stopPropagation(); handleTypeSelection(type); }}>{type}</Badge>
+                   <Badge key={type} color="blue" className="cursor-pointer" onClick={(e) => { e.stopPropagation(); handleTypeSelection(type); }}>{type}</Badge>
                  ))}
                </div>
             </div>
@@ -257,6 +254,45 @@ const SurveyBuilder = () => {
                  className="mt-1"
                />
              </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+               <div>
+                 <Label htmlFor="aiType">Survey Type</Label>
+                 <Select
+                   id="aiType"
+                   value={aiType}
+                   onChange={(e) => setAiType(e.target.value)}
+                   className="mt-1"
+                 >
+                   <option value="">Select type...</option>
+                   <option value="NPS">NPS (Net Promoter Score)</option>
+                   <option value="CES">CES (Customer Effort Score)</option>
+                   <option value="CSAT">CSAT (Customer Satisfaction)</option>
+                 </Select>
+               </div>
+               <div>
+                 <Label htmlFor="aiSector">Industry / Sector</Label>
+                 <TextInput
+                   id="aiSector"
+                   placeholder="e.g. Healthcare, Retail"
+                   value={aiSector}
+                   onChange={(e) => setAiSector(e.target.value)}
+                   className="mt-1"
+                 />
+               </div>
+               <div>
+                 <Label htmlFor="aiQuestionCount">No. of Questions</Label>
+                 <TextInput
+                   id="aiQuestionCount"
+                   type="number"
+                   placeholder="Default: 5"
+                   value={aiQuestionCount}
+                   onChange={(e) => setAiQuestionCount(e.target.value)}
+                   className="mt-1"
+                 />
+               </div>
+             </div>
+
              {aiError && <Alert color="failure">{aiError}</Alert>}
              <div className="flex justify-between pt-4">
                <Button color="gray" onClick={() => setStep(1)}>Back</Button>
@@ -321,11 +357,7 @@ const SurveyBuilder = () => {
 
           <div className="space-y-4">
             {currentSurvey.questions.map((q, idx) => (
-              <Card key={q.id} className="relative group">
-                <div className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button color="failure" size="xs" onClick={() => removeQuestion(q.id)}><HiTrash /></Button>
-                </div>
-                
+              <Card key={q.id} className="relative">
                 <div className="flex gap-4">
                   <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-500 flex-shrink-0">
                     {idx + 1}
@@ -338,50 +370,72 @@ const SurveyBuilder = () => {
                       required
                     />
                     
-                    <div className="flex gap-4 items-center">
-                      <Select 
-                        value={q.type} 
-                        onChange={(e) => updateQuestion(q.id, { type: e.target.value })}
-                        className="w-48"
+                    <div className="flex justify-between items-center gap-4">
+                      <div className="flex gap-4 items-center">
+                        <Select 
+                          value={q.type} 
+                          onChange={(e) => updateQuestion(q.id, { type: e.target.value })}
+                          className="w-48"
+                        >
+                          <option value="FREE_TEXT">Free Text</option>
+                          <option value="MULTIPLE_CHOICE_SINGLE">Single Choice</option>
+                          <option value="MULTIPLE_CHOICE_MULTI">Multiple Choice</option>
+                          <option value="RATING_LINEAR">Linear Scale (1-10)</option>
+                          <option value="RATING_STAR">Star Rating</option>
+                          <option value="NPS_SCALE">NPS (0-10)</option>
+                        </Select>
+                        <Label className="flex items-center gap-2">
+                          <input type="checkbox" checked={q.required} onChange={(e) => updateQuestion(q.id, { required: e.target.checked })} />
+                          Required
+                        </Label>
+                      </div>
+                      <Button 
+                        color="failure" 
+                        size="xs" 
+                        onClick={() => removeQuestion(q.id)}
+                        className="flex items-center gap-1"
                       >
-                        <option value="FREE_TEXT">Free Text</option>
-                        <option value="MULTIPLE_CHOICE_SINGLE">Single Choice</option>
-                        <option value="MULTIPLE_CHOICE_MULTI">Multiple Choice</option>
-                        <option value="RATING_LINEAR">Linear Scale (1-10)</option>
-                        <option value="RATING_STAR">Star Rating</option>
-                        <option value="NPS_SCALE">NPS (0-10)</option>
-                      </Select>
-                      <Label className="flex items-center gap-2">
-                        <input type="checkbox" checked={q.required} onChange={(e) => updateQuestion(q.id, { required: e.target.checked })} />
-                        Required
-                      </Label>
+                        <HiTrash className="h-4 w-4" /> Delete Question
+                      </Button>
                     </div>
 
                     {(q.type === 'MULTIPLE_CHOICE_SINGLE' || q.type === 'MULTIPLE_CHOICE_MULTI') && (
                       <div className="pl-4 border-l-2 border-gray-200 space-y-2">
                         {q.options?.map((opt, oIdx) => (
-                          <TextInput 
-                            key={oIdx} 
-                            value={opt} 
-                            size="sm" 
-                            onChange={(e) => {
-                              const newOpts = [...q.options];
-                              newOpts[oIdx] = e.target.value;
-                              updateQuestion(q.id, { options: newOpts });
-                            }}
-                            placeholder={`Option ${oIdx + 1}`}
-                          />
+                          <div key={oIdx} className="flex gap-2">
+                            <TextInput 
+                              value={opt} 
+                              size="sm" 
+                              className="flex-grow"
+                              onChange={(e) => {
+                                const newOpts = [...q.options];
+                                newOpts[oIdx] = e.target.value;
+                                updateQuestion(q.id, { options: newOpts });
+                              }}
+                              placeholder={`Option ${oIdx + 1}`}
+                            />
+                            <Button 
+                              color="failure" 
+                              size="xs" 
+                              variant="outline"
+                              onClick={() => {
+                                const newOpts = q.options.filter((_, i) => i !== oIdx);
+                                updateQuestion(q.id, { options: newOpts });
+                              }}
+                            >
+                              <HiTrash className="h-3 w-3" />
+                            </Button>
+                          </div>
                         ))}
-                        <Button size="xs" color="light" onClick={() => updateQuestion(q.id, { options: [...(q.options || []), ''] })}>
-                          + Add Option
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            ))}
-            
+                                              <Button size="xs" color="light" onClick={() => updateQuestion(q.id, { options: [...(q.options || []), ''] })}>
+                                                + Add Option
+                                              </Button>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </Card>
+                                  ))}            
             <Button color="light" className="w-full border-dashed border-2" onClick={handleAddQuestion}>
               <HiPlus className="mr-2 h-5 w-5" /> Add Question
             </Button>

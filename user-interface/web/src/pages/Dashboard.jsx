@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Button, Card, Badge, Dropdown, DropdownItem, DropdownDivider, Alert, Modal, Select, Label, Spinner } from 'flowbite-react'
+import { Button, Card, Badge, Dropdown, DropdownItem, DropdownDivider, Alert, Modal, ModalHeader, ModalBody, ModalContext, ModalFooter, modalTheme, Select, Label, Spinner } from 'flowbite-react'
 import PaymentModal from '../components/PaymentModal'
 import { useMySurveys, useActivateSurvey } from '../hooks/useApi'
 import { billingAPI, distributionAPI, surveyAPI } from '../services/apiServices'
@@ -105,7 +105,7 @@ const Dashboard = () => {
     // For now, assuming standard flow.
     setIsSending(true)
         try {
-          await surveyAPI.sendToDistributionList(selectedSurvey.id)
+          await surveyAPI.sendToDistributionList(selectedSurvey.id, selectedListId)
           setShowDistModal(false)
           setSelectedListId('')
           // Set a success state or just refetch
@@ -148,7 +148,7 @@ const Dashboard = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">My Surveys</h1>
+          <h1 className="text-2xl font-bold text-gray-900">My Surveys</h1>
           <p className="text-gray-600 mt-1">Manage your surveys</p>
         </div>
         <Button
@@ -341,8 +341,8 @@ const Dashboard = () => {
       
       {/* Distribution Modal */}
       <Modal show={showDistModal} onClose={() => setShowDistModal(false)} size="md">
-        <Modal.Header>Send Survey</Modal.Header>
-        <Modal.Body>
+        <ModalHeader>Send Survey</ModalHeader>
+        <ModalBody>
           <div className="space-y-4">
              <p className="text-gray-600">Select a contact list to send SMS invitations to.</p>
              <div>
@@ -366,7 +366,7 @@ const Dashboard = () => {
                </Button>
              </div>
           </div>
-        </Modal.Body>
+        </ModalBody>
       </Modal>
     </div>
   )

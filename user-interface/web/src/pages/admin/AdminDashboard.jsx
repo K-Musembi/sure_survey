@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Card, Table, Badge, Tabs, Modal, Label, TextInput, Select, Alert, Textarea } from 'flowbite-react'
+import { Button, Card, Table, Badge, Tabs, Modal, ModalHeader, ModalBody, ModalContext, ModalFooter, modalTheme,
+  TabItem, TableHead, TableBody, TableHeadCell, TableCell, Label, TextInput, Select, Alert, Textarea, 
+  TableRow} from 'flowbite-react'
 import { adminAPI, billingAPI } from '../../services/apiServices'
 import useAuthStore from '../../stores/authStore'
 import { HiLogout, HiRefresh, HiCash, HiOfficeBuilding, HiExclamationCircle, HiTemplate } from 'react-icons/hi'
@@ -227,50 +229,50 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs aria-label="Admin tabs" variant="underline">
-          <Tabs.Item active icon={HiOfficeBuilding} title="Tenants">
+          <TabItem active icon={HiOfficeBuilding} title="Tenants">
             <Card>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-bold text-gray-900">Registered Tenants</h3>
               </div>
               <div className="overflow-x-auto">
                 <Table hoverable>
-                  <Table.Head>
-                    <Table.HeadCell>Tenant Name</Table.HeadCell>
-                    <Table.HeadCell>Slug</Table.HeadCell>
-                    <Table.HeadCell>Plan</Table.HeadCell>
-                    <Table.HeadCell>Users</Table.HeadCell>
-                    <Table.HeadCell>Status</Table.HeadCell>
-                  </Table.Head>
-                  <Table.Body className="divide-y">
+                  <TableHead>
+                    <TableHeadCell>Tenant Name</TableHeadCell>
+                    <TableHeadCell>Slug</TableHeadCell>
+                    <TableHeadCell>Plan</TableHeadCell>
+                    <TableHeadCell>Users</TableHeadCell>
+                    <TableHeadCell>Status</TableHeadCell>
+                  </TableHead>
+                  <TableBody className="divide-y">
                     {tenants.map((tenant) => (
-                      <Table.Row key={tenant.id} className="bg-white">
-                        <Table.Cell className="whitespace-nowrap font-medium text-gray-900">
+                      <TableRow key={tenant.id} className="bg-white">
+                        <TableCell className="whitespace-nowrap font-medium text-gray-900">
                           {tenant.name}
-                        </Table.Cell>
-                        <Table.Cell>{tenant.slug}</Table.Cell>
-                        <Table.Cell>
+                        </TableCell>
+                        <TableCell>{tenant.slug}</TableCell>
+                        <TableCell>
                           <Badge color="info">{tenant.plan || 'Free'}</Badge>
-                        </Table.Cell>
-                        <Table.Cell>{tenant.userCount || 0}</Table.Cell>
-                        <Table.Cell>
+                        </TableCell>
+                        <TableCell>{tenant.userCount || 0}</TableCell>
+                        <TableCell>
                           <Badge color={tenant.status === 'ACTIVE' ? 'success' : 'warning'}>
                             {tenant.status || 'ACTIVE'}
                           </Badge>
-                        </Table.Cell>
-                      </Table.Row>
+                        </TableCell>
+                      </TableRow>
                     ))}
                     {tenants.length === 0 && !isLoading && (
-                       <Table.Row>
-                         <Table.Cell colSpan={6} className="text-center py-4">No tenants found</Table.Cell>
-                       </Table.Row>
+                       <TableRow>
+                         <TableCell colSpan={6} className="text-center py-4">No tenants found</TableCell>
+                       </TableRow>
                     )}
-                  </Table.Body>
+                  </TableBody>
                 </Table>
               </div>
             </Card>
-          </Tabs.Item>
+          </TabItem>
           
-          <Tabs.Item icon={HiTemplate} title="Subscription Plans">
+          <TabItem icon={HiTemplate} title="Subscription Plans">
             <Card>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-bold text-gray-900">Manage Plans</h3>
@@ -280,65 +282,65 @@ const AdminDashboard = () => {
               </div>
               <div className="overflow-x-auto">
                 <Table>
-                  <Table.Head>
-                    <Table.HeadCell>Name</Table.HeadCell>
-                    <Table.HeadCell>Price</Table.HeadCell>
-                    <Table.HeadCell>Interval</Table.HeadCell>
-                    <Table.HeadCell>Features</Table.HeadCell>
-                    <Table.HeadCell>Action</Table.HeadCell>
-                  </Table.Head>
-                  <Table.Body className="divide-y">
+                  <TableHead>
+                    <TableHeadCell>Name</TableHeadCell>
+                    <TableHeadCell>Price</TableHeadCell>
+                    <TableHeadCell>Interval</TableHeadCell>
+                    <TableHeadCell>Features</TableHeadCell>
+                    <TableHeadCell>Action</TableHeadCell>
+                  </TableHead>
+                  <TableBody className="divide-y">
                     {plans.map((plan) => (
-                      <Table.Row key={plan.id} className="bg-white">
-                        <Table.Cell className="font-bold">{plan.name}</Table.Cell>
-                        <Table.Cell>${plan.price}</Table.Cell>
-                        <Table.Cell>{plan.billingInterval}</Table.Cell>
-                        <Table.Cell className="max-w-xs truncate">{plan.features}</Table.Cell>
-                        <Table.Cell>
+                      <TableRow key={plan.id} className="bg-white">
+                        <TableCell className="font-bold">{plan.name}</TableCell>
+                        <TableCell>${plan.price}</TableCell>
+                        <TableCell>{plan.billingInterval}</TableCell>
+                        <TableCell className="max-w-xs truncate">{plan.features}</TableCell>
+                        <TableCell>
                           <Button size="xs" color="gray" onClick={() => openEditPlan(plan)}>Edit</Button>
-                        </Table.Cell>
-                      </Table.Row>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </Table.Body>
+                  </TableBody>
                 </Table>
               </div>
             </Card>
-          </Tabs.Item>
+          </TabItem>
 
-          <Tabs.Item title="System Settings">
+          <TabItem title="System Settings">
             <Card>
               <h3 className="text-xl font-bold text-gray-900 mb-4">Global Configuration</h3>
               <div className="overflow-x-auto">
                 <Table>
-                  <Table.Head>
-                    <Table.HeadCell>Key</Table.HeadCell>
-                    <Table.HeadCell>Value</Table.HeadCell>
-                    <Table.HeadCell>Description</Table.HeadCell>
-                    <Table.HeadCell>Action</Table.HeadCell>
-                  </Table.Head>
-                  <Table.Body className="divide-y">
+                  <TableHead>
+                    <TableHeadCell>Key</TableHeadCell>
+                    <TableHeadCell>Value</TableHeadCell>
+                    <TableHeadCell>Description</TableHeadCell>
+                    <TableHeadCell>Action</TableHeadCell>
+                  </TableHead>
+                  <TableBody className="divide-y">
                     {settings.map((setting) => (
-                      <Table.Row key={setting.key}>
-                         <Table.Cell className="font-mono text-xs">{setting.key}</Table.Cell>
-                         <Table.Cell>{setting.value}</Table.Cell>
-                         <Table.Cell>{setting.description}</Table.Cell>
-                         <Table.Cell>
+                      <TableRow key={setting.key}>
+                         <TableCell className="font-mono text-xs">{setting.key}</TableCell>
+                         <TableCell>{setting.value}</TableCell>
+                         <TableCell>{setting.description}</TableCell>
+                         <TableCell>
                            <Button size="xs" color="gray" onClick={() => openEditSetting(setting)}>Edit</Button>
-                         </Table.Cell>
-                      </Table.Row>
+                         </TableCell>
+                      </TableRow>
                     ))}
-                  </Table.Body>
+                  </TableBody>
                 </Table>
               </div>
             </Card>
-          </Tabs.Item>
+          </TabItem>
         </Tabs>
       </main>
 
       {/* Restock Modal */}
       <Modal show={restockModalOpen} onClose={() => setRestockModalOpen(false)}>
-        <Modal.Header>System Wallet Restock</Modal.Header>
-        <Modal.Body>
+        <ModalHeader>System Wallet Restock</ModalHeader>
+        <ModalBody>
           <div className="space-y-6">
             <p className="text-base leading-relaxed text-gray-500">
               Purchase bulk Airtime or Data Bundles from Safaricom for the system inventory.
@@ -372,19 +374,19 @@ const AdminDashboard = () => {
               />
             </div>
           </div>
-        </Modal.Body>
-        <Modal.Footer>
+        </ModalBody>
+        <ModalFooter>
           <Button onClick={handleRestock}>Process Purchase</Button>
           <Button color="gray" onClick={() => setRestockModalOpen(false)}>
             Cancel
           </Button>
-        </Modal.Footer>
+        </ModalFooter>
       </Modal>
 
       {/* Edit Setting Modal */}
       <Modal show={editSettingModalOpen} onClose={() => setEditSettingModalOpen(false)}>
-        <Modal.Header>Edit Setting</Modal.Header>
-        <Modal.Body>
+        <ModalHeader>Edit Setting</ModalHeader>
+        <ModalBody>
            <div className="space-y-4">
              {settingUpdateError && (
                <Alert color="failure" icon={HiExclamationCircle}>
@@ -402,17 +404,17 @@ const AdminDashboard = () => {
                />
              </div>
            </div>
-        </Modal.Body>
-        <Modal.Footer>
+        </ModalBody>
+        <ModalFooter>
            <Button onClick={handleUpdateSetting}>Save Changes</Button>
            <Button color="gray" onClick={() => setEditSettingModalOpen(false)}>Cancel</Button>
-        </Modal.Footer>
+        </ModalFooter>
       </Modal>
 
       {/* Plan Modal */}
       <Modal show={planModalOpen} onClose={() => setPlanModalOpen(false)}>
-        <Modal.Header>{editingPlan ? 'Edit Plan' : 'Create Plan'}</Modal.Header>
-        <Modal.Body>
+        <ModalHeader>{editingPlan ? 'Edit Plan' : 'Create Plan'}</ModalHeader>
+        <ModalBody>
           <form onSubmit={handlePlanSubmit} className="space-y-4">
             {planMessage && <Alert color="failure">{planMessage}</Alert>}
             
@@ -469,7 +471,7 @@ const AdminDashboard = () => {
               <Button type="submit">{editingPlan ? 'Update Plan' : 'Create Plan'}</Button>
             </div>
           </form>
-        </Modal.Body>
+        </ModalBody>
       </Modal>
     </div>
   )

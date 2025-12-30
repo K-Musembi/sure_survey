@@ -73,7 +73,7 @@ const SurveySession = () => {
     try {
       const answersData = Object.entries(responses).map(([questionId, answer]) => ({
         questionId: parseInt(questionId),
-        answerValue: typeof answer === 'string' ? answer : answer.toString()
+        answerValue: Array.isArray(answer) ? JSON.stringify(answer) : (typeof answer === 'string' ? answer : answer.toString())
       }))
 
       await submitResponseMutation.mutateAsync({
@@ -129,22 +129,38 @@ const SurveySession = () => {
       
       case 'MULTIPLE_CHOICE_MULTI':
          return (
-            <div className="p-4 bg-yellow-50 text-yellow-800 rounded">
-               Multi-select support coming soon. Please select one best option.
-               <div className="space-y-3 mt-2">
-                {parsedOptions.map((option, index) => (
-                  <div key={index} className="flex items-center">
-                    <Radio
+            <div className="space-y-3">
+              {parsedOptions.map((option, index) => {
+                const currentValues = Array.isArray(responses[currentQuestion.id]) 
+                  ? responses[currentQuestion.id] 
+                  : (responses[currentQuestion.id] ? JSON.parse(responses[currentQuestion.id]) : []);
+                
+                const isChecked = currentValues.includes(option);
+
+                return (
+                  <div key={index} className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer" 
+                    onClick={() => {
+                      const newValues = isChecked 
+                        ? currentValues.filter(v => v !== option)
+                        : [...currentValues, option];
+                      handleResponseChange(newValues);
+                    }}
+                  >
+                    <input
                       id={`option-${index}`}
+                      type="checkbox"
                       name={`question-${currentQuestion.id}`}
                       value={option}
-                      checked={currentResponse === option}
-                      onChange={(e) => handleResponseChange(e.target.value)}
+                      checked={isChecked}
+                      onChange={() => {}} // Handled by parent div onClick
+                      className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500"
                     />
-                    <Label htmlFor={`option-${index}`} className="ml-2">{option}</Label>
+                    <Label htmlFor={`option-${index}`} className="ml-3 cursor-pointer w-full pointer-events-none">
+                      {option}
+                    </Label>
                   </div>
-                ))}
-              </div>
+                )
+              })}
             </div>
          )
 
