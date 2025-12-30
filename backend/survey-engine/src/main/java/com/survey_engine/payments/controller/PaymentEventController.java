@@ -30,6 +30,7 @@ import java.util.UUID;
 public class PaymentEventController {
 
     private final PaymentEventService paymentService;
+    private final com.survey_engine.user.UserApi userApi;
 
     /**
      * Initializes a new payment.
@@ -44,7 +45,7 @@ public class PaymentEventController {
             @Valid @RequestBody PaymentEventRequest paymentRequest) {
 
         String userId = jwt.getSubject();
-        String userEmail = jwt.getClaimAsString("email");
+        String userEmail = resolveEmail(userId, jwt);
 
         log.info("Initializing payment for user {} and survey {}", userId, paymentRequest.surveyId());
         return paymentService.createPaymentEvent(paymentRequest, userId, userEmail)
@@ -64,7 +65,7 @@ public class PaymentEventController {
             @Valid @RequestBody TopUpRequest topUpRequest) {
 
         String userId = jwt.getSubject();
-        String userEmail = jwt.getClaimAsString("email");
+        String userEmail = resolveEmail(userId, jwt);
 
         // Construct the internal PaymentEventRequest with the magic string
         PaymentEventRequest internalRequest = new PaymentEventRequest(
@@ -77,6 +78,19 @@ public class PaymentEventController {
         log.info("Initializing wallet top-up for user {}", userId);
         return paymentService.createPaymentEvent(internalRequest, userId, userEmail)
                 .map(response -> ResponseEntity.status(HttpStatus.CREATED).body(response));
+    }
+
+    private String resolveEmail(String userId, Jwt jwt) {
+        String email = jwt.getClaimAsString("email");
+        if (email == null || email.isBlank()) {
+            java.util.Map<String, String> details = userApi.findUserDetailsMapById(userId);
+            email = details.get("email");
+        }
+        if (email == null || email.isBlank()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "User email is required for payment processing.");
+        }
+        return email;
     }
 
     /**

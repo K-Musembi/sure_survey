@@ -10,9 +10,11 @@ import com.survey_engine.survey.dto.QuestionRequest;
 import com.survey_engine.survey.dto.QuestionResponse;
 import com.survey_engine.survey.models.Survey;
 import com.survey_engine.survey.repository.SurveyRepository;
+import com.survey_engine.survey.repository.DistributionListRepository;
 import com.survey_engine.survey.dto.SurveyRequest;
 import com.survey_engine.survey.dto.SurveysResponse;
 import com.survey_engine.user.UserApi;
+import com.survey_engine.survey.models.DistributionList;
 
 import com.survey_engine.survey.service.sms.SmsResponseService;
 
@@ -41,6 +43,7 @@ public class SurveyService {
     private static final Logger logger = LoggerFactory.getLogger(SurveyService.class);
 
     private final SurveyRepository surveyRepository;
+    private final DistributionListRepository distributionListRepository;
     private final UserApi userApi;
     private final BillingApi billingApi;
     private final SystemSettingRepository systemSettingRepository;
@@ -363,9 +366,10 @@ public class SurveyService {
      * @param surveyId The ID of the survey.
      * @param userId The ID of the user triggering send.
      * @param roles The roles of the user.
+     * @param distributionListId Optional ID of a distribution list to link before sending.
      */
-    @Transactional(readOnly = true)
-    public void sendSurveyToDistributionList(Long surveyId, String userId, List<String> roles) {
+    @Transactional
+    public void sendSurveyToDistributionList(Long surveyId, String userId, List<String> roles, UUID distributionListId) {
         Long tenantId = userApi.getTenantId();
         Survey survey = surveyRepository.findById(surveyId)
                 .filter(s -> s.getTenantId().equals(tenantId))
@@ -377,6 +381,13 @@ public class SurveyService {
 
         if (survey.getStatus() != SurveyStatus.ACTIVE) {
             throw new IllegalStateException("Survey must be ACTIVE to send.");
+        }
+
+        if (distributionListId != null) {
+            DistributionList list = distributionListRepository.findByIdAndTenantIdAndUserId(distributionListId, tenantId, userId)
+                    .orElseThrow(() -> new EntityNotFoundException("Distribution list not found or access denied"));
+            survey.setDistributionList(list);
+            survey = surveyRepository.save(survey);
         }
 
         if (survey.getDistributionList() == null || survey.getDistributionList().getContacts().isEmpty()) {

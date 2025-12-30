@@ -80,7 +80,18 @@ public class DistributionListService {
     @Transactional(readOnly = true)
     public List<DistributionListResponse> getAllDistributionLists(String userId) {
         Long tenantId = userApi.getTenantId();
-        return distributionListRepository.findAllByTenantIdAndUserId(tenantId, userId).stream()
+        String tenantName = userApi.findTenantNameById(tenantId).orElse("Main Tenant");
+
+        List<DistributionList> lists;
+        if ("Main Tenant".equalsIgnoreCase(tenantName) || "www".equalsIgnoreCase(tenantName)) {
+            // Individual user: show only their own lists
+            lists = distributionListRepository.findAllByTenantIdAndUserId(tenantId, userId);
+        } else {
+            // Enterprise user: show all lists in the tenant
+            lists = distributionListRepository.findByTenantId(tenantId);
+        }
+
+        return lists.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -191,27 +202,58 @@ public class DistributionListService {
     private List<DistributionListContact> parseCsv(MultipartFile file, DistributionList list) {
         List<DistributionListContact> contacts = new ArrayList<>();
         try (CSVReader csvReader = new CSVReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
-            String[] nextRecord;
-            boolean isHeader = true; // Assuming first row is header
+            String[] header = csvReader.readNext();
+            if (header == null) {
+                return contacts;
+            }
 
-            while ((nextRecord = csvReader.readNext()) != null) {
-                if (isHeader) {
-                    isHeader = false;
-                    continue; // Skip header row
+            // Identify column indices based on header names
+            int phoneIndex = -1;
+            int firstNameIndex = -1;
+            int lastNameIndex = -1;
+            int emailIndex = -1;
+
+            for (int i = 0; i < header.length; i++) {
+                String col = header[i].toLowerCase().trim();
+                if (col.contains("phone") || col.contains("mobile") || col.contains("number") || col.contains("tel")) {
+                    phoneIndex = i;
+                } else if (col.contains("first") || col.equals("name") || col.equals("fname")) {
+                    firstNameIndex = i;
+                } else if (col.contains("last") || col.contains("sur") || col.equals("lname")) {
+                    lastNameIndex = i;
+                } else if (col.contains("email") || col.contains("mail")) {
+                    emailIndex = i;
                 }
+            }
 
-                // Assuming CSV format: phoneNumber, firstName, lastName, email
-                if (nextRecord.length > 0) {
-                    String phoneRaw = nextRecord[0].trim();
+            // Fallback to default indices if specific phone column not found
+            if (phoneIndex == -1) {
+                phoneIndex = 0;
+                if (header.length > 1) firstNameIndex = 1;
+                if (header.length > 2) lastNameIndex = 2;
+                if (header.length > 3) emailIndex = 3;
+            }
+
+            String[] nextRecord;
+            while ((nextRecord = csvReader.readNext()) != null) {
+                if (nextRecord.length > phoneIndex) {
+                    String phoneRaw = nextRecord[phoneIndex].trim();
                     String sanitized = sanitizePhoneNumber(phoneRaw);
                     
                     if (sanitized != null) {
                         DistributionListContact contact = new DistributionListContact();
                         contact.setDistributionList(list);
                         contact.setPhoneNumber(sanitized);
-                        if (nextRecord.length > 1) contact.setFirstName(nextRecord[1].trim());
-                        if (nextRecord.length > 2) contact.setLastName(nextRecord[2].trim());
-                        if (nextRecord.length > 3) contact.setEmail(nextRecord[3].trim());
+                        
+                        if (firstNameIndex != -1 && nextRecord.length > firstNameIndex) {
+                            contact.setFirstName(nextRecord[firstNameIndex].trim());
+                        }
+                        if (lastNameIndex != -1 && nextRecord.length > lastNameIndex) {
+                            contact.setLastName(nextRecord[lastNameIndex].trim());
+                        }
+                        if (emailIndex != -1 && nextRecord.length > emailIndex) {
+                            contact.setEmail(nextRecord[emailIndex].trim());
+                        }
                         contacts.add(contact);
                     }
                 }

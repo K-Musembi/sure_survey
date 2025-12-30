@@ -1,5 +1,6 @@
 package com.survey_engine.survey.controller;
 
+import com.survey_engine.survey.dto.SurveyDistributionRequest;
 import com.survey_engine.survey.service.SurveyService;
 import com.survey_engine.survey.dto.SurveyRequest;
 import com.survey_engine.survey.dto.SurveysResponse;
@@ -13,6 +14,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Controller class for survey entity
@@ -152,15 +154,21 @@ public class SurveyController {
 
     /**
      * Triggers sending the survey to all contacts in its linked distribution list.
+     * Optionally links a new distribution list if provided in the body.
      * @param id The ID of the survey.
+     * @param request Optional request body containing distributionListId.
      * @param jwt The JWT token of the authenticated user.
      * @return A ResponseEntity with Accepted status.
      */
     @PostMapping("/{id}/send-to-distribution-list")
-    public ResponseEntity<Void> sendSurveyToDistributionList(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<Void> sendSurveyToDistributionList(
+            @PathVariable Long id, 
+            @RequestBody(required = false) SurveyDistributionRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getSubject();
         List<String> roles = jwt.getClaimAsStringList("roles");
-        surveyService.sendSurveyToDistributionList(id, userId, roles);
+        UUID listId = request != null ? request.distributionListId() : null;
+        surveyService.sendSurveyToDistributionList(id, userId, roles, listId);
         return ResponseEntity.accepted().build();
     }
 }

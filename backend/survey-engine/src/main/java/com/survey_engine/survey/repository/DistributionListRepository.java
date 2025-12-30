@@ -11,6 +11,13 @@ import java.util.UUID;
 @Repository
 public interface DistributionListRepository extends JpaRepository<DistributionList, UUID> {
     /**
+     * Finds all DistributionList entities for a given tenant ID.
+     * @param tenantId The ID of the tenant.
+     * @return A list of distribution lists for that tenant.
+     */
+    List<DistributionList> findByTenantId(Long tenantId);
+
+    /**
      * Finds all DistributionList entities for a given tenant ID and user ID.
      * @param tenantId The ID of the tenant.
      * @param userId The ID of the user.
