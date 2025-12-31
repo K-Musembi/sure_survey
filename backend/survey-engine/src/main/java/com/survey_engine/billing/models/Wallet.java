@@ -11,22 +11,27 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 /**
- * Represents a prepaid wallet for a tenant.
+ * Represents a prepaid wallet for a tenant or a user.
+ * - For Enterprise Tenants: One wallet per tenant (userId is null).
+ * - For Individual Users (Main Tenant): One wallet per user (userId is set).
  */
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "tenant_wallets")
+@Table(name = "wallets")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class TenantWallet extends BaseEntity {
+public class Wallet extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
-    @Column(name = "tenant_id", nullable = false, unique = true)
+    @Column(name = "tenant_id", nullable = false)
     private Long tenantId;
+
+    @Column(name = "user_id")
+    private Long userId;
 
     @Column(nullable = false, precision = 19, scale = 4)
     private BigDecimal balance;

@@ -47,7 +47,8 @@ public class BillingController {
     @GetMapping("/wallet/balance")
     public ResponseEntity<BigDecimal> getWalletBalance(@AuthenticationPrincipal Jwt jwt) {
         Long tenantId = jwt.getClaim("tenantId");
-        return ResponseEntity.ok(walletService.getBalance(tenantId));
+        Long userId = Long.valueOf(jwt.getSubject());
+        return ResponseEntity.ok(walletService.getBalance(tenantId, userId));
     }
 
     /**
@@ -59,7 +60,8 @@ public class BillingController {
     @GetMapping("/wallet/transactions")
     public ResponseEntity<List<WalletTransactionResponse>> getWalletTransactions(@AuthenticationPrincipal Jwt jwt) {
         Long tenantId = jwt.getClaim("tenantId");
-        return ResponseEntity.ok(walletService.getTransactions(tenantId));
+        Long userId = Long.valueOf(jwt.getSubject());
+        return ResponseEntity.ok(walletService.getTransactions(tenantId, userId));
     }
 
     /**

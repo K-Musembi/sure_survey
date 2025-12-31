@@ -95,7 +95,7 @@ public class WebhookService {
 
         // Credit Wallet if this is a top-up
         if ("WALLET_TOPUP".equals(paymentEvent.getSurveyId())) {
-            billingApi.creditWallet(paymentEvent.getTenantId(), paymentEvent.getAmount(), reference, "Wallet Top Up via Paystack");
+            billingApi.creditWallet(paymentEvent.getTenantId(), Long.valueOf(paymentEvent.getUserId()), paymentEvent.getAmount(), reference, "Wallet Top Up via Paystack");
         }
     }
 

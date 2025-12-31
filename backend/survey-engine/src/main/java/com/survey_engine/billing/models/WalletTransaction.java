@@ -26,7 +26,7 @@ public class WalletTransaction {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "wallet_id", nullable = false)
-    private TenantWallet wallet;
+    private Wallet wallet;
 
     @Column(nullable = false, precision = 19, scale = 4)
     private BigDecimal amount;

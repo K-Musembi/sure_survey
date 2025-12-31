@@ -58,7 +58,7 @@ public class RewardService {
 
         // 3. Check & Debit Tenant Wallet (Cash)
         try {
-            billingApi.debitWallet(tenantId, totalCost, "Funding for reward campaign on survey " + rewardRequest.surveyId());
+            billingApi.debitWallet(tenantId, Long.valueOf(userId), totalCost, "Funding for reward campaign on survey " + rewardRequest.surveyId());
         } catch (IllegalStateException e) {
             throw new IllegalStateException("Insufficient funds to create reward. Required: " + totalCost + ". Please top up your wallet.");
         }
@@ -180,7 +180,7 @@ public class RewardService {
         if (reward.getStatus() == RewardStatus.ACTIVE && reward.getRemainingRewards() > 0) {
             BigDecimal refundAmount = reward.getAmountPerRecipient().multiply(new BigDecimal(reward.getRemainingRewards()));
             if (refundAmount.compareTo(BigDecimal.ZERO) > 0) {
-                billingApi.creditWallet(tenantId, refundAmount, "REFUND:CANCEL:" + rewardId, "Refund for cancelled reward campaign on survey " + reward.getSurveyId());
+                billingApi.creditWallet(tenantId, Long.valueOf(userId), refundAmount, "REFUND:CANCEL:" + rewardId, "Refund for cancelled reward campaign on survey " + reward.getSurveyId());
             }
         }
 

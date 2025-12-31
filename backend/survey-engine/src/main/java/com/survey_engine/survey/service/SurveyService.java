@@ -48,6 +48,7 @@ public class SurveyService {
     private final BillingApi billingApi;
     private final SystemSettingRepository systemSettingRepository;
     private final SmsResponseService smsResponseService;
+    private final SurveyCostService surveyCostService;
 
     @org.springframework.beans.factory.annotation.Value("${survey.web.base-url}")
     private String webBaseUrl;
@@ -246,19 +247,13 @@ public class SurveyService {
         }
 
         // Enterprise Logic: If target respondents are set, calculate cost.
-        // We assume non-Enterprise surveys might have targetRespondents as null or 0, or we rely on the SubscriptionLimitService during response collection.
-        // Here we specifically handle the "Activation Fee" or "Budgeting" for enterprise style surveys if a budget/target is set.
-        
         if (survey.getTargetRespondents() != null && survey.getTargetRespondents() > 0) {
-            BigDecimal costPerRespondent = systemSettingRepository.findByKey(SettingKey.ENTERPRISE_SURVEY_COST_PER_RESPONDENT)
-                    .map(s -> new BigDecimal(s.getValue()))
-                    .orElse(new BigDecimal("5.00"));
-
+            BigDecimal costPerRespondent = surveyCostService.getCostPerRespondent();
             BigDecimal totalCost = costPerRespondent.multiply(new BigDecimal(survey.getTargetRespondents()));
             
             // Debit Wallet
             try {
-                billingApi.debitWallet(tenantId, totalCost, "Activation fee for survey " + surveyId);
+                billingApi.debitWallet(tenantId, Long.valueOf(survey.getUserId()), totalCost, "Activation fee for survey " + surveyId);
                 survey.setBudget(totalCost);
             } catch (IllegalStateException e) {
                 throw new IllegalStateException("Insufficient funds to activate survey. Required: " + totalCost + ". Please top up your wallet.");

@@ -1,5 +1,6 @@
 package com.survey_engine.business_integration.service;
 
+import com.survey_engine.billing.BillingApi;
 import com.survey_engine.business_integration.dto.CreateIntegrationRequest;
 import com.survey_engine.business_integration.dto.DarajaConfirmationRequest;
 import com.survey_engine.business_integration.dto.IntegrationResponse;
@@ -32,6 +33,7 @@ public class BusinessIntegrationService {
     private final BusinessIntegrationRepository integrationRepository;
     private final BusinessTransactionRepository transactionRepository;
     private final UserApi userApi;
+    private final BillingApi billingApi;
     private final ApplicationEventPublisher eventPublisher;
     private final DarajaApiClient darajaApiClient;
 
@@ -40,28 +42,32 @@ public class BusinessIntegrationService {
 
     /**
      * Creates a new business integration configuration for the current tenant.
-     * Enforces restrictions on default 'www' tenant users.
+     * Automatically upgrades individual users to enterprise tenants.
      *
      * @param request The request DTO containing integration details.
+     * @param userId The ID of the user creating the integration.
      * @return The created integration response DTO.
-     * @throws IllegalStateException if the user belongs to the default tenant.
      */
     @Transactional
-    public IntegrationResponse createIntegration(CreateIntegrationRequest request) {
+    public IntegrationResponse createIntegration(CreateIntegrationRequest request, Long userId) {
         Long tenantId = userApi.getTenantId();
         
-        // Ensure not default 'www' tenant or individual user
+        // Check if individual user (default tenant)
         String tenantName = userApi.findTenantNameById(tenantId)
                 .orElseThrow(() -> new EntityNotFoundException("Tenant not found"));
         
-        if ("Main Tenant".equalsIgnoreCase(tenantName) || "www".equalsIgnoreCase(tenantName)) { // Assuming 'www' slug maps to 'Main Tenant' or similar default
-             // A better check might be based on roles or subscription plan, but for now enforcing tenant structure
-             // If tenant is the default one, we might assume they are individual users.
-             userApi.findTenantById(tenantId).ifPresent(t -> {
-                 if ("www".equals(t.getSlug())) {
-                     throw new IllegalStateException("Individual users cannot create business integrations. Please upgrade to an Enterprise account.");
-                 }
-             });
+        if ("Main Tenant".equalsIgnoreCase(tenantName) || "www".equalsIgnoreCase(tenantName)) {
+             log.info("Individual user {} attempting integration. Upgrading to Enterprise Tenant: {}", userId, request.businessName());
+             
+             // 1. Create new Tenant and Migrate User
+             Long newTenantId = userApi.upgradeUserToEnterprise(userId, request.businessName());
+             
+             // 2. Migrate Wallet funds
+             billingApi.migrateUserWalletToTenant(userId, newTenantId);
+             
+             // 3. Update Context for remainder of transaction
+             tenantId = newTenantId;
+             userApi.setTenantId(newTenantId); // IMPORTANT: Update thread-local context via API
         }
 
         BusinessIntegration integration = new BusinessIntegration();

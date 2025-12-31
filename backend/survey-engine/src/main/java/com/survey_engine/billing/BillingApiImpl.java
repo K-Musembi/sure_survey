@@ -109,20 +109,20 @@ public class BillingApiImpl implements BillingApi {
     }
 
     @Override
-    public void creditWallet(Long tenantId, BigDecimal amount, String reference, String description) {
-        log.info("Crediting wallet for tenant {}: amount={}", tenantId, amount);
-        walletService.creditWallet(tenantId, amount, reference, description);
+    public void creditWallet(Long tenantId, Long userId, BigDecimal amount, String reference, String description) {
+        log.info("Crediting wallet for tenant {} user {}: amount={}", tenantId, userId, amount);
+        walletService.creditWallet(tenantId, userId, amount, reference, description);
     }
 
     @Override
-    public void debitWallet(Long tenantId, BigDecimal amount, String description) {
-        log.info("Debiting wallet for tenant {}: amount={}", tenantId, amount);
-        walletService.debitWallet(tenantId, amount, null, description);
+    public void debitWallet(Long tenantId, Long userId, BigDecimal amount, String description) {
+        log.info("Debiting wallet for tenant {} user {}: amount={}", tenantId, userId, amount);
+        walletService.debitWallet(tenantId, userId, amount, null, description);
     }
 
     @Override
-    public BigDecimal getWalletBalance(Long tenantId) {
-        return walletService.getBalance(tenantId);
+    public BigDecimal getWalletBalance(Long tenantId, Long userId) {
+        return walletService.getBalance(tenantId, userId);
     }
 
     @Override
@@ -172,5 +172,10 @@ public class BillingApiImpl implements BillingApi {
     @Override
     public void rollbackSystemReservation(String walletType, BigDecimal amount) {
         systemWalletService.rollbackReservation(SystemWalletType.valueOf(walletType), amount);
+    }
+
+    @Override
+    public void migrateUserWalletToTenant(Long userId, Long newTenantId) {
+        walletService.migrateWalletToEnterprise(userId, newTenantId);
     }
 }

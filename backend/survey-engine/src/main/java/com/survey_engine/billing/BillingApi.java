@@ -50,32 +50,35 @@ public interface BillingApi {
     void handleInvoiceWebhookEvent(String eventType, Map<String, Object> eventData);
 
     /**
-     * Credits the tenant's wallet with a specified amount.
+     * Credits the wallet with a specified amount.
      *
      * @param tenantId The ID of the tenant.
+     * @param userId The ID of the user (nullable for enterprise tenants).
      * @param amount The amount to credit.
      * @param reference A unique reference for the transaction (e.g., payment ID).
      * @param description A description of the transaction.
      */
-    void creditWallet(Long tenantId, BigDecimal amount, String reference, String description);
+    void creditWallet(Long tenantId, Long userId, BigDecimal amount, String reference, String description);
 
     /**
-     * Debits the tenant's wallet with a specified amount.
+     * Debits the wallet with a specified amount.
      *
      * @param tenantId The ID of the tenant.
+     * @param userId The ID of the user (nullable for enterprise tenants).
      * @param amount The amount to debit.
      * @param description A description of the transaction.
      * @throws IllegalStateException if funds are insufficient.
      */
-    void debitWallet(Long tenantId, BigDecimal amount, String description);
+    void debitWallet(Long tenantId, Long userId, BigDecimal amount, String description);
 
     /**
-     * Retrieves the current balance of the tenant's wallet.
+     * Retrieves the current balance of the wallet.
      *
      * @param tenantId The ID of the tenant.
+     * @param userId The ID of the user (nullable for enterprise tenants).
      * @return The current balance.
      */
-    BigDecimal getWalletBalance(Long tenantId);
+    BigDecimal getWalletBalance(Long tenantId, Long userId);
 
     /**
      * Validates if the tenant is allowed to create a new survey based on their subscription.
@@ -133,4 +136,12 @@ public interface BillingApi {
      * @param amount The amount to rollback.
      */
     void rollbackSystemReservation(String walletType, BigDecimal amount);
+
+    /**
+     * Migrates a user's personal wallet to a new enterprise tenant.
+     *
+     * @param userId The ID of the user.
+     * @param newTenantId The ID of the new tenant.
+     */
+    void migrateUserWalletToTenant(Long userId, Long newTenantId);
 }

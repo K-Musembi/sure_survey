@@ -16,6 +16,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
+import com.survey_engine.survey.dto.cost.SurveyCostCalculationRequest;
+import com.survey_engine.survey.dto.cost.SurveyCostCalculationResponse;
+import com.survey_engine.survey.service.SurveyCostService;
+
 /**
  * Controller class for survey entity
  * HTTP requests and responses
@@ -27,6 +31,24 @@ import java.util.UUID;
 public class SurveyController {
 
     private final SurveyService surveyService;
+    private final SurveyCostService surveyCostService;
+
+    /**
+     * Calculates the estimated cost for a survey based on respondents or budget.
+     * @param request The calculation request.
+     * @param jwt The JWT token.
+     * @return The cost calculation result.
+     */
+    @PostMapping("/calculate-cost")
+    public ResponseEntity<SurveyCostCalculationResponse> calculateCost(
+            @Valid @RequestBody SurveyCostCalculationRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        String userIdStr = jwt.getSubject();
+        Long userId = Long.valueOf(userIdStr);
+        Long tenantId = jwt.getClaim("tenantId");
+        
+        return ResponseEntity.ok(surveyCostService.calculateCost(request, tenantId, userId));
+    }
 
     /**
      * Method to create new survey for the authenticated user.

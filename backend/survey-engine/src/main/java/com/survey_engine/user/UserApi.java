@@ -168,4 +168,21 @@ public interface UserApi {
      * @return An {@link Optional} containing the subscription UUID, or empty if not set.
      */
     Optional<UUID> getTenantSubscriptionId(Long tenantId);
+
+    /**
+     * Upgrades an individual user to an enterprise tenant using the provided business name.
+     * Creates a new tenant and assigns the user as ADMIN.
+     *
+     * @param userId The ID of the user.
+     * @param businessName The name of the new business/tenant.
+     * @return The ID of the newly created tenant.
+     */
+    Long upgradeUserToEnterprise(Long userId, String businessName);
+
+    /**
+     * Manually sets the tenant context for the current thread.
+     * Use with caution, typically for context switching during upgrades or background tasks.
+     * @param tenantId The tenant ID to set.
+     */
+    void setTenantId(Long tenantId);
 }

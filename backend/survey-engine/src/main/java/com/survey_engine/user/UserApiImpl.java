@@ -17,6 +17,11 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
+import com.survey_engine.user.dto.TenantRequest;
+import com.survey_engine.user.service.TenantService;
+
+import com.survey_engine.user.service.TenantContext;
+
 @Service
 @RequiredArgsConstructor
 public class UserApiImpl implements UserApi {
@@ -24,6 +29,7 @@ public class UserApiImpl implements UserApi {
     private final ParticipantRepository participantRepository;
     private final UserRepository userRepository;
     private final TenantRepository tenantRepository;
+    private final TenantService tenantService;
 
     /**
      * Finds the participant ID associated with a given phone number.
@@ -230,6 +236,30 @@ public class UserApiImpl implements UserApi {
     @Override
     public Optional<UUID> getTenantSubscriptionId(Long tenantId) {
         return tenantRepository.findById(tenantId).map(Tenant::getSubscriptionId);
+    }
+
+    @Override
+    @Transactional
+    public Long upgradeUserToEnterprise(Long userId, String businessName) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+
+        // Create new Tenant
+        TenantRequest request = new TenantRequest(businessName, businessName.toLowerCase().replaceAll("\\s+", "-"));
+        Tenant newTenant = tenantService.createTenant(request);
+
+        // Update User
+        user.setTenantId(newTenant.getId());
+        user.setTenant(newTenant);
+        user.setRole("ADMIN"); // Promote to Admin of new tenant
+        userRepository.save(user);
+
+        return newTenant.getId();
+    }
+
+    @Override
+    public void setTenantId(Long tenantId) {
+        TenantContext.setTenantId(tenantId);
     }
 
 }

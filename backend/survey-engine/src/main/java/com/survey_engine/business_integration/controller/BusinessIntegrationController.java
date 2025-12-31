@@ -24,8 +24,8 @@ public class BusinessIntegrationController {
     public ResponseEntity<IntegrationResponse> createIntegration(
             @Valid @RequestBody CreateIntegrationRequest request,
             @AuthenticationPrincipal Jwt jwt) {
-        // userId from jwt is available if needed, but service uses TenantContext which is populated by filter
-        return ResponseEntity.status(HttpStatus.CREATED).body(integrationService.createIntegration(request));
+        Long userId = Long.valueOf(jwt.getSubject());
+        return ResponseEntity.status(HttpStatus.CREATED).body(integrationService.createIntegration(request, userId));
     }
 
     @GetMapping
