@@ -5,6 +5,7 @@ import { useTemplatesByType, useCreateSurvey, useSurvey } from '../hooks/useApi'
 import { aiAPI, distributionAPI, billingAPI, surveyAPI } from '../services/apiServices'
 import useSurveyStore from '../stores/surveyStore'
 import { HiPlus, HiTrash, HiLightningBolt, HiSparkles, HiArrowLeft, HiArrowRight, HiCheck } from 'react-icons/hi'
+import PaymentModal from '../components/PaymentModal'
 
 const SurveyBuilder = () => {
   const navigate = useNavigate()
@@ -34,6 +35,13 @@ const SurveyBuilder = () => {
   const [distributionLists, setDistributionLists] = useState([])
   const [selectedListId, setSelectedListId] = useState('')
   const [subscription, setSubscription] = useState(null)
+  
+  // Cost Calculation State
+  const [budget, setBudget] = useState('')
+  const [costCalculation, setCostCalculation] = useState(null)
+  const [isCalculatingCost, setIsCalculatingCost] = useState(false)
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   const createSurveyMutation = useCreateSurvey()
   const { data: templates, isLoading: templatesLoading } = useTemplatesByType(surveyType)
@@ -51,6 +59,7 @@ const SurveyBuilder = () => {
           startDate: s.startDate,
           endDate: s.endDate,
           targetRespondents: s.targetRespondents,
+          budget: s.budget, // Load budget if exists
           questions: s.questions?.map(q => ({
             id: q.id,
             text: q.questionText,
@@ -60,6 +69,7 @@ const SurveyBuilder = () => {
           })) || []
         })
         setSurveyType(s.type)
+        if (s.budget) setBudget(s.budget)
         setStep(3) // Jump to questions
       }).catch(console.error)
     } else {
@@ -71,6 +81,44 @@ const SurveyBuilder = () => {
     distributionAPI.getLists().then(res => setDistributionLists(res.data)).catch(console.error)
     billingAPI.getSubscription().then(res => setSubscription(res.data)).catch(console.error)
   }, [])
+  
+  // Calculate cost when targetRespondents or budget changes
+  useEffect(() => {
+    const calculate = async () => {
+      if (!currentSurvey.targetRespondents && !budget) {
+        setCostCalculation(null)
+        return
+      }
+
+      setIsCalculatingCost(true)
+      try {
+        const response = await surveyAPI.calculateCost({
+           targetRespondents: currentSurvey.targetRespondents ? parseInt(currentSurvey.targetRespondents) : null,
+           budget: budget ? parseFloat(budget) : null
+        })
+        setCostCalculation(response.data)
+        
+        // Auto-update the other field if one is driven by the other
+        if (budget && !currentSurvey.targetRespondents) {
+           updateSurvey({ targetRespondents: response.data.targetRespondents })
+        } else if (currentSurvey.targetRespondents && !budget) {
+           // We don't necessarily want to set the budget state to the estimated cost immediately
+           // as it might override user intent, but for display purposes we use response.data.estimatedCost
+        }
+
+      } catch (error) {
+        console.error("Failed to calculate cost", error)
+      } finally {
+        setIsCalculatingCost(false)
+      }
+    }
+
+    const timer = setTimeout(() => {
+      calculate()
+    }, 800) // Debounce
+
+    return () => clearTimeout(timer)
+  }, [currentSurvey.targetRespondents, budget])
 
   const handleTypeSelection = (type) => {
     setSurveyType(type)
@@ -148,6 +196,7 @@ const SurveyBuilder = () => {
   }
 
   const handleSave = async () => {
+    setSaveError('')
     try {
       const surveyData = {
         name: currentSurvey.name,
@@ -157,7 +206,7 @@ const SurveyBuilder = () => {
         startDate: currentSurvey.startDate,
         endDate: currentSurvey.endDate,
         targetRespondents: parseInt(currentSurvey.targetRespondents || 0),
-        budget: null, // Budget handled on activation
+        budget: budget ? parseFloat(budget) : null, 
         questions: currentSurvey.questions.map((q, index) => ({
           questionText: q.text,
           questionType: q.type,
@@ -172,8 +221,6 @@ const SurveyBuilder = () => {
         const res = await createSurveyMutation.mutateAsync(surveyData)
         const newSurveyId = res.data.id
         if (selectedListId) {
-           // If list selected, link it (backend support needed or separate call)
-           // For now just logging, as primary distribution is in Dashboard
            console.log("Selected list ID:", selectedListId, "for survey", newSurveyId)
         }
       }
@@ -181,11 +228,24 @@ const SurveyBuilder = () => {
       navigate('/dashboard')
     } catch (err) {
       console.error('Failed to save survey:', err)
-      // Global error handler will display the modal
+      setSaveError(err.response?.data?.message || 'Failed to save survey. Please check your inputs and try again.')
     }
   }
 
   const isSmsAllowed = subscription?.plan?.name !== 'Free'
+  const isEnterprise = subscription?.plan?.name === 'Enterprise' || subscription?.plan?.name === 'Pro' // Assuming pro also pays per use or similar
+  
+  // Payment Handler
+  const handlePaymentSuccess = () => {
+     setPaymentModalOpen(false)
+     // Refresh cost calc to update wallet balance
+     if (currentSurvey.targetRespondents || budget) {
+         surveyAPI.calculateCost({
+           targetRespondents: currentSurvey.targetRespondents ? parseInt(currentSurvey.targetRespondents) : null,
+           budget: budget ? parseFloat(budget) : null
+        }).then(res => setCostCalculation(res.data))
+     }
+  }
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -470,14 +530,32 @@ const SurveyBuilder = () => {
                   <option value="PRIVATE">Invitation Only</option>
                 </Select>
               </div>
+              
               <div>
-                <Label>Target Responses (Optional)</Label>
-                <TextInput 
-                  type="number" 
-                  value={currentSurvey.targetRespondents || ''} 
-                  onChange={(e) => updateSurvey({ targetRespondents: e.target.value })} 
-                  placeholder="Unlimited"
-                />
+                  <Label>Target Responses (Cost Estimation)</Label>
+                  <div className="flex gap-2">
+                      <TextInput 
+                        type="number" 
+                        value={currentSurvey.targetRespondents || ''} 
+                        onChange={(e) => {
+                            updateSurvey({ targetRespondents: e.target.value })
+                            setBudget('') // clear budget if targeting specific count
+                        }} 
+                        placeholder="e.g. 1000"
+                        helperText={costCalculation ? `Est. Cost: KES ${costCalculation.estimatedCost}` : ''}
+                      />
+                      <div className="flex items-center text-gray-500 text-sm">OR</div>
+                      <TextInput 
+                        type="number" 
+                        value={budget} 
+                        onChange={(e) => {
+                            setBudget(e.target.value)
+                            updateSurvey({ targetRespondents: '' }) // clear count if budgeting
+                        }}
+                        placeholder="Budget (KES)"
+                      />
+                  </div>
+                  {isCalculatingCost && <span className="text-xs text-blue-500">Calculating...</span>}
               </div>
             </div>
 
@@ -528,6 +606,30 @@ const SurveyBuilder = () => {
               <span className="font-semibold">Access</span>
               <span>{currentSurvey.accessType}</span>
             </div>
+            {saveError && (
+              <Alert color="failure" icon={HiExclamationCircle} onDismiss={() => setSaveError('')}>
+                {saveError}
+              </Alert>
+            )}
+            {costCalculation && (
+                <div className="flex justify-between border-b pb-2 bg-yellow-50 p-2 rounded">
+                  <span className="font-semibold text-gray-900">Estimated Cost</span>
+                  <div className="text-right">
+                      <span className="font-bold text-lg block">KES {costCalculation.estimatedCost}</span>
+                      <span className="text-xs text-gray-500">({costCalculation.targetRespondents} respondents @ KES {costCalculation.costPerRespondent}/ea)</span>
+                  </div>
+                </div>
+            )}
+             {costCalculation && !costCalculation.isSufficientFunds && (
+                 <Alert color="failure" icon={HiLightningBolt} className="mt-2">
+                     <span className="font-medium">Insufficient Funds!</span>
+                     <div className="mt-1 text-sm">
+                         Wallet Balance: KES {costCalculation.currentWalletBalance}
+                         <br/>
+                         Required Top-up: <strong>KES {costCalculation.requiredTopUpAmount}</strong>
+                     </div>
+                 </Alert>
+             )}
           </div>
 
           {/* Distribution List Selection (Optional) */}
@@ -548,12 +650,27 @@ const SurveyBuilder = () => {
 
           <div className="flex justify-between mt-8">
             <Button color="gray" onClick={() => setStep(4)}>Back</Button>
-            <Button color="purple" size="xl" onClick={handleSave}>
-              {editSurveyId ? 'Update Survey' : 'Create Survey'}
-            </Button>
+            {costCalculation && !costCalculation.isSufficientFunds ? (
+                <Button color="warning" size="xl" onClick={() => setPaymentModalOpen(true)}>
+                    Top Up Wallet (KES {costCalculation.requiredTopUpAmount})
+                </Button>
+            ) : (
+                <Button color="purple" size="xl" onClick={handleSave}>
+                  {editSurveyId ? 'Update Survey' : 'Create Survey'}
+                </Button>
+            )}
           </div>
         </Card>
       )}
+      
+      {/* Payment Modal for Top Up */}
+      <PaymentModal
+        show={paymentModalOpen}
+        onClose={() => setPaymentModalOpen(false)}
+        mode="WALLET_TOPUP"
+        amount={costCalculation?.requiredTopUpAmount}
+        onPaymentSuccess={handlePaymentSuccess}
+      />
     </div>
   )
 }

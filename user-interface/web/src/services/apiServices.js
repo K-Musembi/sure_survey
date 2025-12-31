@@ -1,6 +1,5 @@
 import axios from 'axios'
 import useAuthStore from '../stores/authStore'
-import useErrorStore from '../stores/errorStore'
 
 // Create axios instance with base configuration
 // Force relative path to use Vite proxy, solving cookie/CORS issues
@@ -49,12 +48,6 @@ api.interceptors.response.use(
       useAuthStore.getState().logout()
       return Promise.reject(error)
     }
-    
-    // Global Error Handling for other statuses
-    const errorMessage = error.response?.data?.message || error.message || 'An unexpected error occurred.'
-    // Avoid showing modal for 404s if handled locally, or generic network errors we want to be noisy about?
-    // For now, show all except 401.
-    useErrorStore.getState().showError(errorMessage, `Error ${error.response?.status || ''}`)
     
     console.error('[API] Response error:', error.response?.data || error.message)
     return Promise.reject(error)
@@ -128,6 +121,7 @@ export const surveyAPI = {
   updateSurvey: (surveyId, surveyData) => api.put(`/surveys/${surveyId}`, surveyData),
   deleteSurvey: (surveyId) => api.delete(`/surveys/${surveyId}`),
   activateSurvey: (surveyId) => api.post(`/surveys/${surveyId}/activate`),
+  calculateCost: (data) => api.post('/surveys/calculate-cost', data),
   closeSurvey: (surveyId) => api.post(`/surveys/${surveyId}/close`),
   sendToDistributionList: (surveyId, distributionListId) => api.post(`/surveys/${surveyId}/send-to-distribution-list`, { distributionListId }),
   
