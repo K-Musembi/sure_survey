@@ -8,12 +8,13 @@ import com.survey_engine.performance_survey.models.scoring.PerformanceRecord;
 import com.survey_engine.performance_survey.models.scoring.QuestionScoringRule;
 import com.survey_engine.performance_survey.models.scoring.SurveyScoringSchema;
 import com.survey_engine.performance_survey.models.scoring.enums.ScoringStrategy;
-import com.survey_engine.performance_survey.models.structure.OrgUnit;
+import com.survey_engine.performance_survey.models.structure.PerformanceSubject;
 import com.survey_engine.performance_survey.repository.PerformanceRecordRepository;
+import com.survey_engine.performance_survey.repository.PerformanceSubjectRepository;
 import com.survey_engine.survey.SurveyApi;
-import com.survey_engine.survey.repository.ResponseRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,10 +32,10 @@ public class PerformanceExecutionService {
 
     private final ScoringConfigurationService configService;
     private final PerformanceRecordRepository performanceRecordRepository;
-    private final HierarchyService hierarchyService;
-    private final SurveyApi surveyApi; // Need this to fetch actual answers
+    private final PerformanceSubjectRepository performanceSubjectRepository;
+    private final SurveyApi surveyApi;
     private final ObjectMapper objectMapper;
-    private final org.springframework.context.ApplicationEventPublisher eventPublisher;
+    private final ApplicationEventPublisher eventPublisher;
 
     @EventListener
     @Transactional
@@ -47,11 +49,7 @@ public class PerformanceExecutionService {
             return;
         }
 
-        // 2. Fetch answers (Raw implementation: need to fetch from Survey Module DB via API/Repo)
-        // Since SurveyApi interface was limited, we might need to extend it or use the Repository directly if allowed.
-        // The plan allows using SurveyApi. SurveyApi exposes `getSurveyResponseTexts` but that's text.
-        // Ideally, we need the structured answers. 
-        // `SurveyApi.getResponseRepository()` is available.
+        // 2. Fetch answers
         var responseOpt = surveyApi.getResponseRepository().findById(event.responseId());
         if (responseOpt.isEmpty()) return;
         var response = responseOpt.get();
@@ -62,7 +60,6 @@ public class PerformanceExecutionService {
                 .collect(Collectors.toMap(QuestionScoringRule::getQuestionId, r -> r));
 
         double totalScore = 0.0;
-        double maxPossibleScore = 0.0; // To normalize if needed, though schema has targetScore.
 
         for (var answer : response.getAnswers()) {
             QuestionScoringRule rule = ruleMap.get(answer.getQuestion().getId());
@@ -78,43 +75,59 @@ public class PerformanceExecutionService {
             normalized = (totalScore / schema.getTargetScore()) * 100.0;
         }
 
-        // 5. Determine Org Unit
-        // The `responderId` in the event is the participant. 
-        // BUT for performance surveys, usually the Subject is the one we track.
-        // If it's a "Performance Review" of an Agent, the Agent is the subject.
-        // We need to know who the SUBJECT is.
-        // In the current `Survey` model, `userId` is the creator.
-        // If the survey is "Feedback for Agent X", we need to link Agent X.
-        // Assumption: The `subjectUserId` is either the survey owner OR passed via a custom logic.
-        // For this MVP, let's assume the Survey Creator (userId) is the one being evaluated (e.g. CSAT for their service).
-        // OR the respondent IS the subject (Self-Assessment).
-        // Let's stick to: Survey Owner is the Subject (e.g. Agent sends link to customer).
-        String subjectUserId = response.getSurvey().getUserId();
-        
-        OrgUnit orgUnit = hierarchyService.getOrgUnitForUser(subjectUserId);
+        // 5. Determine Subject
+        PerformanceSubject subject = resolveSubject(event.responseId(), schema.getTenantId());
+        if (subject == null) {
+            log.warn("Could not identify performance subject for response {}. Skipping record.", event.responseId());
+            return;
+        }
 
         // 6. Save Record
         PerformanceRecord record = new PerformanceRecord();
         record.setSurveyId(event.surveyId());
         record.setResponseId(event.responseId());
-        record.setSubjectUserId(subjectUserId);
+        record.setSubject(subject);
         record.setEvaluatorUserId(event.responderId());
         record.setRawScore(totalScore);
         record.setNormalizedScore(normalized);
-        record.setOrgUnitId(orgUnit != null ? orgUnit.getId() : null);
+        record.setOrgUnitId(subject.getOrgUnit().getId());
         record.setRecordedAt(LocalDateTime.now());
-        record.setTenantId(schema.getTenantId()); // Inherit tenant
+        record.setTenantId(schema.getTenantId());
 
         performanceRecordRepository.save(record);
-        log.info("Saved performance record for user {}: Score {}", subjectUserId, normalized);
+        log.info("Saved performance record for subject {}: Score {}", subject.getReferenceCode(), normalized);
         
         // Publish event for Aggregation and Gamification
         eventPublisher.publishEvent(new ScoreCalculatedEvent(
                 record.getId(),
-                record.getSubjectUserId(),
+                subject.getId(),
+                subject.getUserId(),
                 record.getNormalizedScore(),
                 record.getOrgUnitId()
         ));
+    }
+
+    private PerformanceSubject resolveSubject(Long responseId, Long tenantId) {
+        var response = surveyApi.getResponseRepository().findById(responseId).get();
+
+        // A. Try metadata attribution
+        if (response.getMetadata() != null) {
+            try {
+                Map<String, String> meta = objectMapper.readValue(response.getMetadata(), new TypeReference<>() {});
+                String subjectRef = meta.get("subjectRef");
+                if (subjectRef != null) {
+                    Optional<PerformanceSubject> subject = performanceSubjectRepository.findByReferenceCodeAndTenantId(subjectRef, tenantId);
+                    if (subject.isPresent()) return subject.get();
+                }
+            } catch (Exception e) {
+                log.warn("Failed to parse response metadata", e);
+            }
+        }
+
+
+        // B. Fallback: Survey Owner
+        String ownerId = response.getSurvey().getUserId();
+        return performanceSubjectRepository.findByUserId(ownerId).orElse(null);
     }
 
     private double calculateQuestionScore(QuestionScoringRule rule, String answerValue) {

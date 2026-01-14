@@ -18,6 +18,9 @@ public class GamificationEventListener {
     @Async
     @EventListener
     public void onScoreCalculated(ScoreCalculatedEvent event) {
+        if (event.subjectUserId() == null) {
+            return;
+        }
         log.info(" awarding gamification points to {}", event.subjectUserId());
         
         // Simple Rule: 10 points for completion + 1 point per normalized score

@@ -1,7 +1,7 @@
 package com.survey_engine.performance_survey.controller;
 
-import com.survey_engine.performance_survey.dto.OrgMemberRequest;
-import com.survey_engine.performance_survey.dto.OrgMemberResponse;
+import com.survey_engine.performance_survey.dto.PerformanceSubjectRequest;
+import com.survey_engine.performance_survey.dto.PerformanceSubjectResponse;
 import com.survey_engine.performance_survey.dto.OrgUnitRequest;
 import com.survey_engine.performance_survey.dto.OrgUnitResponse;
 import com.survey_engine.performance_survey.service.HierarchyService;
@@ -28,10 +28,10 @@ public class PerformanceHierarchyController {
         return ResponseEntity.ok(hierarchyService.createOrgUnit(request));
     }
 
-    @PostMapping("/members")
+    @PostMapping("/subjects")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<OrgMemberResponse> addMember(@Valid @RequestBody OrgMemberRequest request) {
-        return ResponseEntity.ok(hierarchyService.addMember(request));
+    public ResponseEntity<PerformanceSubjectResponse> addSubject(@Valid @RequestBody PerformanceSubjectRequest request) {
+        return ResponseEntity.ok(hierarchyService.addSubject(request));
     }
 
     @GetMapping("/nodes")

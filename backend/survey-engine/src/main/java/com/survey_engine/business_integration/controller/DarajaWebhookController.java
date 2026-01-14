@@ -1,7 +1,7 @@
 package com.survey_engine.business_integration.controller;
 
 import com.survey_engine.business_integration.dto.DarajaConfirmationRequest;
-import com.survey_engine.business_integration.service.BusinessIntegrationService;
+import com.survey_engine.business_integration.service.DarajaIntegrationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +16,7 @@ import java.util.UUID;
 @Slf4j
 public class DarajaWebhookController {
 
-    private final BusinessIntegrationService integrationService;
+    private final DarajaIntegrationService integrationService;
 
     /**
      * M-Pesa Validation URL.

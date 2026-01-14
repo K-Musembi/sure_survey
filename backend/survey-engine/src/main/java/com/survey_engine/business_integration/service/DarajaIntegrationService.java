@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class BusinessIntegrationService {
+public class DarajaIntegrationService {
 
     private final BusinessIntegrationRepository integrationRepository;
     private final BusinessTransactionRepository transactionRepository;
@@ -163,6 +163,9 @@ public class BusinessIntegrationService {
         transaction.setFirstName(payload.firstName());
         transaction.setLastName(payload.lastName());
         
+        // Capture BillRefNumber as Subject Reference
+        transaction.setSubjectReference(payload.billRefNumber());
+        
         if (payload.transAmount() != null) {
             transaction.setAmount(new BigDecimal(payload.transAmount()));
         }
@@ -190,7 +193,8 @@ public class BusinessIntegrationService {
                 transaction.getFirstName(),
                 transaction.getLastName(),
                 transaction.getAmount(),
-                transaction.getTransactionTime()
+                transaction.getTransactionTime(),
+                transaction.getSubjectReference()
         );
         eventPublisher.publishEvent(event);
         log.info("Published business transaction event for survey {}", integration.getSurveyId());

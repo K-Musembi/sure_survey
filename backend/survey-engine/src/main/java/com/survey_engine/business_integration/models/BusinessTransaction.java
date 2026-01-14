@@ -47,4 +47,7 @@ public class BusinessTransaction extends BaseEntity {
 
     @Column(name = "transaction_time")
     private LocalDateTime transactionTime;
+
+    @Column(name = "subject_reference")
+    private String subjectReference; // e.g. BillRefNumber / Account Number
 }

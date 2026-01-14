@@ -2,6 +2,7 @@ package com.survey_engine.common.events;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
  * Event published when a business transaction (e.g. M-Pesa payment) is received.
@@ -13,14 +14,16 @@ import java.time.LocalDateTime;
  * @param lastName Customer's last name.
  * @param amount The transaction amount.
  * @param transactionTime When the transaction occurred.
+ * @param subjectReference A reference code identifying the subject of attribution (e.g. Agent ID).
  */
 public record BusinessTransactionEvent(
-        java.util.UUID transactionId,
+        UUID transactionId,
         Long surveyId,
         String msisdn,
         String firstName,
         String lastName,
         BigDecimal amount,
-        LocalDateTime transactionTime
+        LocalDateTime transactionTime,
+        String subjectReference
 ) {
 }

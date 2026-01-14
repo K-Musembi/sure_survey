@@ -8,6 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -25,8 +28,14 @@ public class BusinessTransactionEventListener {
             distributionListService.addContactToSurveyList(
                     event.surveyId(), event.msisdn(), event.firstName(),  event.lastName());
 
-            // 2. Trigger SMS Survey
-            smsResponseService.initiateSurvey(event.msisdn(), event.surveyId());
+            // 2. Prepare Context (Subject Reference)
+            Map<String, String> context = new HashMap<>();
+            if (event.subjectReference() != null && !event.subjectReference().isBlank()) {
+                context.put("subjectRef", event.subjectReference());
+            }
+
+            // 3. Trigger SMS Survey with Context
+            smsResponseService.initiateSurvey(event.msisdn(), event.surveyId(), context);
             
         } catch (Exception e) {
             log.error("Failed to process business transaction event for survey {}", event.surveyId(), e);

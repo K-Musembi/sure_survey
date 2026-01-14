@@ -1,12 +1,12 @@
 package com.survey_engine.performance_survey.service;
 
-import com.survey_engine.performance_survey.dto.OrgMemberRequest;
-import com.survey_engine.performance_survey.dto.OrgMemberResponse;
+import com.survey_engine.performance_survey.dto.PerformanceSubjectRequest;
+import com.survey_engine.performance_survey.dto.PerformanceSubjectResponse;
 import com.survey_engine.performance_survey.dto.OrgUnitRequest;
 import com.survey_engine.performance_survey.dto.OrgUnitResponse;
-import com.survey_engine.performance_survey.models.structure.OrgMember;
+import com.survey_engine.performance_survey.models.structure.PerformanceSubject;
 import com.survey_engine.performance_survey.models.structure.OrgUnit;
-import com.survey_engine.performance_survey.repository.OrgMemberRepository;
+import com.survey_engine.performance_survey.repository.PerformanceSubjectRepository;
 import com.survey_engine.performance_survey.repository.OrgUnitRepository;
 import com.survey_engine.user.UserApi;
 import jakarta.persistence.EntityNotFoundException;
@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 public class HierarchyService {
 
     private final OrgUnitRepository orgUnitRepository;
-    private final OrgMemberRepository orgMemberRepository;
+    private final PerformanceSubjectRepository performanceSubjectRepository;
     private final UserApi userApi;
 
     @Transactional
@@ -47,36 +47,34 @@ public class HierarchyService {
     }
 
     @Transactional
-    public OrgMemberResponse addMember(OrgMemberRequest request) {
+    public PerformanceSubjectResponse addSubject(PerformanceSubjectRequest request) {
         OrgUnit orgUnit = orgUnitRepository.findById(request.orgUnitId())
                 .orElseThrow(() -> new EntityNotFoundException("OrgUnit not found"));
 
-        // Check if user exists via UserApi
-        // userApi.findUserById(request.userId()) .orElseThrow(...) 
-        // For now, assuming user exists or let FK constraint fail if we had one (soft link here).
+        PerformanceSubject subject = new PerformanceSubject();
+        subject.setUserId(request.userId());
+        subject.setReferenceCode(request.referenceCode());
+        subject.setDisplayName(request.displayName());
+        subject.setType(request.type());
+        subject.setOrgUnit(orgUnit);
+        subject.setRole(request.role());
+        subject.setTenantId(userApi.getTenantId());
 
-        OrgMember member = new OrgMember();
-        member.setUserId(request.userId());
-        member.setOrgUnit(orgUnit);
-        member.setRole(request.role());
-        member.setTenantId(userApi.getTenantId());
-
-        OrgMember saved = orgMemberRepository.save(member);
-        return mapToMemberResponse(saved);
+        PerformanceSubject saved = performanceSubjectRepository.save(subject);
+        return mapToSubjectResponse(saved);
     }
 
     @Transactional(readOnly = true)
     public List<OrgUnitResponse> getHierarchy(Long tenantId) {
-        // Simple list for now, frontend can reconstruct tree
         return orgUnitRepository.findByTenantId(tenantId).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
     
     @Transactional(readOnly = true)
-    public OrgUnit getOrgUnitForUser(String userId) {
-        return orgMemberRepository.findByUserId(userId)
-                .map(OrgMember::getOrgUnit)
+    public OrgUnit getOrgUnitForSubject(String referenceCode) {
+        return performanceSubjectRepository.findByReferenceCodeAndTenantId(referenceCode, userApi.getTenantId())
+                .map(PerformanceSubject::getOrgUnit)
                 .orElse(null);
     }
 
@@ -90,13 +88,16 @@ public class HierarchyService {
         );
     }
 
-    private OrgMemberResponse mapToMemberResponse(OrgMember member) {
-        return new OrgMemberResponse(
-                member.getId(),
-                member.getUserId(),
-                member.getOrgUnit().getId(),
-                member.getOrgUnit().getName(),
-                member.getRole()
+    private PerformanceSubjectResponse mapToSubjectResponse(PerformanceSubject subject) {
+        return new PerformanceSubjectResponse(
+                subject.getId(),
+                subject.getUserId(),
+                subject.getReferenceCode(),
+                subject.getDisplayName(),
+                subject.getType(),
+                subject.getOrgUnit().getId(),
+                subject.getOrgUnit().getName(),
+                subject.getRole()
         );
     }
 }

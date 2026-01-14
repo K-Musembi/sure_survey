@@ -2,7 +2,7 @@ package com.survey_engine.business_integration.controller;
 
 import com.survey_engine.business_integration.dto.CreateIntegrationRequest;
 import com.survey_engine.business_integration.dto.IntegrationResponse;
-import com.survey_engine.business_integration.service.BusinessIntegrationService;
+import com.survey_engine.business_integration.service.DarajaIntegrationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,7 +18,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BusinessIntegrationController {
 
-    private final BusinessIntegrationService integrationService;
+    private final DarajaIntegrationService integrationService;
 
     @PostMapping
     public ResponseEntity<IntegrationResponse> createIntegration(

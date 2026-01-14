@@ -11,6 +11,10 @@ import java.util.UUID;
 @Repository
 public interface PerformanceRecordRepository extends JpaRepository<PerformanceRecord, UUID> {
     Optional<PerformanceRecord> findByResponseId(Long responseId);
-    List<PerformanceRecord> findBySubjectUserId(String subjectUserId);
+
+    List<PerformanceRecord> findBySubject_UserId(String userId);
+
+    List<PerformanceRecord> findBySubject_ReferenceCode(String referenceCode);
+
     List<PerformanceRecord> findByOrgUnitId(UUID orgUnitId);
 }

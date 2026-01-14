@@ -41,6 +41,9 @@ public class Response extends BaseEntity {
     @Column(name = "session_id")
     private String sessionId;
 
+    @Column(name = "metadata", columnDefinition = "TEXT")
+    private String metadata; // JSON string for storing context like attribution data
+
     @OneToMany(mappedBy = "response", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Answer> answers = new ArrayList<>();
 

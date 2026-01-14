@@ -1,5 +1,6 @@
 package com.survey_engine.survey.service.sms;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.survey_engine.survey.common.enums.SurveyStatus;
 import com.survey_engine.survey.dto.AnswerRequest;
 import com.survey_engine.survey.dto.ResponseRequest;
@@ -9,11 +10,13 @@ import com.survey_engine.survey.models.Survey;
 import com.survey_engine.survey.repository.SurveyRepository;
 import com.survey_engine.survey.service.ResponseService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -22,6 +25,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SmsResponseService {
 
     private final SmsResponseRedisSession sessionService;
@@ -37,15 +41,28 @@ public class SmsResponseService {
      * @param surveyId    The ID of the survey to start.
      */
     public void initiateSurvey(String phoneNumber, Long surveyId) {
+        initiateSurvey(phoneNumber, surveyId, new HashMap<>());
+    }
+
+    /**
+     * Initiates a survey session with additional context.
+     *
+     * @param phoneNumber The recipient's phone number.
+     * @param surveyId    The ID of the survey to start.
+     * @param context     Additional metadata/context for the session (e.g., subject attribution).
+     */
+    public void initiateSurvey(String phoneNumber, Long surveyId, Map<String, String> context) {
         try {
             Survey survey = surveyRepository.findById(surveyId)
                     .orElseThrow(() -> new IllegalArgumentException("Survey not found."));
 
             if (survey.getStatus() != SurveyStatus.ACTIVE) {
+                log.warn("Attempted to initiate survey {} which is not ACTIVE.", surveyId);
                 return;
             }
 
             if (survey.getQuestions().isEmpty()) {
+                log.warn("Attempted to initiate survey {} which has no questions.", surveyId);
                 return;
             }
 
@@ -54,8 +71,8 @@ public class SmsResponseService {
                     .sorted(Comparator.comparing(Question::getPosition))
                     .toList();
 
-            // Create new session
-            SmsRedisSession newSession = new SmsRedisSession(phoneNumber, surveyId, 0, new HashMap<>());
+            // Create new session with context
+            SmsRedisSession newSession = new SmsRedisSession(phoneNumber, surveyId, 0, new HashMap<>(), context);
             sessionService.saveSession(newSession);
 
             // Send first question
@@ -63,8 +80,7 @@ public class SmsResponseService {
             smsSendingService.sendSms(phoneNumber, firstQuestion);
 
         } catch (Exception e) {
-            // Log error in production
-            System.err.println("Failed to initiate survey for " + phoneNumber + ": " + e.getMessage());
+            log.error("Failed to initiate survey for {}: {}", phoneNumber, e.getMessage(), e);
         }
     }
 
@@ -117,7 +133,8 @@ public class SmsResponseService {
                     .sorted(Comparator.comparing(Question::getPosition))
                     .toList();
 
-            SmsRedisSession newSession = new SmsRedisSession(from, surveyId, 0, new HashMap<>());
+            // Create new session (no context for self-initiated)
+            SmsRedisSession newSession = new SmsRedisSession(from, surveyId, 0, new HashMap<>(), new HashMap<>());
             sessionService.saveSession(newSession);
 
             return questions.get(0).getQuestionText();
@@ -155,7 +172,7 @@ public class SmsResponseService {
 
         if (nextIndex < questions.size()) {
             // There are more questions
-            SmsRedisSession updatedSession = new SmsRedisSession(session.sessionId(), session.surveyId(), nextIndex, session.answers());
+            SmsRedisSession updatedSession = new SmsRedisSession(session.sessionId(), session.surveyId(), nextIndex, session.answers(), session.context());
             sessionService.saveSession(updatedSession);
             return questions.get(nextIndex).getQuestionText();
         } else {
@@ -164,8 +181,10 @@ public class SmsResponseService {
                     .map(entry -> new AnswerRequest(entry.getKey(), entry.getValue()))
                     .collect(Collectors.toList());
 
-            ResponseRequest finalRequest = new ResponseRequest(answerRequests);
-            responseService.createResponse(session.surveyId(), finalRequest, null, session.sessionId()); // participantId is null for SMS
+            ResponseRequest finalRequest = new ResponseRequest(answerRequests, session.context());
+            
+            // Pass the context as metadata
+            responseService.createResponse(session.surveyId(), finalRequest, null, session.sessionId(), session.context()); 
 
             sessionService.deleteSession(session.sessionId());
             return "Thank you for completing the survey!";

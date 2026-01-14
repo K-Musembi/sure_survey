@@ -1,5 +1,7 @@
 package com.survey_engine.survey.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.survey_engine.billing.BillingApi;
 import com.survey_engine.common.events.SurveyCompletedEvent;
 import com.survey_engine.survey.dto.ResponseRequest;
@@ -19,6 +21,7 @@ import com.survey_engine.survey.repository.SurveyRepository;
 import com.survey_engine.user.UserApi;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -26,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -34,6 +38,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @AllArgsConstructor
+@Slf4j
 public class ResponseService {
 
     private final ResponseRepository responseRepository;
@@ -43,15 +48,18 @@ public class ResponseService {
     private final ApplicationEventPublisher eventPublisher;
     private final UserApi userApi;
     private final BillingApi billingApi;
+    private final ObjectMapper objectMapper;
+
 
     /**
-     * Create survey response instance
+     * Create survey response instance with optional metadata.
      * @param surveyId - id of survey
      * @param responseRequest - ResponseRequest DTO
-     * @param userId - id os user
+     * @param userId - id of user
      * @param sessionId - session id
+     * @param metadata - map of contextual data (e.g. attribution)
      */
-    public void createResponse(Long surveyId, ResponseRequest responseRequest, String userId, String sessionId) {
+    public void createResponse(Long surveyId, ResponseRequest responseRequest, String userId, String sessionId, Map<String, String> metadata) {
         Survey survey = surveyRepository.findById(surveyId)
                 .orElseThrow(() -> new EntityNotFoundException("Survey not found with id: " + surveyId));
 
@@ -74,7 +82,7 @@ public class ResponseService {
             }
         }
 
-        ResponseSubmissionPayload payload = new ResponseSubmissionPayload(surveyId, responseRequest, userId, sessionId);
+        ResponseSubmissionPayload payload = new ResponseSubmissionPayload(surveyId, responseRequest, userId, sessionId, metadata);
         responseRabbitMqPublisher.publishResponse(payload);
     }
 
@@ -90,6 +98,15 @@ public class ResponseService {
         response.setSessionId(payload.sessionId()); // Set the session ID
         response.setStatus(ResponseStatus.COMPLETE);
         response.setSubmissionDate(LocalDateTime.now());
+        
+        // Save metadata if present
+        if (payload.metadata() != null && !payload.metadata().isEmpty()) {
+            try {
+                response.setMetadata(objectMapper.writeValueAsString(payload.metadata()));
+            } catch (JsonProcessingException e) {
+                log.error("Failed to serialize metadata for response to survey {}", payload.surveyId(), e);
+            }
+        }
 
         List<Answer> answers = payload.request().answers().stream().map(answerRequest -> {
             Question question = questionRepository.findById(answerRequest.questionId())

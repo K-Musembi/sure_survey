@@ -4,7 +4,8 @@ import java.util.UUID;
 
 public record ScoreCalculatedEvent(
         UUID performanceRecordId,
-        String subjectUserId,
+        UUID subjectId,
+        String subjectUserId, // Nullable, if the subject is a system user
         Double normalizedScore,
         UUID orgUnitId
 ) {}

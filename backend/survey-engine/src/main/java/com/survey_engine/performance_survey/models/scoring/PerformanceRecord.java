@@ -1,6 +1,7 @@
 package com.survey_engine.performance_survey.models.scoring;
 
 import com.survey_engine.common.models.BaseEntity;
+import com.survey_engine.performance_survey.models.structure.PerformanceSubject;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -30,10 +31,11 @@ public class PerformanceRecord extends BaseEntity {
     private Long responseId;
 
     /**
-     * The user being evaluated.
+     * The subject being evaluated.
      */
-    @Column(name = "subject_user_id", nullable = false)
-    private String subjectUserId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subject_id", nullable = false)
+    private PerformanceSubject subject;
 
     /**
      * The user who filled the survey (could be null for anonymous, or external).
