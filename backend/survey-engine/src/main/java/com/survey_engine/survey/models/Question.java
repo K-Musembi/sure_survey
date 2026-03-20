@@ -37,6 +37,22 @@ public class Question {
     @Column(name = "position", nullable = false)
     private Integer position;
 
+    /** Relative importance weight for scoring (default 1.0). */
+    @Column(name = "weight")
+    private Double weight = 1.0;
+
+    /**
+     * JSON map of option index → score value.
+     * Example: {"0": 0, "1": 5, "2": 10, "3": 15}
+     * Null means this question is not scored.
+     */
+    @Column(name = "score_map", columnDefinition = "TEXT")
+    private String scoreMap;
+
+    /** Optional category label for grouping scores (e.g. "Customer Service"). */
+    @Column(name = "category")
+    private String category;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 

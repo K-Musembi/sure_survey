@@ -24,7 +24,8 @@ public class SurveyCostService {
     @Transactional(readOnly = true)
     public SurveyCostCalculationResponse calculateCost(SurveyCostCalculationRequest request, Long tenantId, Long userId) {
         BigDecimal costPerRespondent = getCostPerRespondent();
-        
+        BigDecimal smsCostPerMessage = getSmsCostPerMessage();
+
         Integer targetRespondents = request.targetRespondents();
         BigDecimal estimatedCost;
 
@@ -33,21 +34,33 @@ public class SurveyCostService {
         } else if (request.budget() != null && request.budget().compareTo(BigDecimal.ZERO) > 0) {
             estimatedCost = request.budget();
             targetRespondents = request.budget().divide(costPerRespondent, 0, RoundingMode.FLOOR).intValue();
-            // Re-adjust cost to match exact respondent count to avoid dust
+            // Re-adjust to avoid fractional cost dust
             estimatedCost = costPerRespondent.multiply(new BigDecimal(targetRespondents));
         } else {
             targetRespondents = 0;
             estimatedCost = BigDecimal.ZERO;
         }
 
+        // SMS distribution cost (independent of respondent activation cost)
+        Integer smsContactCount = request.smsContactCount();
+        BigDecimal smsCost = BigDecimal.ZERO;
+        if (smsContactCount != null && smsContactCount > 0) {
+            smsCost = smsCostPerMessage.multiply(new BigDecimal(smsContactCount));
+        }
+
+        BigDecimal totalCost = estimatedCost.add(smsCost);
         BigDecimal walletBalance = billingApi.getWalletBalance(tenantId, userId);
-        boolean isSufficient = walletBalance.compareTo(estimatedCost) >= 0;
-        BigDecimal requiredTopUp = isSufficient ? BigDecimal.ZERO : estimatedCost.subtract(walletBalance);
+        boolean isSufficient = walletBalance.compareTo(totalCost) >= 0;
+        BigDecimal requiredTopUp = isSufficient ? BigDecimal.ZERO : totalCost.subtract(walletBalance);
 
         return new SurveyCostCalculationResponse(
                 targetRespondents,
                 estimatedCost,
                 costPerRespondent,
+                smsContactCount,
+                smsCostPerMessage,
+                smsCost,
+                totalCost,
                 walletBalance,
                 isSufficient,
                 requiredTopUp
@@ -58,5 +71,11 @@ public class SurveyCostService {
         return systemSettingRepository.findByKey(SettingKey.ENTERPRISE_SURVEY_COST_PER_RESPONDENT)
                 .map(s -> new BigDecimal(s.getValue()))
                 .orElse(new BigDecimal("5.00"));
+    }
+
+    public BigDecimal getSmsCostPerMessage() {
+        return systemSettingRepository.findByKey(SettingKey.SMS_COST_PER_MESSAGE)
+                .map(s -> new BigDecimal(s.getValue()))
+                .orElse(new BigDecimal("2.00"));
     }
 }

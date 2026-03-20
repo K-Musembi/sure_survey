@@ -3,6 +3,7 @@ package com.survey_engine.user.config.security;
 import com.survey_engine.user.models.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
@@ -31,6 +32,17 @@ public class JwtService {
     private long jwtExpiration; // in minutes
 
     /**
+     * Generates a JWT for a user looked up by ID (used during token refresh).
+     * Creates a synthetic Authentication to reuse the standard token-generation path.
+     */
+    public String generateTokenForUser(User user) {
+        Authentication authentication =
+                new UsernamePasswordAuthenticationToken(
+                        user, null, user.getAuthorities());
+        return generateToken(authentication);
+    }
+
+    /**
      * Generates a JWT for the authenticated user.
      *
      * @param authentication The {@link Authentication} object representing the authenticated user.
@@ -43,15 +55,19 @@ public class JwtService {
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(" "));
 
-        JwtClaimsSet claims = JwtClaimsSet.builder()
+        JwtClaimsSet.Builder claimsBuilder = JwtClaimsSet.builder()
                 .issuer("self")
                 .issuedAt(now)
                 .expiresAt(now.plus(jwtExpiration, ChronoUnit.MINUTES))
                 .subject(user.getId().toString())
                 .claim("scope", scope)
-                .claim("tenantId", user.getTenantId())
-                .claim("role", user.getRole())
-                .build();
+                .claim("role", user.getRole());
+
+        if (user.getTenantId() != null) {
+            claimsBuilder.claim("tenantId", user.getTenantId());
+        }
+
+        JwtClaimsSet claims = claimsBuilder.build();
 
         return this.jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
     }

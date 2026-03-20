@@ -5,6 +5,8 @@ package com.survey_engine.common.enums;
  */
 public enum SettingKey {
         ENTERPRISE_SURVEY_COST_PER_RESPONDENT,
+        SMS_COST_PER_MESSAGE,
+        PRIVACY_NOTICE_URL,
         DATA_BUNDLE_PRICE_20MB,
         DATA_BUNDLE_PRICE_100MB,
         AIRTIME_RETAIL_PRICE_20,

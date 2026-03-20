@@ -2,6 +2,7 @@ package com.survey_engine.survey.service;
 
 import com.survey_engine.billing.BillingApi;
 import com.survey_engine.common.enums.SettingKey;
+import com.survey_engine.common.exception.BusinessRuleException;
 import com.survey_engine.common.repository.SystemSettingRepository;
 import com.survey_engine.survey.common.enums.SurveyStatus;
 import com.survey_engine.survey.models.DistributionListContact;
@@ -27,6 +28,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -50,7 +52,7 @@ public class SurveyService {
     private final SmsResponseService smsResponseService;
     private final SurveyCostService surveyCostService;
 
-    @org.springframework.beans.factory.annotation.Value("${survey.web.base-url}")
+    @Value("${survey.web.base-url}")
     private String webBaseUrl;
 
     /**
@@ -252,12 +254,16 @@ public class SurveyService {
             BigDecimal totalCost = costPerRespondent.multiply(new BigDecimal(survey.getTargetRespondents()));
             
             // Debit Wallet
-            try {
-                billingApi.debitWallet(tenantId, Long.valueOf(survey.getUserId()), totalCost, "Activation fee for survey " + surveyId);
-                survey.setBudget(totalCost);
-            } catch (IllegalStateException e) {
-                throw new IllegalStateException("Insufficient funds to activate survey. Required: " + totalCost + ". Please top up your wallet.");
+            BigDecimal walletBalance = billingApi.getWalletBalance(tenantId, Long.valueOf(survey.getUserId()));
+            if (walletBalance.compareTo(totalCost) < 0) {
+                throw new BusinessRuleException(
+                        "INSUFFICIENT_FUNDS",
+                        "Insufficient wallet balance to activate survey. Required: KES " + totalCost
+                                + ", Available: KES " + walletBalance + ". Please top up your wallet."
+                );
             }
+            billingApi.debitWallet(tenantId, Long.valueOf(survey.getUserId()), totalCost, "Activation fee for survey " + surveyId);
+            survey.setBudget(totalCost);
         } else {
             // For non-enterprise (or plans where you don't pay per respondent upfront), 
             // we reset the budget. Limits are enforced by SubscriptionLimitService during response submission.
@@ -390,12 +396,28 @@ public class SurveyService {
         }
 
         List<DistributionListContact> contacts = survey.getDistributionList().getContacts();
-        logger.info("Sending survey {} to {} contacts in distribution list.", surveyId, contacts.size());
+        int contactCount = contacts.size();
+        logger.info("Sending survey {} to {} contacts in distribution list.", surveyId, contactCount);
+
+        // Validate and debit wallet for SMS cost before dispatching
+        BigDecimal smsCostPerMessage = surveyCostService.getSmsCostPerMessage();
+        BigDecimal totalSmsCost = smsCostPerMessage.multiply(new BigDecimal(contactCount));
+        BigDecimal walletBalance = billingApi.getWalletBalance(tenantId, Long.valueOf(userId));
+
+        if (walletBalance.compareTo(totalSmsCost) < 0) {
+            throw new BusinessRuleException(
+                    "INSUFFICIENT_FUNDS_FOR_SMS",
+                    "Insufficient wallet balance for SMS distribution. Required: KES " + totalSmsCost
+                            + " (" + contactCount + " contacts × KES " + smsCostPerMessage + "/SMS)"
+                            + ", Available: KES " + walletBalance + "."
+            );
+        }
+
+        billingApi.debitWallet(tenantId, Long.valueOf(userId), totalSmsCost,
+                "SMS distribution for survey " + surveyId + " (" + contactCount + " contacts)");
 
         List<String> phoneNumbers = contacts.stream().map(DistributionListContact::getPhoneNumber).toList();
-
         for (String phoneNumber : phoneNumbers) {
-            // Initiate survey for each contact
             smsResponseService.initiateSurvey(phoneNumber, surveyId);
         }
     }

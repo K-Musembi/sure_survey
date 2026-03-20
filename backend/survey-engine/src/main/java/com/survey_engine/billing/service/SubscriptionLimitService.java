@@ -6,13 +6,15 @@ import com.survey_engine.billing.dto.PlanFeatures;
 import com.survey_engine.billing.models.Subscription;
 import com.survey_engine.billing.models.enums.SubscriptionStatus;
 import com.survey_engine.billing.repository.SubscriptionRepository;
+import com.survey_engine.common.exception.BusinessRuleException;
 import com.survey_engine.survey.SurveyApi;
-import com.survey_engine.survey.common.enums.SurveyType;
 import com.survey_engine.user.UserApi;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Map;
 
 /**
  * Service to validate if a tenant is allowed to perform actions based on their subscription plan.
@@ -23,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class SubscriptionLimitService {
 
     private final SubscriptionRepository subscriptionRepository;
-    private final SurveyApi surveyApi; // To check current usage
+    private final SurveyApi surveyApi;
     private final UserApi userApi;
     private final ObjectMapper objectMapper;
     private final SubscriptionService subscriptionService;
@@ -33,36 +35,33 @@ public class SubscriptionLimitService {
      */
     @Transactional(readOnly = true)
     public void validateSurveyCreationLimit(Long tenantId, Long userId) {
-        // 1. Get Active Subscription (Uses new logic for User/Tenant context)
         Subscription subscription = subscriptionService.getActiveSubscriptionForUser(tenantId, userId)
                 .orElse(null);
 
         if (subscription == null) {
-            // Fallback for FREE tier or no sub? 
             validateFreeTierSurveyLimit(tenantId, userId);
             return;
         }
 
-        // 2. Parse Features
         PlanFeatures features = parseFeatures(subscription.getPlan().getFeatures());
-        if (features == null || features.maxSurveys() == null) {
-            return; // No limit defined
+        if (features == null || features.maxSurveys() == null || features.maxSurveys() == -1) {
+            return; // No limit or unlimited
         }
 
-        // 3. Check Usage
         long currentSurveyCount;
         String tenantName = userApi.findTenantNameById(tenantId).orElse("Main Tenant");
-        
+
         if (tenantName.equals("Main Tenant")) {
-             // Individual user - check their specific count
-             currentSurveyCount = surveyApi.findSurveysByUserId(String.valueOf(userId)).size();
+            currentSurveyCount = surveyApi.findSurveysByUserId(String.valueOf(userId)).size();
         } else {
-             // Enterprise - check tenant-wide count
-             currentSurveyCount = surveyApi.findSurveysByTenantId(tenantId).size();
+            currentSurveyCount = surveyApi.findSurveysByTenantId(tenantId).size();
         }
-        
+
         if (currentSurveyCount >= features.maxSurveys()) {
-            throw new IllegalStateException("Subscription limit reached. You can only create " + features.maxSurveys() + " surveys on this plan.");
+            throw new BusinessRuleException(
+                    "SURVEY_LIMIT_REACHED",
+                    "Survey limit reached. Your plan allows up to " + features.maxSurveys() + " surveys. Please upgrade to create more."
+            );
         }
     }
 
@@ -71,57 +70,62 @@ public class SubscriptionLimitService {
      */
     @Transactional(readOnly = true)
     public void validateResponseLimit(Long tenantId, Long surveyId) {
-        // We don't have userId here easily, but response limits are usually property of the survey owner/tenant.
-        // For "Main Tenant", the survey belongs to a user who has a sub.
-        // We need to resolve the owner of the survey to check their limit.
-        // However, this method signature only takes tenantId. 
-        // For now, let's assume if it's Main Tenant, we might need to look up the survey owner.
-        // BUT, getActiveSubscription needs a userId for Main Tenant.
-        // Let's defer complex response limit logic for Main Tenant for a moment or infer userId from survey if possible?
-        // SubscriptionLimitService doesn't have easy access to survey owner ID without calling SurveyApi.
-        // But SurveyApi is injected.
-        
-        // Let's assume for now response limits are enforced. 
-        // We'll pass null for userId which might fail for Main Tenant if we don't fix getActiveSubscription.
-        // Actually SubscriptionService.getActiveSubscriptionForUser handles null userId gracefully? No.
-        
-        // Fix: Use surveyApi to find owner of surveyId? SurveyApi returns Map.
-        // We can't easily get owner ID without fetching survey details.
-        
-        // For this immediate task (fixing survey CREATION), we focus on validateSurveyCreationLimit.
-        
-        // Ideally we should update validateResponseLimit too, but let's stick to the reported error first.
-        Subscription subscription = getActiveSubscription(tenantId); 
-        // ... (rest of method)
-    }
+        // Resolve the survey owner to find their subscription
+        Map<String, Object> survey = surveyApi.getSurveyById(surveyId);
+        if (survey == null) {
+            return; // Survey not found — let it through; controller will handle 404
+        }
 
-    // Helper for legacy method usage or internal
-    private Subscription getActiveSubscription(Long tenantId) {
-         // This is the problematic legacy method. 
-         // For response limits, we might still fail for Main Tenant users.
-         return subscriptionRepository.findFirstByTenantIdAndStatusOrderByIdAsc(tenantId, SubscriptionStatus.ACTIVE)
+        Object ownerUserIdObj = survey.get("userId");
+        Long userId = ownerUserIdObj != null ? Long.parseLong(ownerUserIdObj.toString()) : null;
+
+        Subscription subscription = subscriptionService.getActiveSubscriptionForUser(tenantId, userId)
                 .orElse(null);
+
+        if (subscription == null) {
+            validateFreeTierResponseLimit(surveyId);
+            return;
+        }
+
+        PlanFeatures features = parseFeatures(subscription.getPlan().getFeatures());
+        if (features == null || features.maxResponsesPerSurvey() == null || features.maxResponsesPerSurvey() == -1) {
+            return; // No limit or unlimited
+        }
+
+        long currentCount = surveyApi.getResponseRepository().countBySurveyId(surveyId);
+        if (currentCount >= features.maxResponsesPerSurvey()) {
+            throw new BusinessRuleException(
+                    "RESPONSE_LIMIT_REACHED",
+                    "Response limit of " + features.maxResponsesPerSurvey() + " reached for this survey. Please upgrade your plan."
+            );
+        }
     }
 
     private void validateFreeTierSurveyLimit(Long tenantId, Long userId) {
         long count;
         String tenantName = userApi.findTenantNameById(tenantId).orElse("Main Tenant");
-        
+
         if (tenantName.equals("Main Tenant")) {
-             count = surveyApi.findSurveysByUserId(String.valueOf(userId)).size();
+            count = surveyApi.findSurveysByUserId(String.valueOf(userId)).size();
         } else {
-             count = surveyApi.findSurveysByTenantId(tenantId).size();
+            count = surveyApi.findSurveysByTenantId(tenantId).size();
         }
 
-        if (count >= 5) { // Example limit
-            throw new IllegalStateException("Free limit reached. Please upgrade to create more surveys.");
+        if (count >= 5) {
+            throw new BusinessRuleException(
+                    "FREE_SURVEY_LIMIT_REACHED",
+                    "Free tier limit reached (5 surveys). Please upgrade to create more surveys."
+            );
         }
     }
 
     private void validateFreeTierResponseLimit(Long surveyId) {
         long count = surveyApi.getResponseRepository().countBySurveyId(surveyId);
         if (count >= 25) {
-            throw new IllegalStateException("Free survey response limit (25) reached.");
+            throw new BusinessRuleException(
+                    "FREE_RESPONSE_LIMIT_REACHED",
+                    "Free tier response limit (25) reached for this survey. Please upgrade your plan."
+            );
         }
     }
 

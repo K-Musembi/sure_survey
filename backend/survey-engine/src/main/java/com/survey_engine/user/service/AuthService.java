@@ -2,6 +2,7 @@ package com.survey_engine.user.service;
 
 import com.survey_engine.common.events.UserRegisteredEvent;
 import com.survey_engine.user.config.security.JwtService;
+import com.survey_engine.user.config.security.RefreshTokenService;
 import com.survey_engine.user.dto.*;
 import com.survey_engine.user.models.Tenant;
 import com.survey_engine.user.repository.TenantRepository;
@@ -40,6 +41,7 @@ public class AuthService {
     private final TenantService tenantService;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
     private final org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     /**
@@ -100,8 +102,9 @@ public class AuthService {
 
         Authentication authentication = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
 
-        String token = jwtService.generateToken(authentication);
-        return new LoginResponse(token, user);
+        String accessToken = jwtService.generateToken(authentication);
+        String refreshToken = refreshTokenService.createRefreshToken(user.getId().toString());
+        return new LoginResponse(accessToken, refreshToken, user);
     }
 
     /**
@@ -184,13 +187,34 @@ public class AuthService {
             throw new AccessDeniedException("Access Denied: User is not a system admin.");
         }
 
-        String token = jwtService.generateToken(authentication);
-        return new LoginResponse(token, user);
+        String accessToken = jwtService.generateToken(authentication);
+        String refreshToken = refreshTokenService.createRefreshToken(user.getId().toString());
+        return new LoginResponse(accessToken, refreshToken, user);
     }
 
     /**
-     * Performs logout by clearing the security context.
+     * Validates a refresh token, rotates it, and returns a new access token + rotated refresh token.
      */
+    public TokenRefreshResult refreshAccessToken(String refreshToken) {
+        String userId = refreshTokenService.validateAndGetUserId(refreshToken);
+        User user = userRepository.findById(Long.parseLong(userId))
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("User not found for token refresh"));
+        String newAccessToken = jwtService.generateTokenForUser(user);
+        String newRefreshToken = refreshTokenService.rotate(refreshToken, userId);
+        return new TokenRefreshResult(newAccessToken, newRefreshToken);
+    }
+
+    /**
+     * Performs logout by clearing the security context and invalidating the refresh token.
+     */
+    public void logout(String refreshToken) {
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            refreshTokenService.invalidate(refreshToken);
+        }
+        SecurityContextHolder.clearContext();
+    }
+
+    /** @deprecated Use logout(refreshToken) */
     public void logout() {
         SecurityContextHolder.clearContext();
     }

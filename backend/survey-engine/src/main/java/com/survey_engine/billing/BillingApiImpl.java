@@ -156,7 +156,12 @@ public class BillingApiImpl implements BillingApi {
 
     @Override
     public void restockSystemWallet(String walletType, BigDecimal amount) {
-        systemWalletService.restockInventory(SystemWalletType.valueOf(walletType), amount);
+        restockSystemWallet(walletType, amount, "SAFARICOM");
+    }
+
+    @Override
+    public void restockSystemWallet(String walletType, BigDecimal amount, String provider) {
+        systemWalletService.restockInventory(SystemWalletType.valueOf(walletType), amount, provider);
     }
 
     @Override

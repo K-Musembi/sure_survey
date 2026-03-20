@@ -110,11 +110,19 @@ public interface BillingApi {
     void updatePlan(Long planId, BigDecimal price, Map<String, Object> features);
 
     /**
-     * Restocks the system inventory from an external provider.
+     * Restocks the system inventory from an external provider (Defaults to SAFARICOM).
      * @param walletType The type of wallet to restock (e.g., "AIRTIME_STOCK", "DATA_BUNDLE_STOCK").
      * @param amount The amount to restock.
      */
     void restockSystemWallet(String walletType, BigDecimal amount);
+
+    /**
+     * Restocks the system inventory from a specific external provider.
+     * @param walletType The type of wallet to restock.
+     * @param amount The amount to restock.
+     * @param provider The provider name (e.g., "SAFARICOM", "CREDOFASTER").
+     */
+    void restockSystemWallet(String walletType, BigDecimal amount, String provider);
 
     /**
      * Reserves stock from the system inventory.

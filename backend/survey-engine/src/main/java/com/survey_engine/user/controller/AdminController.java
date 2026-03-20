@@ -23,7 +23,7 @@ import java.util.Map;
  * All endpoints in this controller are protected and require SUPER_ADMIN role.
  */
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("/api/v1/admin")
 @RequiredArgsConstructor
 @Validated
 @PreAuthorize("hasRole('SUPER_ADMIN')")
@@ -43,22 +43,18 @@ public class AdminController {
      */
     @PostMapping("/login")
     @PreAuthorize("permitAll()") // Override class-level security for this specific endpoint
-    public ResponseEntity<UserResponse> loginSuperAdmin(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
+    public ResponseEntity<LoginResponse> loginSuperAdmin(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
         LoginResponse loginResponse = authService.loginSuperAdmin(request);
         response.addCookie(createCookie(loginResponse.token()));
-
-        UserResponse userResponse = new UserResponse(
-                loginResponse.user().getId(),
-                loginResponse.user().getName(),
-                loginResponse.user().getEmail(),
-                loginResponse.user().getDepartment(),
-                loginResponse.user().getRegion(),
-                loginResponse.user().getBranch(),
-                loginResponse.user().getTenantId(),
-                loginResponse.user().getTenant() != null ? loginResponse.user().getTenant().getName() : "SYSTEM"
-        );
-
-        return ResponseEntity.ok(userResponse);
+        // Set refresh token cookie for admin too
+        if (loginResponse.refreshToken() != null) {
+            Cookie refreshCookie = new Cookie("refresh_token", loginResponse.refreshToken());
+            refreshCookie.setHttpOnly(true);
+            refreshCookie.setPath("/api/v1/auth/refresh");
+            refreshCookie.setMaxAge(7 * 24 * 60 * 60);
+            response.addCookie(refreshCookie);
+        }
+        return ResponseEntity.ok(loginResponse);
     }
 
     /**

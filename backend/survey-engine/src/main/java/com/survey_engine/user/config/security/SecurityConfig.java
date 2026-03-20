@@ -40,7 +40,9 @@ public class SecurityConfig {
     @Order(1)
     public SecurityFilterChain publicSecurityFilterChain(HttpSecurity http) throws Exception {
         http
-                .securityMatcher("/api/v1/auth/**", "/api/v1/integrations/webhook/**", "/api/v1/webhooks/**")
+                .securityMatcher("/api/v1/auth/**", "/api/v1/integrations/webhook/**", "/api/v1/webhooks/**",
+                        "/api/v1/billing/plans",
+                        "/api/v1/referrals/subjects/access", "/api/v1/referrals/subjects/erasure")
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
@@ -59,10 +61,11 @@ public class SecurityConfig {
     @Order(2)
     public SecurityFilterChain adminSecurityFilterChain(HttpSecurity http) throws Exception {
         http
-                .securityMatcher("/api/admin/**")
+                .securityMatcher("/api/v1/admin/**")
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/v1/admin/login").permitAll()
                         .anyRequest().hasRole("SUPER_ADMIN")
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

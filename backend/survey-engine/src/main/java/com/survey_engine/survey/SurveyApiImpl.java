@@ -84,4 +84,48 @@ class SurveyApiImpl implements SurveyApi {
                 .map(a -> "Q: " + a.getQuestion().getQuestionText() + " | A: " + a.getAnswerValue())
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public Map<String, Object> getSurveyById(Long surveyId) {
+        return surveyRepository.findById(surveyId)
+                .map(survey -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("id", survey.getId());
+                    map.put("name", survey.getName());
+                    map.put("type", survey.getType().toString());
+                    map.put("status", survey.getStatus().toString());
+
+                    // Include questions with scoring metadata
+                    List<Map<String, Object>> questionMaps = survey.getQuestions().stream()
+                            .map(q -> {
+                                Map<String, Object> qm = new HashMap<>();
+                                qm.put("id", q.getId());
+                                qm.put("questionText", q.getQuestionText());
+                                qm.put("questionType", q.getQuestionType().toString());
+                                qm.put("options", q.getOptions());
+                                qm.put("category", q.getCategory());
+                                qm.put("weight", q.getWeight());
+                                return qm;
+                            }).collect(Collectors.toList());
+                    map.put("questions", questionMaps);
+
+                    // Include response summaries
+                    List<Response> responses = responseRepository.findBySurveyId(surveyId);
+                    map.put("responses", responses.stream()
+                            .map(r -> {
+                                Map<String, Object> rm = new HashMap<>();
+                                rm.put("id", r.getId());
+                                rm.put("participantId", r.getParticipantId());
+                                rm.put("submissionDate", r.getSubmissionDate());
+                                rm.put("answers", r.getAnswers().stream()
+                                        .map(a -> Map.of(
+                                                "questionId", a.getQuestion().getId(),
+                                                "answerValue", a.getAnswerValue()
+                                        )).collect(Collectors.toList()));
+                                return rm;
+                            }).collect(Collectors.toList()));
+                    return map;
+                })
+                .orElse(null);
+    }
 }

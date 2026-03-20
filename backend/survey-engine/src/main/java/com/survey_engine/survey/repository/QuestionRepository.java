@@ -18,4 +18,8 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
      * @return - List of questions
      */
     List<Question> findBySurveyId(Long surveyId);
+
+    List<Question> findBySurveyIdOrderByPositionAsc(Long surveyId);
+
+    boolean existsByIdAndSurveyId(Long id, Long surveyId);
 }

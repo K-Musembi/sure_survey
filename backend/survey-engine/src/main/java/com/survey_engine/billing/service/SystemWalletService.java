@@ -3,20 +3,18 @@ package com.survey_engine.billing.service;
 import com.survey_engine.billing.models.SystemWallet;
 import com.survey_engine.billing.models.enums.SystemWalletType;
 import com.survey_engine.billing.repository.SystemWalletRepository;
-import jakarta.annotation.PostConstruct;
+import com.survey_engine.billing.service.client.StockProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 /**
  * Manages the System's inventory of digital assets (Airtime, Data).
- * Handles restocking from external providers (Safaricom) and reserving stock for tenant rewards.
+ * Handles restocking from external providers and reserving stock for tenant rewards.
  */
 @Service
 @RequiredArgsConstructor
@@ -24,43 +22,31 @@ import java.math.BigDecimal;
 public class SystemWalletService {
 
     private final SystemWalletRepository systemWalletRepository;
-    private final WebClient.Builder webClientBuilder;
-
-    // Placeholder for Safaricom API URL - strictly for the refill logic
-    @Value("${safaricom.api.url}")
-    private String safaricomApiUrl;
+    private final Map<String, StockProvider> stockProviders;
 
     /**
-     * Simulates an API call to Safaricom to purchase bulk airtime or data,
-     * then credits the System Wallet.
+     * Restocks the system inventory from an external provider.
      *
      * @param type   The type of asset to restock.
-     * @param amount The amount to purchase (value in KES for Airtime, MBs for Data).
+     * @param amount The amount to purchase.
+     * @param providerName The name of the provider to use (e.g., "SAFARICOM", "CREDOFASTER").
      */
     @Transactional
-    public void restockInventory(SystemWalletType type, BigDecimal amount) {
-        log.info("Initiating restock for {} with amount {}", type, amount);
+    public void restockInventory(SystemWalletType type, BigDecimal amount, String providerName) {
+        log.info("Initiating restock for {} with amount {} via {}", type, amount, providerName);
 
-        // 1. Perform External API Call (WebFlux)
-        // Using the builder ensures we inherit any global configuration (logging, timeouts, etc.)
-        Boolean apiSuccess = webClientBuilder.baseUrl(safaricomApiUrl).build()
-                .post()
-                .bodyValue(String.format("{\"command\": \"PURCHASE\", \"type\": \"%s\", \"amount\": %s}", type, amount))
-                .retrieve()
-                .bodyToMono(String.class)
-                .map(response -> true) // Assume success if we get a response body
-                .onErrorResume(e -> {
-                    log.error("Failed to call Safaricom API: {}", e.getMessage());
-                    return Mono.just(false);
-                })
-                .block(); // Blocking here is acceptable for an administrative, low-throughput operation
-
-        if (Boolean.FALSE.equals(apiSuccess)) {
-            throw new RuntimeException("Safaricom API call failed. Restock aborted to prevent funds mismatch.");
+        StockProvider provider = stockProviders.get(providerName);
+        if (provider == null) {
+            throw new IllegalArgumentException("Unknown stock provider: " + providerName);
         }
 
-        // 2. Credit System Wallet
-        // findByWalletType uses a PESSIMISTIC_WRITE lock, ensuring thread safety during the update
+        boolean success = provider.purchaseStock(type, amount);
+
+        if (!success) {
+            throw new RuntimeException(providerName + " API call failed. Restock aborted to prevent funds mismatch.");
+        }
+
+        // Credit System Wallet
         SystemWallet wallet = systemWalletRepository.findByWalletType(type)
                 .orElseThrow(() -> new IllegalStateException("System wallet not initialized for " + type));
 

@@ -1,5 +1,6 @@
 package com.survey_engine.common.config;
 
+import com.survey_engine.common.exception.SurveyPlatformException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
@@ -31,6 +32,17 @@ public class GlobalExceptionHandler {
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     public record ErrorResponse(String message, String value) {}
+
+    /**
+     * Handle all platform-specific domain exceptions.
+     * These carry an explicit error code and HTTP status — always logged and propagated.
+     */
+    @ExceptionHandler(SurveyPlatformException.class)
+    public ResponseEntity<ErrorResponse> handlePlatformException(SurveyPlatformException ex) {
+        logger.error("Platform exception [{}]: {}", ex.getErrorCode(), ex.getMessage());
+        ErrorResponse errorResponse = new ErrorResponse(ex.getMessage(), ex.getErrorCode());
+        return ResponseEntity.status(ex.getStatus()).body(errorResponse);
+    }
 
     /**
      * Handle authentication errors

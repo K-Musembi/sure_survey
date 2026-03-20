@@ -47,6 +47,9 @@ public class BillingController {
     @GetMapping("/wallet/balance")
     public ResponseEntity<BigDecimal> getWalletBalance(@AuthenticationPrincipal Jwt jwt) {
         Long tenantId = jwt.getClaim("tenantId");
+        if (tenantId == null) {
+            return ResponseEntity.ok(BigDecimal.ZERO);
+        }
         Long userId = Long.valueOf(jwt.getSubject());
         return ResponseEntity.ok(walletService.getBalance(tenantId, userId));
     }
@@ -60,6 +63,9 @@ public class BillingController {
     @GetMapping("/wallet/transactions")
     public ResponseEntity<List<WalletTransactionResponse>> getWalletTransactions(@AuthenticationPrincipal Jwt jwt) {
         Long tenantId = jwt.getClaim("tenantId");
+        if (tenantId == null) {
+            return ResponseEntity.ok(List.of());
+        }
         Long userId = Long.valueOf(jwt.getSubject());
         return ResponseEntity.ok(walletService.getTransactions(tenantId, userId));
     }
@@ -73,6 +79,9 @@ public class BillingController {
     @GetMapping("/subscription")
     public ResponseEntity<SubscriptionResponse> getSubscription(@AuthenticationPrincipal Jwt jwt) {
         Long tenantId = jwt.getClaim("tenantId");
+        if (tenantId == null) {
+            return ResponseEntity.notFound().build();
+        }
         Long userId = Long.valueOf(jwt.getSubject());
         Optional<Subscription> subscription = subscriptionService.getActiveSubscriptionForUser(tenantId, userId);
         return subscription.map(this::mapToSubscriptionResponse)
@@ -158,6 +167,9 @@ public class BillingController {
     @GetMapping("/invoices")
     public ResponseEntity<List<InvoiceResponse>> getInvoices(@AuthenticationPrincipal Jwt jwt) {
         Long tenantId = jwt.getClaim("tenantId");
+        if (tenantId == null) {
+            return ResponseEntity.ok(List.of());
+        }
         Long userId = Long.valueOf(jwt.getSubject());
         List<Invoice> invoices = invoiceService.findInvoicesForUser(tenantId, userId);
         List<InvoiceResponse> invoiceResponses = invoices.stream()

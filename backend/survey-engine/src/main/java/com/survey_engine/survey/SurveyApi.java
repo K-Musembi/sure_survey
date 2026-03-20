@@ -47,4 +47,14 @@ public interface SurveyApi {
      * @return A list of formatted response strings.
      */
     List<String> getSurveyResponseTexts(Long surveyId);
+
+    /**
+     * Retrieves a single survey with its questions and summarised response data.
+     * Used by the intelligence module for report generation.
+     * Returns null if the survey does not exist.
+     *
+     * @param surveyId The ID of the survey.
+     * @return A Map representing the survey and its data, or null.
+     */
+    Map<String, Object> getSurveyById(Long surveyId);
 }

@@ -1,5 +1,6 @@
 package com.survey_engine.user.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.survey_engine.common.models.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -12,6 +13,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Model class for User Entity
@@ -51,6 +53,7 @@ public class User extends BaseEntity implements UserDetails {
     /**
      * The hashed password of the user.
      */
+    @JsonIgnore
     @Column(name = "password", nullable = false, length = 100)
     private String password;
 
@@ -77,7 +80,7 @@ public class User extends BaseEntity implements UserDetails {
     private Tenant tenant;
 
     @Column(name = "subscription_id")
-    private java.util.UUID subscriptionId;
+    private UUID subscriptionId;
 
     /**
      * Returns the authorities granted to the user. The role is prefixed with "ROLE_"
