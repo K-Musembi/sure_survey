@@ -432,7 +432,7 @@ const SurveySession = () => {
         </Card>
         
         <div className="mt-8 text-center text-sm text-gray-400">
-          Powered by Sure Survey
+          Powered by asq
         </div>
       </div>
     </div>

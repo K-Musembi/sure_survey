@@ -9,6 +9,8 @@ const useAuthStore = create()(
         token: null,
         isAuthenticated: false,
         isLoading: false,
+        emailVerified: true,
+        needsVerification: false,
         
         // Actions
         setUser: (user) => set({ user, isAuthenticated: !!user }, false, 'setUser'),
@@ -56,7 +58,7 @@ const useAuthStore = create()(
         getUser: () => get().user,
         getToken: () => get().token,
         isUserAuthenticated: () => get().isAuthenticated,
-        isAdmin: () => get().user?.role === 'SYSTEM_ADMIN' || get().user?.roles?.includes('SYSTEM_ADMIN'), // Handle both string or list scenarios
+        isAdmin: () => get().user?.role === 'SUPER_ADMIN' || get().user?.roles?.includes('SUPER_ADMIN'),
       }),
       {
         name: 'auth-storage',

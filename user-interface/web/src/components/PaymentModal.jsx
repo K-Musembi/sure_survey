@@ -4,7 +4,7 @@ import { useCreatePayment, useVerifyPayment } from '../hooks/useApi'
 import { paymentAPI } from '../services/apiServices'
 import { HiCreditCard, HiCheckCircle, HiExclamationCircle } from 'react-icons/hi'
 
-const PaymentModal = ({ show, onClose, survey, mode = 'SURVEY_ACTIVATION', onPaymentSuccess }) => {
+const PaymentModal = ({ show, onClose, survey, mode = 'SURVEY_ACTIVATION', onPaymentSuccess, returnPath }) => {
   const [step, setStep] = useState(1) // 1: Details, 2: Processing, 3: Success/Error
   const [paymentData, setPaymentData] = useState({
     amount: '',
@@ -47,7 +47,8 @@ const PaymentModal = ({ show, onClose, survey, mode = 'SURVEY_ACTIVATION', onPay
       if (mode === 'WALLET_TOPUP') {
         const topUpPayload = {
             amount: paymentData.amount,
-            currency: paymentData.currency
+            currency: paymentData.currency,
+            returnPath: returnPath || window.location.pathname
         };
         response = await paymentAPI.topUpWallet(topUpPayload)
       } else {
@@ -182,10 +183,10 @@ const PaymentModal = ({ show, onClose, survey, mode = 'SURVEY_ACTIVATION', onPay
               <Button color="gray" onClick={handleModalClose}>
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={!paymentData.amount || isLoading}
-                className="bg-primary-500 hover:bg-primary-600"
+                color="blue"
               >
                 {isLoading ? 'Processing...' : 'Continue to Payment'}
               </Button>

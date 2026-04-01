@@ -39,16 +39,21 @@ api.interceptors.response.use(
   },
   async (error) => {
     const originalRequest = error.config
-    
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
-      
-      // On unauthorized, logout the user from the store
-      console.warn('[API] Unauthorized access. Logging out.')
-      useAuthStore.getState().logout()
-      return Promise.reject(error)
+
+      // Attempt silent token refresh
+      try {
+        await api.post('/auth/refresh')
+        return api(originalRequest)
+      } catch {
+        console.warn('[API] Token refresh failed. Logging out.')
+        useAuthStore.getState().logout()
+        return Promise.reject(error)
+      }
     }
-    
+
     console.error('[API] Response error:', error.response?.data || error.message)
     return Promise.reject(error)
   }
@@ -80,6 +85,10 @@ export const authAPI = {
   me: () => api.get('/auth/me'), // Note: Backend implementation for /auth/me might be missing, usually we rely on login response or dedicated user endpoint
   checkTenant: (tenantName) => api.post('/auth/check-tenant', { tenantName }, { withCredentials: false }),
   refreshToken: () => api.post('/auth/refresh'),
+  verifyEmail: (token) => api.get(`/auth/verify-email?token=${encodeURIComponent(token)}`),
+  resendVerification: (email) => api.post(`/auth/resend-verification?email=${encodeURIComponent(email)}`),
+  forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
+  resetPassword: (data) => api.post('/auth/reset-password', data),
 }
 
 // User & Tenant API calls
@@ -101,7 +110,25 @@ export const tenantAPI = {
 
 // Admin API calls
 export const adminAPI = {
-  login: (credentials) => api.post('/admin/login', credentials, { withCredentials: false }),
+  login: async (credentials) => {
+    const response = await fetch(`${API_BASE_URL}/api/${API_VERSION}/admin/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(credentials),
+    })
+
+    if (!response.ok) {
+       const errorData = await response.json().catch(() => ({}));
+       const error = new Error('Admin login failed');
+       error.response = { status: response.status, data: errorData };
+       throw error;
+    }
+
+    const data = await response.json();
+    return { data }; 
+  },
   getAllTenants: () => api.get('/admin/tenants'),
   getTenantSurveys: (tenantId) => api.get(`/admin/tenants/${tenantId}/surveys`),
   getSettings: () => api.get('/admin/settings'),
@@ -124,7 +151,12 @@ export const surveyAPI = {
   calculateCost: (data) => api.post('/surveys/calculate-cost', data),
   closeSurvey: (surveyId) => api.post(`/surveys/${surveyId}/close`),
   sendToDistributionList: (surveyId, distributionListId) => api.post(`/surveys/${surveyId}/send-to-distribution-list`, { distributionListId }),
-  
+
+  // Branch Rules
+  getBranchRules: (surveyId) => api.get(`/surveys/${surveyId}/branch-rules`),
+  createBranchRule: (surveyId, data) => api.post(`/surveys/${surveyId}/branch-rules`, data),
+  deleteBranchRule: (surveyId, ruleId) => api.delete(`/surveys/${surveyId}/branch-rules/${ruleId}`),
+
   // Questions
   addQuestion: (surveyId, questionData) => api.post(`/surveys/${surveyId}/questions`, questionData),
   getQuestions: (surveyId) => api.get(`/surveys/${surveyId}/questions`),
@@ -194,6 +226,7 @@ export const billingAPI = {
   getWalletBalance: () => api.get('/billing/wallet/balance'),
   getWalletTransactions: () => api.get('/billing/wallet/transactions'),
   getSubscription: () => api.get('/billing/subscription'),
+  getUsage: () => api.get('/billing/usage'),
   getAllPlans: () => api.get('/billing/plans'),
   createSubscription: (data) => api.post('/billing/subscription', data),
   cancelSubscription: (id) => api.delete(`/billing/subscription/${id}`),
@@ -243,6 +276,62 @@ export const subscriptionAPI = {
   getSubscription: billingAPI.getSubscription,
   createSubscription: billingAPI.createSubscription,
   cancelSubscription: billingAPI.cancelSubscription,
+}
+
+// Intelligence API calls
+export const intelligenceAPI = {
+  requestReport: (surveyId) => api.post(`/intelligence/reports`, { surveyId }),
+  getReport: (id) => api.get(`/intelligence/reports/${id}`),
+  getMyReports: () => api.get('/intelligence/reports'),
+  getSummary: () => api.get('/intelligence/summary'),
+  getActionPlans: (reportId) => api.get(`/intelligence/reports/${reportId}/action-plans`),
+  getAllActionPlans: (status) => api.get('/intelligence/action-plans', { params: status ? { status } : {} }),
+  updateActionPlan: (id, data) => api.patch(`/intelligence/action-plans/${id}`, data),
+}
+
+// Referral API calls
+export const referralAPI = {
+  createCampaign: (data) => api.post('/referrals/campaigns', data),
+  getCampaigns: () => api.get('/referrals/campaigns'),
+  updateCampaignStatus: (id, status) => api.patch(`/referrals/campaigns/${id}/status`, { status }),
+  updateCampaignPurpose: (id, data) => api.patch(`/referrals/campaigns/${id}/purpose`, data),
+  createInvite: (data) => api.post('/referrals/invites', data),
+}
+
+// Branch Rule API calls
+export const branchRuleAPI = {
+  create: (surveyId, data) => api.post(`/surveys/${surveyId}/branch-rules`, data),
+  getAll: (surveyId) => api.get(`/surveys/${surveyId}/branch-rules`),
+  delete: (surveyId, ruleId) => api.delete(`/surveys/${surveyId}/branch-rules/${ruleId}`),
+  getMilestones: (surveyId) => api.get(`/surveys/${surveyId}/milestones`),
+  createMilestone: (surveyId, data) => api.post(`/surveys/${surveyId}/milestones`, data),
+}
+
+// Webhook API calls
+export const webhookAPI = {
+  getSubscriptions: () => api.get('/webhooks/subscriptions'),
+  createSubscription: (data) => api.post('/webhooks/subscriptions', data),
+  toggleSubscription: (id, active) => api.patch(`/webhooks/subscriptions/${id}`, { active }),
+  deleteSubscription: (id) => api.delete(`/webhooks/subscriptions/${id}`),
+  getDeliveryLogs: (id) => api.get(`/webhooks/subscriptions/${id}/logs`),
+}
+
+// Performance / Competition Survey API calls
+export const competitionAPI = {
+  getMyProfile: () => api.get('/performance/dashboards/my-profile'),
+  createScoringSchema: (data) => api.post('/performance/scoring-schema', data),
+  getScoringSchema: (surveyId) => api.get(`/performance/scoring-schema/${surveyId}`),
+  createNode: (data) => api.post('/performance/hierarchy/nodes', data),
+  createSubject: (data) => api.post('/performance/hierarchy/subjects', data),
+  getNodes: () => api.get('/performance/hierarchy/nodes'),
+}
+
+// Admin extensions
+export const adminExtAPI = {
+  getDashboardMetrics: () => api.get('/admin/dashboard/metrics'),
+  getSubscriptions: () => api.get('/admin/subscriptions'),
+  updateSubscription: (id, data) => api.patch(`/admin/subscriptions/${id}`, data),
+  getSystemWalletStatus: () => api.get('/admin/system-wallet/status'),
 }
 
 // Generic API utility functions

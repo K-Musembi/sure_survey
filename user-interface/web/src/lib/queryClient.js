@@ -49,4 +49,28 @@ export const QUERY_KEYS = {
   payments: {
     history: ['payments', 'history'],
   },
+  billing: {
+    usage: ['billing', 'usage'],
+    balance: ['billing', 'balance'],
+    transactions: ['billing', 'transactions'],
+    subscription: ['billing', 'subscription'],
+    plans: ['billing', 'plans'],
+    invoices: ['billing', 'invoices'],
+  },
+  intelligence: {
+    reports: ['intelligence', 'reports'],
+    report: (id) => ['intelligence', 'reports', id],
+    actionPlans: ['intelligence', 'action-plans'],
+  },
+  referrals: {
+    campaigns: ['referrals', 'campaigns'],
+    campaign: (id) => ['referrals', 'campaigns', id],
+  },
+  branchRules: {
+    bySurvey: (surveyId) => ['branch-rules', surveyId],
+  },
+  webhooks: {
+    subscriptions: ['webhooks', 'subscriptions'],
+    logs: (id) => ['webhooks', 'logs', id],
+  },
 }

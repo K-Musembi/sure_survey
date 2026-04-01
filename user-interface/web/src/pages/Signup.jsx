@@ -134,7 +134,7 @@ const Signup = () => {
           <div>
             <Label htmlFor="password">Password</Label>
             <TextInput id="password" type="password" placeholder="Create a password" required value={password} onChange={(e) => setPassword(e.target.value)} />
-            <p className="text-xs text-gray-500 mt-1">Password must be at least 8 characters, include uppercase, lowercase and a number.</p>
+            <p className="text-xs text-gray-500 mt-1">Password must be 8-72 characters with at least one uppercase, one lowercase, one digit, and one special character.</p>
           </div>
 
           <div>

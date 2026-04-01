@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
-import { authAPI, surveyAPI, templateAPI, responseAPI, paymentAPI } from '../services/apiServices'
+import { authAPI, surveyAPI, templateAPI, responseAPI, paymentAPI, billingAPI } from '../services/apiServices'
 import { QUERY_KEYS } from '../lib/queryClient'
 import useAuthStore from '../stores/authStore'
 
@@ -152,6 +152,18 @@ export const useSubmitResponse = () => {
   return useMutation({
     mutationFn: ({ surveyId, responseData }) => 
       responseAPI.submitResponse(surveyId, responseData),
+  })
+}
+
+// Billing hooks
+export const useUsage = () => {
+  return useQuery({
+    queryKey: QUERY_KEYS.billing.usage,
+    queryFn: async () => {
+      const response = await billingAPI.getUsage()
+      return response.data
+    },
+    staleTime: 30 * 1000, // 30 seconds
   })
 }
 

@@ -156,35 +156,59 @@ const Subscriptions = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {plans.length > 0 ? plans.map((plan) => {
             const isCurrent = subscription?.plan?.name === plan.name
-            let featuresList = []
-            try {
-               const parsed = JSON.parse(plan.features)
-               // Simple heuristic to display features
-               featuresList = Object.entries(parsed).map(([k, v]) => `${k}: ${v}`)
-            } catch (e) {
-               featuresList = ['Standard Features']
-            }
+            let parsed = {}
+            try { parsed = JSON.parse(plan.features) } catch { /* ignore */ }
+            const isCustom = parsed.isCustomPricing === true
+            const displayFeatures = parsed.displayFeatures || []
 
             return (
-              <div key={plan.id} className={`border rounded-lg p-4 flex flex-col ${isCurrent ? 'border-primary-500 bg-primary-50' : 'border-gray-200'}`}>
-                <h4 className="font-bold text-lg">{plan.name}</h4>
-                <div className="text-xl font-bold mt-2">Ksh {plan.price}<span className="text-sm font-normal text-gray-500">/{plan.billingInterval}</span></div>
-                <ul className="mt-4 space-y-2 flex-grow text-sm text-gray-600">
-                  {featuresList.map((f, i) => (
-                    <li key={i} className="flex items-center">
-                      <HiCheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                      {f}
-                    </li>
-                  ))}
+              <div key={plan.id} className={`border-2 rounded-xl p-5 flex flex-col ${isCurrent ? 'border-primary-500 bg-primary-50' : 'border-gray-200'}`}>
+                <div className="flex justify-between items-start">
+                  <h4 className="font-bold text-lg">{plan.name}</h4>
+                  {isCurrent && <Badge color="success">Current</Badge>}
+                </div>
+
+                <div className="mt-2 mb-4">
+                  {isCustom ? (
+                    <span className="text-xl font-bold text-gray-700">Custom pricing</span>
+                  ) : (
+                    <span>
+                      <span className="text-2xl font-extrabold text-gray-900">
+                        {new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', maximumFractionDigits: 0 }).format(plan.price)}
+                      </span>
+                      <span className="text-sm text-gray-500">/{plan.billingInterval === 'YEARLY' ? 'yr' : 'mo'}</span>
+                    </span>
+                  )}
+                </div>
+
+                <ul className="space-y-2 flex-grow text-sm text-gray-600 mb-4">
+                  {displayFeatures.length > 0
+                    ? displayFeatures.map((f, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <HiCheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+                          {f}
+                        </li>
+                      ))
+                    : <li className="text-gray-400 italic">Standard features</li>
+                  }
                 </ul>
-                <Button 
-                  className="mt-4" 
-                  color={isCurrent ? 'success' : 'dark'}
-                  disabled={isCurrent || isUpgrading}
-                  onClick={() => handleUpgrade(plan.id)}
-                >
-                  {isCurrent ? 'Current Plan' : (isUpgrading ? 'Updating...' : 'Switch Plan')}
-                </Button>
+
+                {isCustom ? (
+                  <a href="mailto:sales@suresurvey.co">
+                    <Button className="w-full" color="dark">
+                      Contact Sales
+                    </Button>
+                  </a>
+                ) : (
+                  <Button
+                    className="w-full"
+                    color={isCurrent ? 'success' : 'purple'}
+                    disabled={isCurrent || isUpgrading}
+                    onClick={() => handleUpgrade(plan.id)}
+                  >
+                    {isCurrent ? 'Current Plan' : (isUpgrading ? 'Updating...' : 'Upgrade')}
+                  </Button>
+                )}
               </div>
             )
           }) : (
