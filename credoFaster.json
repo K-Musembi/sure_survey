@@ -1,0 +1,580 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Credofaster Partner Api",
+    "description": "Buy Airtime on the most simplistic System. We abstract all the nitty-gritty leaving you with just the option to specify the account number to receive airtime and how much. \n\nWe guarantee 95% uptime, 99% reliability.\n\nJust Request and we will make sure you get, in realtime. If not, you will be notified immediately by events.\n\nNow, what Credo is faster that Credofaster!\n\n# Authentication\n\n<!-- ReDoc-Inject: <security-definitions> -->",
+    "contact": {
+      "name": "Admin",
+      "url": "http://partner.credofaster.co.ke",
+      "email": "admin@credofaster.co.ke"
+    },
+    "version": "1.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.partner.credofaster.co.ke",
+      "description": "Live Environment",
+      "variables": {}
+    },
+    {
+      "url": "https://posthere.io/dfd0-4d32-8ad9",
+      "description": "Live Environment",
+      "variables": {}
+    },
+    {
+      "url": "https://api-test.partner.credofaster.co.ke",
+      "description": "For Test Purpose",
+      "variables": {}
+    },
+    {
+      "url": "https://posthere.io/dfd0-4d32-8ad9",
+      "description": "For Test Purpose",
+      "variables": {}
+    }
+  ],
+  "paths": {
+    "/airtime/request": {
+      "post": {
+        "tags": [
+          "Main"
+        ],
+        "summary": "AirtimeRequest",
+        "description": "Request Airtime Purchase",
+        "operationId": "AirtimeRequest",
+        "parameters": [],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerAirtimeRequest"
+              },
+              "example": {
+                "initiator": {
+                  "type": "PARTNER",
+                  "id": "10001"
+                },
+                "parameters": [
+                  {
+                    "reference_id": "123",
+                    "country": "KE",
+                    "account_no": "254705126329",
+                    "denomination": {
+                      "name": "KE",
+                      "value": 10
+                    },
+                    "other": {}
+                  }
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "minItems": 1,
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PartnerAirtimeResponse"
+                  },
+                  "example": [
+                    {
+                      "ErrorCode": 0,
+                      "ErrorDescription": "Success",
+                      "ReferenceId": "123",
+                      "RequestId": "A09797a11e2564061b859781b18bb34dd"
+                    }
+                  ]
+                },
+                "example": [
+                  {
+                    "ErrorCode": 0,
+                    "ErrorDescription": "Success",
+                    "ReferenceId": "123",
+                    "RequestId": "A09797a11e2564061b859781b18bb34dd"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "deprecated": false,
+        "servers": [
+          {
+            "url": "https://api.partner.credofaster.co.ke",
+            "variables": {}
+          },
+          {
+            "url": "https://api-test.partner.credofaster.co.ke",
+            "variables": {}
+          }
+        ]
+      }
+    },
+    "/airtime/balance": {
+      "post": {
+        "tags": [
+          "Main"
+        ],
+        "summary": "AirtimeBalance",
+        "description": "Gets the current Working Balance. \nBalance is SIGNED",
+        "operationId": "AirtimeBalance",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerAirtimeBalanceResponse"
+                },
+                "example": {
+                  "ErrorCode": 0,
+                  "ErrorDescription": "Success.",
+                  "UnitBalance": 99998425106
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false,
+        "servers": [
+          {
+            "url": "https://api.partner.credofaster.co.ke",
+            "variables": {}
+          },
+          {
+            "url": "https://api-test.partner.credofaster.co.ke",
+            "variables": {}
+          }
+        ]
+      }
+    },
+    "/RegisterCallback": {
+      "post": {
+        "tags": [
+          "Events"
+        ],
+        "summary": "RegisterCallback",
+        "description": "A callback to receive the below Callbacks",
+        "operationId": "RegisterCallback",
+        "parameters": [],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterCallbackRequest"
+              },
+              "example": {
+                "url": "https://posthere.io/3ab4-443d-9ddc",
+                "tps": "10",
+                "retries": "1,5"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterCallbackRequest"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false,
+        "servers": [
+          {
+            "url": "https://api.partner.credofaster.co.ke",
+            "variables": {}
+          },
+          {
+            "url": "https://api-test.partner.credofaster.co.ke",
+            "variables": {}
+          }
+        ]
+      }
+    },
+    "/my_endpoint_here": {
+      "post": {
+        "tags": [
+          "Events"
+        ],
+        "summary": "ClientEventFeedback",
+        "description": "You are required to provide a HTTP/HTTPS endpoint, to which we will publish various events. \n\nThis Endpoint will be hosted on the CLIENT's Environment. If no endpoint is provided, we are not liable to any missing events. \n\nNOTE: A DETAILED PDF of all Events is shared on request. It contains application events, System Health Events and Alerts on the same.",
+        "operationId": "ClientEventFeedback",
+        "parameters": [],
+        "requestBody": {
+          "description": "Sample Payload: {\"EventId\":\"123456789\",\"EventType\":\"QUEUED\",\"RequestId\":\"A09797a11e2564061b859781b18bb34dd\",\"EventData\":{}}",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventCallbackPayload"
+              },
+              "example": {
+                "EventId": "123456789",
+                "EventType": "QUEUED",
+                "RequestId": "A09797a11e2564061b859781b18bb34dd",
+                "EventData": {}
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "headers": {},
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventCallbackFeedback"
+                },
+                "example": {
+                  "ErrorCode": 0,
+                  "ErrorDescription": "Success."
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false,
+        "security": [],
+        "servers": [
+          {
+            "url": "https://posthere.io/dfd0-4d32-8ad9",
+            "variables": {}
+          },
+          {
+            "url": "https://posthere.io/dfd0-4d32-8ad9",
+            "variables": {}
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PartnerAirtimeRequest": {
+        "title": "PartnerAirtimeRequest",
+        "required": [
+          "initiator",
+          "parameters"
+        ],
+        "type": "object",
+        "properties": {
+          "initiator": {
+            "$ref": "#/components/schemas/Initiator"
+          },
+          "parameters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SingleAirtimeParameter"
+            },
+            "description": "",
+            "example": [
+              {
+                "reference_id": "123",
+                "country": "KE",
+                "account_no": "254705126329",
+                "denomination": {
+                  "name": "KE",
+                  "value": 10
+                },
+                "other": {}
+              }
+            ]
+          }
+        }
+      },
+      "SingleAirtimeParameter": {
+        "title": "SingleAirtimeParameter",
+        "required": [
+          "reference_id",
+          "country",
+          "account_no",
+          "denomination",
+          "other"
+        ],
+        "type": "object",
+        "properties": {
+          "reference_id": {
+            "type": "string",
+            "description": "A UUID for Each",
+            "format": "uuid"
+          },
+          "country": {
+            "type": "string",
+            "description": "Which Country are you requesting in",
+            "example": "KE"
+          },
+          "account_no": {
+            "type": "string",
+            "description": "The Receipient's Account. Can be Phone Number(International Format)",
+            "example": "254705126329"
+          },
+          "denomination": {
+            "$ref": "#/components/schemas/Denomination"
+          },
+          "other": {
+            "type": "object",
+            "description": "Any Other Tags to accompany the Request",
+            "example": {}
+          }
+        }
+      },
+      "Initiator": {
+        "title": "Initiator",
+        "required": [
+          "type",
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Client Type Initiating the Request",
+            "example": "PARTNER"
+          },
+          "id": {
+            "type": "string",
+            "description": "Client ID Initiating the Request",
+            "example": "10001"
+          }
+        }
+      },
+      "Denomination": {
+        "title": "Denomination",
+        "required": [
+          "name",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Available Name: KE",
+            "example": "KE"
+          },
+          "value": {
+            "multipleOf": 1,
+            "maximum": 70000,
+            "minimum": 5,
+            "type": "integer",
+            "description": "Amount to Request",
+            "format": "int32",
+            "example": 10
+          }
+        },
+        "description": "Currency Declarative Type"
+      },
+      "PartnerAirtimeResponse": {
+        "title": "PartnerAirtimeResponse",
+        "required": [
+          "ErrorCode",
+          "ErrorDescription",
+          "ReferenceId",
+          "RequestId"
+        ],
+        "type": "object",
+        "properties": {
+          "ErrorCode": {
+            "type": "integer",
+            "description": "Code for the Request API Generated. 0: Success, Any other Error Code, refer to ErrorCodes Page",
+            "format": "int32",
+            "example": 0
+          },
+          "ErrorDescription": {
+            "type": "string",
+            "description": "Text Description",
+            "example": "Success"
+          },
+          "ReferenceId": {
+            "type": "string",
+            "description": "a UUID Returned for the Transaction",
+            "format": "uuid"
+          },
+          "RequestId": {
+            "type": "string",
+            "description": "Return of the Clients Request ID",
+            "format": "uuid"
+          }
+        },
+        "description": "Response you get for A Request"
+      },
+      "PartnerAirtimeBalanceResponse": {
+        "title": "PartnerAirtimeBalanceResponse",
+        "required": [
+          "ErrorCode",
+          "ErrorDescription",
+          "UnitBalance"
+        ],
+        "type": "object",
+        "properties": {
+          "ErrorCode": {
+            "type": "integer",
+            "description": "Code for the Request API Generated. 0: Success, Any other Error Code, refer to ErrorCodes Page",
+            "format": "int32",
+            "example": 0
+          },
+          "ErrorDescription": {
+            "type": "string",
+            "description": "Text Description",
+            "example": "Success."
+          },
+          "UnitBalance": {
+            "type": "integer",
+            "description": "Remaining Tentative Balance",
+            "format": "int64",
+            "example": 99998425106
+          }
+        },
+        "description": "Balance Response"
+      },
+      "RegisterCallbackRequest": {
+        "title": "RegisterCallbackRequest",
+        "required": [
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Define a reachable URL that accepts a JSON Payload as described below",
+            "example": "https://posthere.io/3ab4-443d-9ddc"
+          },
+          "tps": {
+            "type": "string",
+            "description": "Define the transactions per second we should use when pushing callbacks to your side",
+            "default": "10",
+            "example": "10"
+          },
+          "retries": {
+            "type": "string",
+            "description": "A comma separated value, containing the number of seconds to wait for any retries and the max number of retries to do, when the clients endpoint responds with an Error",
+            "default": "1,5",
+            "example": "1,5"
+          }
+        }
+      },
+      "EventCallbackPayload": {
+        "title": "EventCallbackPayload",
+        "required": [
+          "EventId",
+          "EventType",
+          "EventData"
+        ],
+        "type": "object",
+        "properties": {
+          "EventId": {
+            "type": "string",
+            "description": "This is shared by the system and should be referred when doing any debugging",
+            "example": "123456789"
+          },
+          "EventType": {
+            "type": "string",
+            "description": "Contains the EVENT type.  detailed list of this can be shared on Request to the admin",
+            "example": "QUEUED"
+          },
+          "RequestId": {
+            "type": "string",
+            "description": "For Events that are related with the Clients Request, you will get a Request ID that was generate by the system when you made a  service call",
+            "example": "A09797a11e2564061b859781b18bb34dd"
+          },
+          "EventData": {
+            "type": "object",
+            "description": "Contains any addition fields,(CAN BE NESTED). See the PDF for more details",
+            "example": {}
+          }
+        },
+        "description": "Payload the Partner receives on for each Event"
+      },
+      "RegisterCallbackResponse": {
+        "title": "RegisterCallbackResponse",
+        "required": [
+          "ErrorCode",
+          "ErrorDescription",
+          "RegisteredCallbackUrl"
+        ],
+        "type": "object",
+        "properties": {
+          "ErrorCode": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0
+          },
+          "ErrorDescription": {
+            "type": "string",
+            "example": "Success"
+          },
+          "RegisteredCallbackUrl": {
+            "type": "string",
+            "example": "https://posthere.io/3ab4-443d-9ddc"
+          }
+        }
+      },
+      "EventCallbackFeedback": {
+        "title": "EventCallbackFeedback",
+        "required": [
+          "ErrorCode",
+          "ErrorDescription"
+        ],
+        "type": "object",
+        "properties": {
+          "ErrorCode": {
+            "type": "integer",
+            "format": "int32",
+            "example": 0
+          },
+          "ErrorDescription": {
+            "type": "string",
+            "example": "Success"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "ApiKey": {
+        "type": "apiKey",
+        "description": "Assigned APIKey",
+        "name": "ApiKey",
+        "in": "header"
+      },
+      "ClientId": {
+        "type": "apiKey",
+        "description": "Assigned ClientId",
+        "name": "ClientId",
+        "in": "header"
+      }
+    }
+  },
+  "security": [
+    {
+      "ApiKey": [],
+      "ClientId": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Main",
+      "description": ""
+    },
+    {
+      "name": "Events",
+      "description": ""
+    }
+  ]
+}
