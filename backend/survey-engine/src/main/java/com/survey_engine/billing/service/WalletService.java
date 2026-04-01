@@ -5,8 +5,9 @@ import com.survey_engine.billing.models.WalletTransaction;
 import com.survey_engine.billing.models.enums.WalletTransactionType;
 import com.survey_engine.billing.repository.WalletRepository;
 import com.survey_engine.billing.repository.WalletTransactionRepository;
+import com.survey_engine.common.exception.BusinessRuleException;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import com.survey_engine.user.UserApi;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -96,7 +97,7 @@ public class WalletService {
     @Transactional
     public void creditWallet(Long tenantId, Long userId, BigDecimal amount, String reference, String description) {
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Credit amount must be positive");
+            throw new BusinessRuleException("INVALID_AMOUNT", "Credit amount must be positive");
         }
 
         Wallet wallet = resolveWalletWithLock(tenantId, userId);
@@ -121,13 +122,14 @@ public class WalletService {
     @Transactional
     public void debitWallet(Long tenantId, Long userId, BigDecimal amount, String reference, String description) {
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Debit amount must be positive");
+            throw new BusinessRuleException("INVALID_AMOUNT", "Debit amount must be positive");
         }
 
         Wallet wallet = resolveWalletWithLock(tenantId, userId);
 
         if (wallet.getBalance().compareTo(amount) < 0) {
-            throw new IllegalStateException("Insufficient funds in wallet. Required: " + amount + ", Available: " + wallet.getBalance());
+            throw new BusinessRuleException("INSUFFICIENT_FUNDS",
+                    "Insufficient funds in wallet. Required: " + amount + ", Available: " + wallet.getBalance());
         }
 
         wallet.setBalance(wallet.getBalance().subtract(amount));
@@ -146,13 +148,41 @@ public class WalletService {
 
     private Wallet resolveWalletWithLock(Long tenantId, Long userId) {
         boolean isMainTenant = isMainTenant(tenantId);
-        
+
         if (isMainTenant && userId != null) {
              return walletRepository.findByUserIdAndIdIsNotNull(userId)
-                    .orElseGet(() -> getOrCreateWallet(tenantId, userId));
+                    .orElseGet(() -> createWalletSafely(tenantId, userId));
         } else {
              return walletRepository.findByTenantIdAndUserIdIsNullAndIdIsNotNull(tenantId)
-                    .orElseGet(() -> getOrCreateWallet(tenantId, userId));
+                    .orElseGet(() -> createWalletSafely(tenantId, null));
+        }
+    }
+
+    /**
+     * Creates a wallet, handling the race condition where two threads try
+     * to create the same wallet concurrently. If save fails with a unique
+     * constraint violation, retry the locked lookup.
+     */
+    private Wallet createWalletSafely(Long tenantId, Long userId) {
+        try {
+            Wallet wallet = new Wallet();
+            wallet.setTenantId(tenantId);
+            wallet.setUserId(userId);
+            wallet.setBalance(BigDecimal.ZERO);
+            wallet.setCurrency("KES");
+            return walletRepository.saveAndFlush(wallet);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            // Another thread created the wallet first — re-fetch with lock
+            log.info("Wallet creation race detected for tenant {} user {}, re-fetching with lock", tenantId, userId);
+            if (userId != null) {
+                return walletRepository.findByUserIdAndIdIsNotNull(userId)
+                        .orElseThrow(() -> new BusinessRuleException("WALLET_CREATION_FAILED",
+                                "Failed to create or find wallet for user " + userId));
+            } else {
+                return walletRepository.findByTenantIdAndUserIdIsNullAndIdIsNotNull(tenantId)
+                        .orElseThrow(() -> new BusinessRuleException("WALLET_CREATION_FAILED",
+                                "Failed to create or find wallet for tenant " + tenantId));
+            }
         }
     }
 
@@ -173,7 +203,7 @@ public class WalletService {
     public void migrateWalletToEnterprise(Long userId, Long newTenantId) {
         // Find user's personal wallet
         Wallet wallet = walletRepository.findByUserId(userId)
-                .orElseThrow(() -> new EntityNotFoundException("User wallet not found for migration. UserId: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("WALLET_NOT_FOUND", "User wallet not found for migration. UserId: " + userId));
 
         // Update to be a tenant wallet
         wallet.setUserId(null); // Clear user binding

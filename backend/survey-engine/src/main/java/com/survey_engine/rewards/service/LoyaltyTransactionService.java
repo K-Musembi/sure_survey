@@ -8,8 +8,9 @@ import com.survey_engine.rewards.models.enums.LoyaltyTransactionType;
 import com.survey_engine.rewards.repository.LoyaltyAccountRepository;
 import com.survey_engine.rewards.repository.LoyaltyTransactionRepository;
 import com.survey_engine.rewards.repository.RewardTransactionRepository;
+import com.survey_engine.common.exception.BusinessRuleException;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import com.survey_engine.user.UserApi;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -54,7 +55,7 @@ public class LoyaltyTransactionService {
         loyaltyAccountRepository.save(account);
 
         RewardTransaction rewardTransaction = rewardTransactionRepository.findById(rewardTransactionId)
-                .orElseThrow(() -> new EntityNotFoundException("RewardTransaction not found with id: " + rewardTransactionId));
+                .orElseThrow(() -> new ResourceNotFoundException("REWARD_TRANSACTION_NOT_FOUND", "RewardTransaction not found with id: " + rewardTransactionId));
 
         LoyaltyTransaction transaction = new LoyaltyTransaction();
         transaction.setLoyaltyAccount(account);
@@ -82,15 +83,15 @@ public class LoyaltyTransactionService {
     public void debitPoints(String userId, BigDecimal amount, String description) {
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             log.warn("Attempted to debit non-positive amount {} for user {}. Skipping.", amount, userId);
-            throw new IllegalArgumentException("Debit amount must be positive.");
+            throw new BusinessRuleException("INVALID_AMOUNT", "Debit amount must be positive.");
         }
 
         Long tenantId = userApi.getTenantId();
         LoyaltyAccount account = loyaltyAccountRepository.findByUserIdAndTenantId(userId, tenantId)
-                .orElseThrow(() -> new EntityNotFoundException("Loyalty account not found for user: " + userId + " and tenant: " + tenantId));
+                .orElseThrow(() -> new ResourceNotFoundException("LOYALTY_ACCOUNT_NOT_FOUND", "Loyalty account not found for user: " + userId));
 
         if (account.getBalance().compareTo(amount) < 0) {
-            throw new IllegalStateException("Insufficient balance to debit " + amount + " points from user: " + userId);
+            throw new BusinessRuleException("INSUFFICIENT_POINTS", "Insufficient balance to debit " + amount + " points from user: " + userId);
         }
 
         account.setBalance(account.getBalance().subtract(amount));
@@ -131,7 +132,7 @@ public class LoyaltyTransactionService {
     @Transactional(readOnly = true)
     public List<LoyaltyTransactionResponse> findTransactionsByAccountId(UUID accountId) {
         if (!loyaltyAccountRepository.existsById(accountId)) {
-            throw new EntityNotFoundException("Loyalty account not found with id: " + accountId);
+            throw new ResourceNotFoundException("LOYALTY_ACCOUNT_NOT_FOUND", "Loyalty account not found with id: " + accountId);
         }
         return loyaltyTransactionRepository.findByLoyaltyAccountId(accountId).stream()
                 .map(this::mapToResponse)

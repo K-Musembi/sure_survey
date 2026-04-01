@@ -57,4 +57,8 @@ public interface SurveyRepository extends JpaRepository<Survey, Long> {
     @EntityGraph(value = "Survey.withQuestions")
     @Override
     Optional<Survey> findById(Long id);
+
+    long countByUserId(String userId);
+
+    long countByTenantId(Long tenantId);
 }

@@ -22,5 +22,10 @@ public enum SubscriptionStatus {
     /**
      * The subscription is in a trial period.
      */
-    TRIALING
+    TRIALING,
+
+    /**
+     * The subscription billing period has ended without renewal.
+     */
+    EXPIRED
 }

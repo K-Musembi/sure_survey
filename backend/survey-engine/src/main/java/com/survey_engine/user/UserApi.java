@@ -2,7 +2,6 @@ package com.survey_engine.user;
 
 import com.survey_engine.user.models.Tenant;
 import com.survey_engine.user.models.User;
-import jakarta.persistence.EntityNotFoundException;
 import org.springframework.modulith.NamedInterface;
 
 import java.util.*;

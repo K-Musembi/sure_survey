@@ -1,6 +1,7 @@
 package com.survey_engine.billing.service;
 
 import com.survey_engine.billing.dto.paystack.*;
+import com.survey_engine.common.exception.ExternalServiceException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -44,7 +45,8 @@ public class PaystackSubscriptionService {
         } else {
             String errorMessage = response != null ? response.message() : "No response";
             log.error("Failed to create Paystack customer: {}", errorMessage);
-            throw new RuntimeException("Failed to create Paystack customer. Reason: " + errorMessage);
+            throw new ExternalServiceException("PAYSTACK_CUSTOMER_CREATION_FAILED",
+                    "Failed to create Paystack customer. Reason: " + errorMessage, null);
         }
     }
 
@@ -72,7 +74,8 @@ public class PaystackSubscriptionService {
         } else {
             String errorMessage = response != null ? response.message() : "No response";
             log.error("Failed to create Paystack subscription: {}", errorMessage);
-            throw new RuntimeException("Failed to create Paystack subscription. Reason: " + errorMessage);
+            throw new ExternalServiceException("PAYSTACK_SUBSCRIPTION_CREATION_FAILED",
+                    "Failed to create Paystack subscription. Reason: " + errorMessage, null);
         }
     }
 
@@ -100,7 +103,8 @@ public class PaystackSubscriptionService {
         } else {
             String errorMessage = response != null ? response.message() : "No response";
             log.error("Failed to cancel Paystack subscription {}: {}", subscriptionCode, errorMessage);
-            throw new RuntimeException("Failed to cancel Paystack subscription. Reason: " + errorMessage);
+            throw new ExternalServiceException("PAYSTACK_SUBSCRIPTION_CANCELLATION_FAILED",
+                    "Failed to cancel Paystack subscription. Reason: " + errorMessage, null);
         }
     }
 }

@@ -9,8 +9,9 @@ import com.survey_engine.rewards.models.Reward;
 import com.survey_engine.rewards.models.enums.RewardStatus;
 import com.survey_engine.rewards.models.enums.RewardType;
 import com.survey_engine.rewards.repository.RewardRepository;
+import com.survey_engine.common.exception.BusinessRuleException;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import com.survey_engine.user.UserApi;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
@@ -59,8 +60,8 @@ public class RewardService {
         // 3. Check & Debit Tenant Wallet (Cash)
         try {
             billingApi.debitWallet(tenantId, Long.valueOf(userId), totalCost, "Funding for reward campaign on survey " + rewardRequest.surveyId());
-        } catch (IllegalStateException e) {
-            throw new IllegalStateException("Insufficient funds to create reward. Required: " + totalCost + ". Please top up your wallet.");
+        } catch (Exception e) {
+            throw new BusinessRuleException("INSUFFICIENT_FUNDS", "Insufficient funds to create reward. Required: " + totalCost + ". Please top up your wallet.");
         }
 
         // 4. Check & Reserve System Inventory (Stock) if applicable
@@ -135,7 +136,7 @@ public class RewardService {
         Long tenantId = userApi.getTenantId();
         return rewardRepository.findBySurveyIdAndTenantId(surveyId, tenantId)
                 .map(this::mapToRewardResponse)
-                .orElseThrow(() -> new EntityNotFoundException("Reward not found for surveyId: " + surveyId));
+                .orElseThrow(() -> new ResourceNotFoundException("REWARD_NOT_FOUND", "Reward not found for surveyId: " + surveyId));
     }
 
     /**
@@ -166,14 +167,14 @@ public class RewardService {
     public RewardResponse cancelReward(UUID rewardId, String userId) {
         Long tenantId = userApi.getTenantId();
         Reward reward = rewardRepository.findByIdAndTenantId(rewardId, tenantId)
-                .orElseThrow(() -> new EntityNotFoundException("Reward not found with id: " + rewardId));
+                .orElseThrow(() -> new ResourceNotFoundException("REWARD_NOT_FOUND", "Reward not found with id: " + rewardId));
 
         if (!reward.getUserId().equals(userId)) {
             throw new AccessDeniedException("You do not have permission to cancel this reward.");
         }
 
         if (reward.getStatus() == RewardStatus.DEPLETED) {
-            throw new IllegalStateException("Cannot cancel a depleted reward.");
+            throw new BusinessRuleException("REWARD_DEPLETED", "Cannot cancel a depleted reward.");
         }
 
         // Refund logic

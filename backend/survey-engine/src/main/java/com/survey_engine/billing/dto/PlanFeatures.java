@@ -9,11 +9,13 @@ import java.util.List;
 public record PlanFeatures(
         Integer maxSurveys,                  // -1 = unlimited
         Integer maxResponsesPerSurvey,       // -1 = unlimited
-        List<String> channels,               // e.g., ["WEB", "SMS"]
+        List<String> channels,               // e.g., ["WEB", "SMS", "WHATSAPP"]
         Boolean aiAnalysis,
         Boolean referralEngine,
         Boolean performanceSurvey,
+        Boolean rewards,                     // true = can configure survey rewards (airtime, data, loyalty)
         Boolean webhooks,
-        Boolean isCustomPricing,             // true = Enterprise / contact sales
+        Boolean isCustomPricing,             // true = contact sales
+        Boolean businessIntelligence,        // true = Enterprise BI dashboards & reports
         List<String> displayFeatures         // human-readable feature list for UI
 ) {}

@@ -27,5 +27,6 @@ public record CampaignRequest(
         LocalDate startDate,
         LocalDate endDate,
         /* Describes the specific purpose for which referral data is collected (ODPC Art. 25). */
-        String purposeDescription
+        String purposeDescription,
+        UUID businessIntegrationId
 ) {}

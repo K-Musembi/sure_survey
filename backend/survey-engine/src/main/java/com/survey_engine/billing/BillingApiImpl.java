@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.survey_engine.billing.models.enums.PlanInterval;
 import com.survey_engine.billing.models.Plan;
+import com.survey_engine.common.exception.BusinessRuleException;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import com.survey_engine.billing.models.PlanGatewayMapping;
 import com.survey_engine.billing.models.enums.PaymentGatewayType;
 import com.survey_engine.billing.models.enums.SystemWalletType;
@@ -20,7 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Implementation of the {@link BillingApi} interface.
@@ -54,7 +58,7 @@ public class BillingApiImpl implements BillingApi {
                 String json = objectMapper.writeValueAsString(features);
                 plan.setFeatures(json);
             } catch (JsonProcessingException e) {
-                throw new RuntimeException("Failed to serialize plan features", e);
+                throw new BusinessRuleException("PLAN_FEATURES_SERIALIZATION_FAILED", "Failed to serialize plan features: " + e.getMessage());
             }
         }
         
@@ -65,7 +69,7 @@ public class BillingApiImpl implements BillingApi {
     @Transactional
     public void configurePlanGateway(Long planId, String gatewayType, String gatewayCode) {
         Plan plan = planRepository.findById(planId)
-                .orElseThrow(() -> new RuntimeException("Plan not found with ID: " + planId));
+                .orElseThrow(() -> new ResourceNotFoundException("PLAN_NOT_FOUND", "Plan not found with ID: " + planId));
 
         PaymentGatewayType type = PaymentGatewayType.valueOf(gatewayType);
 
@@ -136,9 +140,14 @@ public class BillingApiImpl implements BillingApi {
     }
 
     @Override
+    public void validateChannelAllowed(Long tenantId, Long userId, String channel) {
+        subscriptionLimitService.validateChannelAllowed(tenantId, userId, channel);
+    }
+
+    @Override
     public void updatePlan(Long planId, BigDecimal price, Map<String, Object> features) {
         Plan plan = planRepository.findById(planId)
-                .orElseThrow(() -> new RuntimeException("Plan not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("PLAN_NOT_FOUND", "Plan not found with ID: " + planId));
 
         if (price != null) {
             plan.setPrice(price);
@@ -148,7 +157,7 @@ public class BillingApiImpl implements BillingApi {
                 String json = objectMapper.writeValueAsString(features);
                 plan.setFeatures(json);
             } catch (JsonProcessingException e) {
-                throw new RuntimeException("Failed to serialize plan features", e);
+                throw new BusinessRuleException("PLAN_FEATURES_SERIALIZATION_FAILED", "Failed to serialize plan features: " + e.getMessage());
             }
         }
         planRepository.save(plan);
@@ -182,5 +191,23 @@ public class BillingApiImpl implements BillingApi {
     @Override
     public void migrateUserWalletToTenant(Long userId, Long newTenantId) {
         walletService.migrateWalletToEnterprise(userId, newTenantId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getAllSubscriptions() {
+        return subscriptionService.getAllSubscriptions();
+    }
+
+    @Override
+    @Transactional
+    public void updateSubscription(UUID subscriptionId, Map<String, Object> updates) {
+        subscriptionService.adminUpdateSubscription(subscriptionId, updates);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getSystemWalletStatus() {
+        return systemWalletService.getAllWalletStatus();
     }
 }

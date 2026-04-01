@@ -6,7 +6,7 @@ import com.survey_engine.survey.repository.TemplateQuestionRepository;
 import com.survey_engine.survey.repository.TemplateRepository;
 import com.survey_engine.survey.dto.TemplateQuestionRequest;
 import com.survey_engine.survey.dto.TemplateQuestionResponse;
-import jakarta.persistence.EntityNotFoundException;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -49,7 +49,7 @@ public class TemplateQuestionService {
             throw new AccessDeniedException("Only admins can create template questions.");
         }
         Template template = templateRepository.findById(templateId)
-                .orElseThrow(() -> new EntityNotFoundException("Template not found with id: " + templateId));
+                .orElseThrow(() -> new ResourceNotFoundException("TEMPLATE_NOT_FOUND", "Template not found with id: " + templateId));
 
         TemplateQuestion question = new TemplateQuestion();
         question.setTemplate(template);
@@ -77,7 +77,7 @@ public class TemplateQuestionService {
         }
         TemplateQuestion question = templateQuestionRepository.findById(questionId)
                 .filter(q -> q.getTemplate().getId().equals(templateId))
-                .orElseThrow(() -> new EntityNotFoundException("TemplateQuestion not found with id: " + questionId + " for template: " + templateId));
+                .orElseThrow(() -> new ResourceNotFoundException("TEMPLATE_QUESTION_NOT_FOUND", "TemplateQuestion not found with id: " + questionId + " for template: " + templateId));
 
         question.setQuestionText(request.questionText());
         question.setQuestionType(request.questionType());
@@ -101,7 +101,7 @@ public class TemplateQuestionService {
         }
         TemplateQuestion question = templateQuestionRepository.findById(questionId)
                 .filter(q -> q.getTemplate().getId().equals(templateId))
-                .orElseThrow(() -> new EntityNotFoundException("TemplateQuestion not found with id: " + questionId + " for template: " + templateId));
+                .orElseThrow(() -> new ResourceNotFoundException("TEMPLATE_QUESTION_NOT_FOUND", "TemplateQuestion not found with id: " + questionId + " for template: " + templateId));
         templateQuestionRepository.delete(question);
     }
 
@@ -113,7 +113,7 @@ public class TemplateQuestionService {
     @Transactional(readOnly = true)
     public List<TemplateQuestionResponse> getQuestionsByTemplateId(Long templateId) {
         if (!templateRepository.existsById(templateId)) {
-            throw new EntityNotFoundException("Template not found with id: " + templateId);
+            throw new ResourceNotFoundException("TEMPLATE_NOT_FOUND", "Template not found with id: " + templateId);
         }
         return templateQuestionRepository.findByTemplateId(templateId).stream()
                 .map(this::mapToResponse)
@@ -131,7 +131,7 @@ public class TemplateQuestionService {
         return templateQuestionRepository.findById(questionId)
                 .filter(q -> q.getTemplate().getId().equals(templateId))
                 .map(this::mapToResponse)
-                .orElseThrow(() -> new EntityNotFoundException("TemplateQuestion not found with id: " + questionId + " for template: " + templateId));
+                .orElseThrow(() -> new ResourceNotFoundException("TEMPLATE_QUESTION_NOT_FOUND", "TemplateQuestion not found with id: " + questionId + " for template: " + templateId));
     }
 
     /**

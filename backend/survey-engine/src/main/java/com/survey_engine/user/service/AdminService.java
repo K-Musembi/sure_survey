@@ -45,7 +45,8 @@ public class AdminService {
     @Transactional
     public UserResponse registerSystemAdmin(SignUpRequest request) {
         if (userRepository.findByEmail(request.email()).isPresent()) {
-            throw new RuntimeException("Email already exists");
+            throw new com.survey_engine.common.exception.BusinessRuleException(
+                    "EMAIL_ALREADY_EXISTS", "Email already exists");
         }
 
         User user = new User();
@@ -180,6 +181,44 @@ public class AdminService {
         return systemSettingRepository.saveAll(settingsToSave).stream()
                 .map(s -> new SystemSettingResponse(s.getKey(), s.getValue(), s.getDescription()))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Lists all subscriptions across the system.
+     */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getAllSubscriptions() {
+        return billingApi.getAllSubscriptions();
+    }
+
+    /**
+     * Admin updates a subscription (status, plan, period).
+     */
+    @Transactional
+    public void updateSubscription(java.util.UUID subscriptionId, Map<String, Object> updates) {
+        billingApi.updateSubscription(subscriptionId, updates);
+    }
+
+    /**
+     * Returns status of all system wallets.
+     */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getSystemWalletStatus() {
+        return billingApi.getSystemWalletStatus();
+    }
+
+    /**
+     * Returns high-level platform metrics for the admin dashboard.
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> getDashboardMetrics() {
+        Map<String, Object> metrics = new java.util.LinkedHashMap<>();
+        metrics.put("totalTenants", tenantRepository.count());
+        metrics.put("totalUsers", userRepository.count());
+        metrics.put("totalSurveys", surveyApi.getPlatformSurveyCount());
+        metrics.put("totalResponses", surveyApi.getPlatformResponseCount());
+        metrics.put("systemWallets", billingApi.getSystemWalletStatus());
+        return metrics;
     }
 
     /**

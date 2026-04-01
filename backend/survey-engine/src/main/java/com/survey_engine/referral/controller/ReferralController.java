@@ -16,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,14 +34,16 @@ public class ReferralController {
 
     @PostMapping("/campaigns")
     public ResponseEntity<ReferralCampaign> createCampaign(
-            @RequestParam Long tenantId,
+            @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody CampaignRequest request) {
+        Long tenantId = extractTenantId(jwt);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(referralService.createCampaign(tenantId, request));
     }
 
     @GetMapping("/campaigns")
-    public ResponseEntity<List<ReferralCampaign>> getCampaigns(@RequestParam Long tenantId) {
+    public ResponseEntity<List<ReferralCampaign>> getCampaigns(@AuthenticationPrincipal Jwt jwt) {
+        Long tenantId = extractTenantId(jwt);
         return ResponseEntity.ok(referralService.getCampaignsForTenant(tenantId));
     }
 
@@ -137,5 +141,9 @@ public class ReferralController {
         RequestStatus status = RequestStatus.valueOf(body.get("status"));
         String notes = body.get("notes");
         return ResponseEntity.ok(dataSubjectService.updateRequestStatus(dsrId, status, notes));
+    }
+
+    private Long extractTenantId(Jwt jwt) {
+        return jwt.getClaim("tenantId");
     }
 }

@@ -9,7 +9,7 @@ import com.survey_engine.rewards.repository.RewardRepository;
 import com.survey_engine.rewards.service.LoyaltyTransactionService;
 import com.survey_engine.rewards.service.RewardTransactionService;
 import com.survey_engine.user.UserApi;
-import jakarta.persistence.EntityNotFoundException;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -51,7 +51,7 @@ public class LoyaltyPointsProvider implements RewardProvider {
 
         Long tenantId = userApi.getTenantId();
         Reward reward = rewardRepository.findByIdAndTenantId(rewardId, tenantId)
-                .orElseThrow(() -> new EntityNotFoundException("Reward not found with id: " + rewardId + " for tenant: " + tenantId));
+                .orElseThrow(() -> new ResourceNotFoundException("REWARD_NOT_FOUND","Reward not found with id: " + rewardId + " for tenant: " + tenantId));
 
         if (reward.getRemainingRewards() <= 0) {
             log.warn("Reward campaign {} is already depleted. Cannot disburse loyalty points to responderId: {}", rewardId, responderId);

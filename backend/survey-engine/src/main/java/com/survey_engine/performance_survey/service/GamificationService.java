@@ -8,7 +8,6 @@ import com.survey_engine.performance_survey.repository.BadgeDefinitionRepository
 import com.survey_engine.performance_survey.repository.GamificationProfileRepository;
 import com.survey_engine.performance_survey.repository.UserBadgeRepository;
 import com.survey_engine.user.UserApi;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

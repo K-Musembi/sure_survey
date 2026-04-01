@@ -44,6 +44,13 @@ public class AiApiImpl implements AiApi {
 
     @Override
     public String analyzeSentiment(String text) {
+
         return insightService.analyzeSentiment(text);
+    }
+
+    @Override
+    public String suggestBranchRules(String surveyContext) {
+
+        return insightService.suggestBranchRules(surveyContext);
     }
 }

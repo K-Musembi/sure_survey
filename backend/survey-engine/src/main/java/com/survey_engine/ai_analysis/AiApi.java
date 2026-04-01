@@ -37,4 +37,10 @@ public interface AiApi {
      * Returns one of: POSITIVE | NEUTRAL | NEGATIVE
      */
     String analyzeSentiment(String text);
+
+    /**
+     * Suggests branch rules for a survey based on its questions and answer options.
+     * Returns a JSON string containing an array of suggested branch rules.
+     */
+    String suggestBranchRules(String surveyContext);
 }

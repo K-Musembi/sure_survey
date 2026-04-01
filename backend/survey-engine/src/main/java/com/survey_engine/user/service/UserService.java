@@ -6,7 +6,7 @@ import com.survey_engine.user.repository.TenantRepository;
 import com.survey_engine.user.repository.UserRepository;
 import com.survey_engine.user.dto.UserRequest;
 import com.survey_engine.user.dto.UserResponse;
-import jakarta.persistence.EntityNotFoundException;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +39,7 @@ public class UserService {
     public UserResponse findUserById(Long id) {
         Long tenantId = TenantContext.getTenantId();
         User user = userRepository.findByIdAndTenantId(id, tenantId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "User not found"));
 
         return mapToUserResponse(user);
     }
@@ -54,7 +54,7 @@ public class UserService {
     public UserResponse findUserByEmail(String email) {
         Long tenantId = TenantContext.getTenantId();
         User user =  userRepository.findByEmailAndTenantId(email, tenantId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "User not found"));
 
         return mapToUserResponse(user);
     }
@@ -99,7 +99,7 @@ public class UserService {
     public UserResponse updateUser(Long id, UserRequest userRequest) {
         Long tenantId = TenantContext.getTenantId();
         User user = userRepository.findByIdAndTenantId(id, tenantId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "User not found"));
 
         User savedUser = getUser(user, userRequest);
         return mapToUserResponse(savedUser);
@@ -114,7 +114,7 @@ public class UserService {
     public void deleteUser(Long id) {
         Long tenantId = TenantContext.getTenantId();
         User user = userRepository.findByIdAndTenantId(id, tenantId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "User not found"));
         userRepository.delete(user);
     }
 
@@ -144,7 +144,7 @@ public class UserService {
         }
         if (userRequest.tenantId() != null) {
             Tenant tenant = tenantRepository.findById(userRequest.tenantId())
-                    .orElseThrow(() -> new EntityNotFoundException("Tenant Not Found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("TENANT_NOT_FOUND", "Tenant not found"));
             user.setTenant(tenant);
             user.setTenantId(tenant.getId()); // Set tenantId in BaseEntity
         }

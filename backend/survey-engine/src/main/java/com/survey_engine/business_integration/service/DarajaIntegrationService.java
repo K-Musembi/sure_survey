@@ -9,8 +9,9 @@ import com.survey_engine.business_integration.models.BusinessTransaction;
 import com.survey_engine.business_integration.repository.BusinessIntegrationRepository;
 import com.survey_engine.business_integration.repository.BusinessTransactionRepository;
 import com.survey_engine.common.events.BusinessTransactionEvent;
+import com.survey_engine.common.exception.ExternalServiceException;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import com.survey_engine.user.UserApi;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -54,7 +55,7 @@ public class DarajaIntegrationService {
         
         // Check if individual user (default tenant)
         String tenantName = userApi.findTenantNameById(tenantId)
-                .orElseThrow(() -> new EntityNotFoundException("Tenant not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("TENANT_NOT_FOUND", "Tenant not found"));
         
         if ("Main Tenant".equalsIgnoreCase(tenantName) || "www".equalsIgnoreCase(tenantName)) {
              log.info("Individual user {} attempting integration. Upgrading to Enterprise Tenant: {}", userId, request.businessName());
@@ -106,7 +107,7 @@ public class DarajaIntegrationService {
                 // We don't roll back the transaction because the integration itself is valid, 
                 // but the external registration failed. The user can retry or register manually.
                 // However, throwing an exception alerts the user immediately.
-                throw new RuntimeException("Integration created, but failed to register URLs with Daraja: " + e.getMessage());
+                throw new ExternalServiceException("DARAJA_REGISTRATION_FAILED", "Integration created, but failed to register URLs with Daraja: " + e.getMessage());
             }
         }
 
@@ -135,7 +136,7 @@ public class DarajaIntegrationService {
     @Transactional
     public void processDarajaConfirmation(UUID integrationId, String secretToken, DarajaConfirmationRequest payload) {
         BusinessIntegration integration = integrationRepository.findById(integrationId)
-                .orElseThrow(() -> new EntityNotFoundException("Integration not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("INTEGRATION_NOT_FOUND", "Integration not found"));
 
         // 1. Verify Secret
         if (!integration.getCallbackSecretToken().equals(secretToken)) {
@@ -208,6 +209,7 @@ public class DarajaIntegrationService {
                 integration.getId(),
                 integration.getBusinessName(),
                 integration.getType(),
+                integration.getSurveyId(),
                 integration.getShortcode(),
                 callbackUrl,
                 integration.isActive()

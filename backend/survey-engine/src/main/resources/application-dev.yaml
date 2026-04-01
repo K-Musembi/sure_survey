@@ -34,7 +34,20 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://127.0.0.1:8080
+          issuer-uri: ${app-security.base-url:http://127.0.0.1:8080}
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enabled: true
+            required: true
+
   data:
     redis:
       port: 6379
@@ -85,8 +98,15 @@ jwt:
   expiration: 15           # access token lifetime in minutes
   refresh-expiration-days: 7  # refresh token lifetime in days
 
+cookie:
+  secure: ${COOKIE_SECURE:false}
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174,http://localhost:4173,http://127.0.0.1:5173}
+
 app:
-  base-url: ${APP_BASE_URL:http://localhost:5173}
+  frontend:
+    base-url: ${APP_FRONTEND_URL:http://localhost:5173}
 
 paystack:
   api:
@@ -95,8 +115,14 @@ paystack:
 
 africastalking:
   api:
-    api-key: SECRET_API_KEY
-    username: SECRET_USERNAME
+    api-key: ${AFRICASTALKING_API_KEY:username}
+    username: ${AFRICASTALKING_USERNAME:12345}
+
+whatsapp:
+  api:
+    base-url: https://graph.facebook.com/v18.0
+    access-token: ${WHATSAPP_ACCESS_TOKEN:access_token}
+    phone-number-id: ${WHATSAPP_PHONE_NUMBER_ID:0723929410}
 
 logging:
   level:
@@ -105,10 +131,10 @@ logging:
 
 credofaster:
   api:
-    base-url: https://api-test.partner.credofaster.co.ke
+    base-url: ${CREDOFASTER_BASE_URL:https://api-test.partner.credofaster.co.ke}
     airtime:
-      api-key: 050619d0-f940-4a81-b56f-06439c4e57a7
-      client-id: Paypot3_AIRTIME
+      api-key: ${CREDOFASTER_AIRTIME_API_KEY:050619d0-f940-4a81-b56f-06439c4e57a7}
+      client-id: ${CREDOFASTER_AIRTIME_CLIENT_ID:Paypot3_AIRTIME}
     data:
-      api-key: 23d0e61e-f1e4-4e00-9e54-47d51ca49af3
-      client-id: Paypot3_DATA
+      api-key: ${CREDOFASTER_DATA_API_KEY:23d0e61e-f1e4-4e00-9e54-47d51ca49af3}
+      client-id: ${CREDOFASTER_DATA_CLIENT_ID:Paypot3_DATA}

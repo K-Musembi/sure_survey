@@ -4,7 +4,7 @@
  * Cross-module access through IntelligenceApi (@NamedInterface "intelligence").
  */
 @ApplicationModule(
-    allowedDependencies = {"survey", "ai_analysis", "user", "common :: *"}
+    allowedDependencies = {"survey", "ai_analysis :: ai", "user", "common :: *"}
 )
 package com.survey_engine.intelligence;
 

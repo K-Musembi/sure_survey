@@ -8,6 +8,7 @@ import com.survey_engine.ai_analysis.dto.InsightReportResult;
 import com.survey_engine.common.exception.ResourceNotFoundException;
 import com.survey_engine.intelligence.domain.ActionPlan;
 import com.survey_engine.intelligence.domain.InsightReport;
+import com.survey_engine.intelligence.domain.enums.PlanStatus;
 import com.survey_engine.intelligence.domain.enums.Priority;
 import com.survey_engine.intelligence.domain.enums.ReportStatus;
 import com.survey_engine.intelligence.domain.enums.ReportType;
@@ -73,7 +74,8 @@ public class InsightGenerationService {
             // Fetch response data via SurveyApi
             Map<String, Object> surveyData = surveyApi.getSurveyById(report.getSurveyId());
             if (surveyData == null || surveyData.isEmpty()) {
-                throw new IllegalStateException("No data found for survey " + report.getSurveyId());
+                throw new ResourceNotFoundException("INTELLIGENCE_SURVEY_DATA_NOT_FOUND",
+                        "No data found for survey " + report.getSurveyId());
             }
 
             String surveyName = (String) surveyData.getOrDefault("name", "Survey");
@@ -169,7 +171,7 @@ public class InsightGenerationService {
             plan.setRecommendedAction(rec.recommendedAction());
             plan.setSuggestedOwner(rec.suggestedOwner());
             plan.setSuggestedTimeline(rec.suggestedTimeline());
-            plan.setStatus(ActionPlan.PlanStatus.PENDING);
+            plan.setStatus(PlanStatus.PENDING);
             plans.add(plan);
         }
         actionPlanRepository.saveAll(plans);
@@ -184,10 +186,14 @@ public class InsightGenerationService {
         }
     }
 
-    // ── Queries ───────────────────────────────────────────────────────────────
-
     public InsightReport getReport(UUID reportId) {
         return reportRepository.findById(reportId)
+                .orElseThrow(() -> new ResourceNotFoundException("INTELLIGENCE_REPORT_NOT_FOUND",
+                        "Report not found: " + reportId));
+    }
+
+    public InsightReport getReport(UUID reportId, Long tenantId) {
+        return reportRepository.findByIdAndTenantId(reportId, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("INTELLIGENCE_REPORT_NOT_FOUND",
                         "Report not found: " + reportId));
     }
@@ -197,9 +203,9 @@ public class InsightGenerationService {
     }
 
     public ReportSummary getSummary(Long tenantId) {
-        long pending = actionPlanRepository.countByTenantIdAndStatus(tenantId, ActionPlan.PlanStatus.PENDING);
-        long inProgress = actionPlanRepository.countByTenantIdAndStatus(tenantId, ActionPlan.PlanStatus.IN_PROGRESS);
-        long completed = actionPlanRepository.countByTenantIdAndStatus(tenantId, ActionPlan.PlanStatus.COMPLETED);
+        long pending = actionPlanRepository.countByTenantIdAndStatus(tenantId, PlanStatus.PENDING);
+        long inProgress = actionPlanRepository.countByTenantIdAndStatus(tenantId, PlanStatus.IN_PROGRESS);
+        long completed = actionPlanRepository.countByTenantIdAndStatus(tenantId, PlanStatus.COMPLETED);
         List<InsightReport> recent = reportRepository.findByTenantIdOrderByCreatedAtDesc(tenantId)
                 .stream().limit(5).toList();
         return new ReportSummary(pending, inProgress, completed, recent);

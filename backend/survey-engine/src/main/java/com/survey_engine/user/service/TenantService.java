@@ -4,7 +4,7 @@ import com.survey_engine.user.dto.TenantRequest;
 import com.survey_engine.user.dto.TenantResponse;
 import com.survey_engine.user.models.Tenant;
 import com.survey_engine.user.repository.TenantRepository;
-import jakarta.persistence.EntityNotFoundException;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -106,7 +106,7 @@ public class TenantService {
     @Transactional
     public TenantResponse findTenantById(Long id) {
         Tenant tenant = tenantRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Tenant not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("TENANT_NOT_FOUND", "Tenant not found"));
         return mapToTenantResponse(tenant);
     }
 
@@ -120,7 +120,7 @@ public class TenantService {
     @Transactional
     public TenantResponse findTenantByName(String name) {
         Tenant tenant =  tenantRepository.findByName(name)
-                .orElseThrow(() -> new EntityNotFoundException("Tenant not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("TENANT_NOT_FOUND", "Tenant not found"));
         return mapToTenantResponse(tenant);
     }
     
@@ -134,7 +134,7 @@ public class TenantService {
     @Transactional
     public TenantResponse findTenantBySlug(String slug) {
         Tenant tenant =  tenantRepository.findBySlug(slug)
-                .orElseThrow(() -> new EntityNotFoundException("Tenant not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("TENANT_NOT_FOUND", "Tenant not found"));
         return mapToTenantResponse(tenant);
     }
 
@@ -162,7 +162,7 @@ public class TenantService {
     @Transactional
     public TenantResponse updateTenant(Long id, TenantRequest tenantRequest) {
         Tenant tenant = tenantRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Tenant not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("TENANT_NOT_FOUND", "Tenant not found"));
 
         tenant.setName(tenantRequest.name());
         tenant.setSlug(tenantRequest.slug());
@@ -179,7 +179,7 @@ public class TenantService {
     @Transactional
     public void deleteTenant(Long id) {
         Tenant tenant = tenantRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Tenant not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("TENANT_NOT_FOUND", "Tenant not found"));
         tenantRepository.delete(tenant);
     }
 

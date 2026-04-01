@@ -50,7 +50,7 @@ public class DarajaApiClient {
             return rootNode.path("access_token").asText();
         } catch (Exception e) {
             log.error("Failed to get Daraja Access Token", e);
-            throw new RuntimeException("Failed to authenticate with Daraja: " + e.getMessage());
+            throw new com.survey_engine.common.exception.ExternalServiceException("DARAJA_AUTH_FAILED", "Failed to authenticate with Daraja: " + e.getMessage());
         }
     }
 
@@ -83,7 +83,7 @@ public class DarajaApiClient {
                     .block();
         } catch (Exception e) {
             log.error("Failed to register C2B URLs", e);
-            throw new RuntimeException("Failed to register URLs with Daraja: " + e.getMessage());
+            throw new com.survey_engine.common.exception.ExternalServiceException("DARAJA_REGISTRATION_FAILED", "Failed to register URLs with Daraja: " + e.getMessage());
         }
     }
 }

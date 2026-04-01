@@ -76,4 +76,10 @@ public class Survey extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "distribution_list_id")
     private DistributionList distributionList;
+
+    @Column(name = "requires_consent", nullable = false)
+    private boolean requiresConsent = true;
+
+    @Column(name = "consent_message", columnDefinition = "TEXT")
+    private String consentMessage;
 }

@@ -116,5 +116,44 @@ public class AiInsightService {
         return sb.toString();
     }
 
+    /**
+     * Suggests branch rules for a survey given its question context.
+     * Returns a raw JSON string with suggested rules.
+     */
+    public String suggestBranchRules(String surveyContext) {
+        String systemPrompt = """
+                You are an expert survey designer specializing in branching logic.
+                Given a survey's questions, suggest branch rules that would make the survey
+                more intelligent and adaptive. Each rule should specify:
+                - sourceQuestionId: the question that triggers the branch
+                - conditionType: one of ANSWER_EQUALS, SCORE_LT, SCORE_GT, SCORE_CATEGORY_LT, SCORE_CATEGORY_GT, ALWAYS
+                - conditionValue: JSON string with the condition parameters (e.g., {"optionIndex": 0} for ANSWER_EQUALS, {"threshold": 5.0} for SCORE_GT, {"threshold": 3.0, "category": "satisfaction"} for SCORE_CATEGORY_LT)
+                - targetQuestionId: the question to jump to (null to end survey)
+                - priority: integer (lower = higher priority)
+                - reasoning: brief explanation of why this rule is useful
+
+                Return ONLY a valid JSON array of rule suggestions. No markdown, no prose outside JSON.
+                Example: [{"sourceQuestionId": 1, "conditionType": "ANSWER_EQUALS", "conditionValue": "{\\"optionIndex\\": 0}", "targetQuestionId": 5, "priority": 1, "reasoning": "Skip detailed questions if user is not interested"}]
+                """;
+
+        try {
+            String rawResponse = chatClient.prompt()
+                    .system(systemPrompt)
+                    .user(surveyContext)
+                    .call()
+                    .content();
+
+            assert rawResponse != null;
+            return rawResponse.replace("```json", "").replace("```", "").trim();
+        } catch (Exception e) {
+            log.error("Failed to suggest branch rules: {}", e.getMessage(), e);
+            throw new ExternalServiceException(
+                    "AI_BRANCH_SUGGESTION_FAILED",
+                    "Failed to generate branch rule suggestions",
+                    e
+            );
+        }
+    }
+
     private static final List<String> SENTIMENTS = List.of("POSITIVE", "NEUTRAL", "NEGATIVE");
 }

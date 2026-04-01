@@ -16,4 +16,6 @@ public interface InsightReportRepository extends JpaRepository<InsightReport, UU
     List<InsightReport> findBySurveyIdOrderByCreatedAtDesc(Long surveyId);
 
     List<InsightReport> findByTenantIdAndStatus(Long tenantId, ReportStatus status);
+
+    java.util.Optional<InsightReport> findByIdAndTenantId(UUID id, Long tenantId);
 }

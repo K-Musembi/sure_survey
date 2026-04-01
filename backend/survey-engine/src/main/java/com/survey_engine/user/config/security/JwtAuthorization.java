@@ -56,6 +56,18 @@ public class JwtAuthorization {
     @Value("${jwt.keystore.alias}")
     private String keyAlias;
 
+    @Value("${oauth2.client.id:client}")
+    private String oauth2ClientId;
+
+    @Value("${oauth2.client.secret:secret}")
+    private String oauth2ClientSecret;
+
+    @Value("${oauth2.client.redirect-uri:http://127.0.0.1:8080/login/oauth2/code/client-oidc}")
+    private String oauth2RedirectUri;
+
+    @Value("${app-security.base-url:http://127.0.0.1:8080}")
+    private String issuerUri;
+
     /**
      * Creates and configures the primary {@link SecurityFilterChain} for the OAuth2 Authorization Server endpoints.
      * This chain is given high precedence with {@code @Order(1)} to ensure it acts before the default security filter chain.
@@ -116,13 +128,13 @@ public class JwtAuthorization {
     @Bean
     public RegisteredClientRepository registeredClientRepository(PasswordEncoder passwordEncoder) {
         RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
-                .clientId("client")
-                .clientSecret(passwordEncoder.encode("secret")) // Encode the secret
+                .clientId(oauth2ClientId)
+                .clientSecret(passwordEncoder.encode(oauth2ClientSecret))
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
                 .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                .redirectUri("http://127.0.0.1:8080/login/oauth2/code/client-oidc")
+                .redirectUri(oauth2RedirectUri)
                 .scope(OidcScopes.OPENID)
                 .scope("read")
                 .scope("write")
@@ -153,7 +165,7 @@ public class JwtAuthorization {
     @Bean
     public AuthorizationServerSettings authorizationServerSettings() {
         return AuthorizationServerSettings.builder()
-                .issuer("http://127.0.0.1:8080")
+                .issuer(issuerUri)
                 .build();
     }
 

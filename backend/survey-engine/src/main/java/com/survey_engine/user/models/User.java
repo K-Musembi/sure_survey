@@ -82,6 +82,9 @@ public class User extends BaseEntity implements UserDetails {
     @Column(name = "subscription_id")
     private UUID subscriptionId;
 
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified = false;
+
     /**
      * Returns the authorities granted to the user. The role is prefixed with "ROLE_"
      * to integrate with Spring Security's role-based authorization.

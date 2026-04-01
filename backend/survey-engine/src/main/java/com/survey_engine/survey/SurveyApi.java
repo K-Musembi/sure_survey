@@ -1,10 +1,10 @@
 package com.survey_engine.survey;
 
-import com.survey_engine.survey.repository.ResponseRepository;
 import org.springframework.modulith.NamedInterface;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Public API for the Survey module.
@@ -15,12 +15,22 @@ import java.util.Map;
 public interface SurveyApi {
 
     /**
-     * Retrieves the {@link ResponseRepository} for direct access to survey response data.
-     * This is primarily intended for internal module communication where direct repository access is necessary.
+     * Counts the number of responses for a given survey.
      *
-     * @return The {@link ResponseRepository} instance.
+     * @param surveyId The ID of the survey.
+     * @return The number of responses.
      */
-    ResponseRepository getResponseRepository();
+    long countResponsesBySurveyId(Long surveyId);
+
+    /**
+     * Retrieves a single response's answer data by response ID.
+     * Returns a map with keys: id, surveyId, participantId, sessionId, submissionDate,
+     * metadata (JSON string), answers (list of maps with questionId, answerValue).
+     *
+     * @param responseId The ID of the response.
+     * @return An Optional containing the response data map, or empty if not found.
+     */
+    Optional<Map<String, Object>> getResponseById(Long responseId);
 
     /**
      * Retrieves a list of survey data for a given tenant ID.
@@ -57,4 +67,24 @@ public interface SurveyApi {
      * @return A Map representing the survey and its data, or null.
      */
     Map<String, Object> getSurveyById(Long surveyId);
+
+    /**
+     * Counts surveys owned by a specific user (efficient COUNT query, no entity loading).
+     */
+    long countSurveysByUserId(String userId);
+
+    /**
+     * Counts surveys belonging to a specific tenant (efficient COUNT query, no entity loading).
+     */
+    long countSurveysByTenantId(Long tenantId);
+
+    /**
+     * Returns the total number of surveys across the platform.
+     */
+    long getPlatformSurveyCount();
+
+    /**
+     * Returns the total number of responses across the platform.
+     */
+    long getPlatformResponseCount();
 }

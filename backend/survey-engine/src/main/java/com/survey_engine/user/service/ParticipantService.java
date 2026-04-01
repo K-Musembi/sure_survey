@@ -4,7 +4,7 @@ import com.survey_engine.user.dto.ParticipantRequest;
 import com.survey_engine.user.dto.ParticipantResponse;
 import com.survey_engine.user.models.Participant;
 import com.survey_engine.user.repository.ParticipantRepository;
-import jakarta.persistence.EntityNotFoundException;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,7 +46,7 @@ public class ParticipantService {
     @Transactional(readOnly = true)
     public ParticipantResponse findParticipantById(Long participantId) {
         Participant participant = participantRepository.findById(participantId)
-                .orElseThrow(() -> new EntityNotFoundException("Participant not found with id: " + participantId));
+                .orElseThrow(() -> new ResourceNotFoundException("PARTICIPANT_NOT_FOUND", "Participant not found with id: " + participantId));
 
         return mapToResponse(participant);
     }
@@ -60,7 +60,7 @@ public class ParticipantService {
     @Transactional
     public void deleteParticipant(Long participantId) {
         Participant participant = participantRepository.findById(participantId)
-                .orElseThrow(() -> new EntityNotFoundException("Participant not found with id: " + participantId));
+                .orElseThrow(() -> new ResourceNotFoundException("PARTICIPANT_NOT_FOUND", "Participant not found with id: " + participantId));
 
         participantRepository.delete(participant);
     }

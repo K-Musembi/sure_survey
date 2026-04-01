@@ -5,6 +5,8 @@ import com.survey_engine.billing.models.enums.SubscriptionStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -58,4 +60,9 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, UUID
      * @return An {@link Optional} containing the found Subscription or empty if not found.
      */
     Optional<Subscription> findByGatewaySubscriptionId(String gatewaySubscriptionId);
+
+    /**
+     * Finds all subscriptions with the given status whose period has ended before the given date.
+     */
+    List<Subscription> findByStatusAndCurrentPeriodEndBefore(SubscriptionStatus status, LocalDateTime cutoff);
 }

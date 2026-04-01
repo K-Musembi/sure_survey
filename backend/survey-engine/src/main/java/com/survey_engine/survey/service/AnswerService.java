@@ -6,7 +6,7 @@ import com.survey_engine.survey.repository.ResponseRepository;
 import com.survey_engine.survey.models.Answer;
 import com.survey_engine.survey.repository.AnswerRepository;
 import com.survey_engine.survey.repository.ResponseRepository;
-import jakarta.persistence.EntityNotFoundException;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -47,7 +47,7 @@ public class AnswerService {
     @Transactional(readOnly = true)
     public List<AnswerResponse> getAnswersByResponseId(Long responseId, String userId, List<String> roles) {
         Response response = responseRepository.findById(responseId)
-                .orElseThrow(() -> new EntityNotFoundException("Response not found with id: " + responseId));
+                .orElseThrow(() -> new ResourceNotFoundException("RESPONSE_NOT_FOUND", "Response not found with id: " + responseId));
 
         // Authorization: Allow survey owner or admin
         if (!response.getSurvey().getUserId().equals(userId) && (roles == null || !roles.contains("ADMIN"))) {
@@ -70,7 +70,7 @@ public class AnswerService {
     @Transactional(readOnly = true)
     public AnswerResponse getAnswerById(Long answerId, String userId, List<String> roles) {
         Answer answer = answerRepository.findById(answerId)
-                .orElseThrow(() -> new EntityNotFoundException("Answer not found with id: " + answerId));
+                .orElseThrow(() -> new ResourceNotFoundException("ANSWER_NOT_FOUND", "Answer not found with id: " + answerId));
 
         // Authorization: Allow survey owner or admin
         if (!answer.getResponse().getSurvey().getUserId().equals(userId) && (roles == null || !roles.contains("ADMIN"))) {

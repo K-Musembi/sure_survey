@@ -69,6 +69,9 @@ public class ReferralCampaign {
     @Column(name = "end_date")
     private LocalDate endDate;
 
+    @Column(name = "business_integration_id")
+    private UUID businessIntegrationId;
+
     @Column(name = "purpose_description", columnDefinition = "TEXT")
     private String purposeDescription;
 

@@ -42,7 +42,8 @@ public class SecurityConfig {
         http
                 .securityMatcher("/api/v1/auth/**", "/api/v1/integrations/webhook/**", "/api/v1/webhooks/**",
                         "/api/v1/billing/plans",
-                        "/api/v1/referrals/subjects/access", "/api/v1/referrals/subjects/erasure")
+                        "/api/v1/referrals/subjects/access", "/api/v1/referrals/subjects/erasure",
+                        "/r/**")
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())

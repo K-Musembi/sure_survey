@@ -107,6 +107,8 @@ public class AuditAspect {
             for (int i = 0; i < parameterNames.length; i++) {
                 if (isSensitive(parameterNames[i])) {
                     params.put(parameterNames[i], "******");
+                } else if (isNonSerializable(parameterValues[i])) {
+                    params.put(parameterNames[i], parameterValues[i].getClass().getSimpleName());
                 } else {
                     params.put(parameterNames[i], parameterValues[i]);
                 }
@@ -127,5 +129,12 @@ public class AuditAspect {
     private boolean isSensitive(String paramName) {
         String lowerCaseParamName = paramName.toLowerCase();
         return lowerCaseParamName.contains("password") || lowerCaseParamName.contains("token") || lowerCaseParamName.contains("jwt");
+    }
+
+    private boolean isNonSerializable(Object value) {
+        return value instanceof jakarta.servlet.ServletRequest
+                || value instanceof jakarta.servlet.ServletResponse
+                || value instanceof java.io.InputStream
+                || value instanceof java.io.OutputStream;
     }
 }

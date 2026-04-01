@@ -9,7 +9,7 @@ import com.survey_engine.rewards.models.enums.RewardType;
 import com.survey_engine.rewards.repository.RewardRepository;
 import com.survey_engine.rewards.service.AirtimeRewardService;
 import com.survey_engine.rewards.service.RewardTransactionService;
-import jakarta.persistence.EntityNotFoundException;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -52,7 +52,7 @@ public class AfricasTalkingAirtimeProvider implements RewardProvider {
     @Override
     public void disburse(UUID rewardId, String responderId) {
         Reward reward = rewardRepository.findById(rewardId)
-                .orElseThrow(() -> new EntityNotFoundException("Reward not found with id: " + rewardId));
+                .orElseThrow(() -> new ResourceNotFoundException("REWARD_NOT_FOUND","Reward not found with id: " + rewardId));
 
         log.info("Queueing disbursement of {} for rewardId: {} to responderId: {}", reward.getRewardType(), reward.getId(), responderId);
 

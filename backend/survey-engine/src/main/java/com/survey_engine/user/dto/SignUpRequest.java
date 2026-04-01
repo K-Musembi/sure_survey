@@ -27,8 +27,8 @@ public record SignUpRequest(
 
         @Sanitize
         @NotBlank(message = "Password is required")
-        @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[a-zA-Z\\d]{8,}$",
-                message = "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number.")
+        @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?]).{8,72}$",
+                message = "Password must be 8-72 characters with at least one uppercase, one lowercase, one digit, and one special character.")
         String password,
 
         @Sanitize

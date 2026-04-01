@@ -1,8 +1,9 @@
 package com.survey_engine.billing.service;
 
 import com.survey_engine.billing.dto.SubscriberInfo;
+import com.survey_engine.common.exception.BusinessRuleException;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import com.survey_engine.user.UserApi;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -31,21 +32,21 @@ public class WebhookSubscriberFinder {
         Object customerObject = eventData.get("customer");
         if (!(customerObject instanceof Map)) {
             log.error("Customer data is not a Map in webhook payload: {}", eventData);
-            throw new IllegalArgumentException("Invalid customer data in webhook payload.");
+            throw new BusinessRuleException("INVALID_WEBHOOK_PAYLOAD","Invalid customer data in webhook payload.");
         }
         Map<String, Object> customerData = (Map<String, Object>) customerObject;
         String email = (String) customerData.get("email");
 
         if (email == null) {
             log.error("Email is null in customer data: {}", customerData);
-            throw new IllegalArgumentException("Customer email is missing in webhook payload.");
+            throw new BusinessRuleException("INVALID_WEBHOOK_PAYLOAD","Customer email is missing in webhook payload.");
         }
 
         Long tenantId = userApi.findTenantIdByEmail(email)
-                .orElseThrow(() -> new EntityNotFoundException("Tenant not found for email: " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("SUBSCRIBER_NOT_FOUND","Tenant not found for email: " + email));
 
         Long userId = userApi.findUserIdByEmail(email)
-                .orElseThrow(() -> new EntityNotFoundException("User not found for email: " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("SUBSCRIBER_NOT_FOUND","User not found for email: " + email));
 
         return new SubscriberInfo(tenantId, userId);
     }

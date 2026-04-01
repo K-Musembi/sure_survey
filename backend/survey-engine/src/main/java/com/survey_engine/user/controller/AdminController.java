@@ -8,6 +8,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -32,6 +33,9 @@ public class AdminController {
     private final AdminService adminService;
     private final AuthService authService;
 
+    @Value("${cookie.secure:false}")
+    private boolean cookieSecure;
+
     /**
      * Endpoint for SUPER_ADMIN login.
      * This endpoint is an exception to the class-level PreAuthorize,
@@ -46,10 +50,10 @@ public class AdminController {
     public ResponseEntity<LoginResponse> loginSuperAdmin(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
         LoginResponse loginResponse = authService.loginSuperAdmin(request);
         response.addCookie(createCookie(loginResponse.token()));
-        // Set refresh token cookie for admin too
         if (loginResponse.refreshToken() != null) {
             Cookie refreshCookie = new Cookie("refresh_token", loginResponse.refreshToken());
             refreshCookie.setHttpOnly(true);
+            refreshCookie.setSecure(cookieSecure);
             refreshCookie.setPath("/api/v1/auth/refresh");
             refreshCookie.setMaxAge(7 * 24 * 60 * 60);
             response.addCookie(refreshCookie);
@@ -153,13 +157,12 @@ public class AdminController {
         Long planId = ((Number) request.get("planId")).longValue();
         BigDecimal price = request.get("price") != null ? new BigDecimal(request.get("price").toString()) : null;
         @SuppressWarnings("unchecked")
-        java.util.Map<String, Object> features = (java.util.Map<String, Object>) request.get("features");
+        Map<String, Object> features = (Map<String, Object>) request.get("features");
 
         adminService.updatePlan(planId, price, features);
         return ResponseEntity.ok().build();
     }
-    
-    // NOTE: I need to change the parameter type of updatePlan in AdminController from PlanUpdateRequest to Map.
+
 
     /**
      * Restocks the system wallet (inventory) via external provider.
@@ -174,6 +177,43 @@ public class AdminController {
     }
 
     /**
+     * Retrieves the status of all system wallets (inventory levels).
+     */
+    @GetMapping("/system-wallet/status")
+    public ResponseEntity<List<Map<String, Object>>> getSystemWalletStatus() {
+        return ResponseEntity.ok(adminService.getSystemWalletStatus());
+    }
+
+    /**
+     * Returns high-level platform metrics for the admin dashboard.
+     */
+    @GetMapping("/dashboard")
+    public ResponseEntity<Map<String, Object>> getDashboard() {
+        return ResponseEntity.ok(adminService.getDashboardMetrics());
+    }
+
+    /**
+     * Lists all subscriptions across the system.
+     */
+    @GetMapping("/subscriptions")
+    @Auditable(action = "VIEW_ALL_SUBSCRIPTIONS")
+    public ResponseEntity<List<Map<String, Object>>> getAllSubscriptions() {
+        return ResponseEntity.ok(adminService.getAllSubscriptions());
+    }
+
+    /**
+     * Admin-level subscription adjustment (status, plan, period).
+     */
+    @PatchMapping("/subscriptions/{subscriptionId}")
+    @Auditable(action = "UPDATE_SUBSCRIPTION")
+    public ResponseEntity<Void> updateSubscription(
+            @PathVariable java.util.UUID subscriptionId,
+            @RequestBody Map<String, Object> updates) {
+        adminService.updateSubscription(subscriptionId, updates);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
      * Creates a secure, HTTP-only cookie for the JWT token.
      *
      * @param token The JWT token.
@@ -182,8 +222,8 @@ public class AdminController {
     private Cookie createCookie(String token) {
         Cookie cookie = new Cookie("access_token", token);
         cookie.setHttpOnly(true);
+        cookie.setSecure(cookieSecure);
         cookie.setPath("/");
-        // cookie.setSecure(true); // Should be enabled in production (HTTPS)
         cookie.setMaxAge(60 * 60 * 8); // 8 hours
         return cookie;
     }

@@ -110,7 +110,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
         logger.error("MethodArgumentNotValidException: {}", ex.getMessage());
-        ErrorResponse errorResponse = new ErrorResponse("VALIDATION ERROR", "BAD_REQUEST");
+        String message = ex.getBindingResult().getFieldErrors().stream()
+                .map(error -> error.getDefaultMessage())
+                .findFirst()
+                .orElse("Validation failed");
+        ErrorResponse errorResponse = new ErrorResponse(message, "BAD_REQUEST");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 

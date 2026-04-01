@@ -8,8 +8,8 @@ import com.survey_engine.payments.models.PaymentEvent;
 import com.survey_engine.payments.models.enums.PaymentGateway;
 import com.survey_engine.payments.models.enums.PaymentStatus;
 import com.survey_engine.payments.repository.PaymentEventRepository;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import com.survey_engine.user.UserApi;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -43,11 +43,16 @@ public class PaymentEventService {
      */
     @Transactional
     public Mono<PaymentEventResponse> createPaymentEvent(PaymentEventRequest request, String userId, String userEmail) {
+        return createPaymentEvent(request, userId, userEmail, null);
+    }
+
+    @Transactional
+    public Mono<PaymentEventResponse> createPaymentEvent(PaymentEventRequest request, String userId, String userEmail, String returnPath) {
         Long tenantId = userApi.getTenantId();
 
         return validateIdempotency(request.idempotencyKey(), tenantId)
                 .then(Mono.fromCallable(() -> UUID.randomUUID().toString())) // Generate reference after idempotency check
-                .flatMap(reference -> paystackService.initializePayment(request, userEmail, reference))
+                .flatMap(reference -> paystackService.initializePayment(request, userEmail, reference, returnPath))
                 .flatMap(this::validatePaystackInitializationResponse)
                 .flatMap(paystackResponse -> {
                     PaymentEvent paymentEvent = persistPaymentEvent(request, paystackResponse, userId, userEmail, tenantId);
@@ -91,7 +96,7 @@ public class PaymentEventService {
     private Mono<PaystackResponse> validatePaystackInitializationResponse(PaystackResponse paystackResponse) {
         if (paystackResponse == null || !paystackResponse.status()) {
             log.error("PayStack initialization failed: {}", paystackResponse != null ? paystackResponse.message() : "No response");
-            return Mono.error(new IllegalStateException("PaymentEvent gateway failed to initialize transaction."));
+            return Mono.error(new com.survey_engine.common.exception.ExternalServiceException("PAYMENT_GATEWAY_INIT_FAILED", "Payment gateway failed to initialize transaction."));
         }
         return Mono.just(paystackResponse);
     }
@@ -109,7 +114,7 @@ public class PaymentEventService {
         return paymentRepository.findById(id)
                 .filter(pe -> pe.getTenantId().equals(tenantId))
                 .map(this::mapToPaymentEventDetails)
-                .orElseThrow(() -> new EntityNotFoundException("PaymentEvent with ID " + id + " not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("PAYMENT_EVENT_NOT_FOUND", "PaymentEvent with ID " + id + " not found."));
     }
 
     /**

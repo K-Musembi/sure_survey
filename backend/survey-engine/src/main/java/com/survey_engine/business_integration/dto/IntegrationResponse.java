@@ -8,6 +8,7 @@ public record IntegrationResponse(
         UUID id,
         String businessName,
         BusinessIntegrationType type,
+        Long surveyId,
         String shortcode,
         String callbackUrl, // The URL they need to copy to Daraja
         boolean isActive

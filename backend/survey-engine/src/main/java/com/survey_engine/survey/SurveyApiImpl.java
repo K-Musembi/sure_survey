@@ -10,11 +10,12 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
  * Implementation of the {@link SurveyApi} interface.
- * Provides concrete access to survey-related repositories for inter-module communication.
+ * Provides concrete access to survey-related data for inter-module communication.
  */
 @Service
 @RequiredArgsConstructor
@@ -26,23 +27,32 @@ class SurveyApiImpl implements SurveyApi {
     @org.springframework.beans.factory.annotation.Value("${survey.web.base-url}")
     private String webBaseUrl;
 
-    /**
-     * Retrieves the {@link ResponseRepository} instance.
-     *
-     * @return The {@link ResponseRepository} instance.
-     */
     @Override
-    public ResponseRepository getResponseRepository() {
-        return responseRepository;
+    public long countResponsesBySurveyId(Long surveyId) {
+        return responseRepository.countBySurveyId(surveyId);
     }
 
-    /**
-     * Retrieves all surveys for a given tenant ID and maps them to a list of Maps.
-     * This prevents leaking the Survey entity to other modules.
-     *
-     * @param tenantId The ID of the tenant.
-     * @return A list of Maps, where each map contains key survey attributes.
-     */
+    @Override
+    public Optional<Map<String, Object>> getResponseById(Long responseId) {
+        return responseRepository.findById(responseId)
+                .map(response -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("id", response.getId());
+                    map.put("surveyId", response.getSurvey().getId());
+                    map.put("surveyUserId", response.getSurvey().getUserId());
+                    map.put("participantId", response.getParticipantId());
+                    map.put("sessionId", response.getSessionId());
+                    map.put("submissionDate", response.getSubmissionDate());
+                    map.put("metadata", response.getMetadata());
+                    map.put("answers", response.getAnswers().stream()
+                            .map(a -> Map.of(
+                                    "questionId", (Object) a.getQuestion().getId(),
+                                    "answerValue", (Object) a.getAnswerValue()
+                            )).collect(Collectors.toList()));
+                    return map;
+                });
+    }
+
     @Override
     public List<Map<String, Object>> findSurveysByTenantId(Long tenantId) {
         List<Survey> surveys = surveyRepository.findByTenantId(tenantId);
@@ -86,6 +96,26 @@ class SurveyApiImpl implements SurveyApi {
     }
 
     @Override
+    public long countSurveysByUserId(String userId) {
+        return surveyRepository.countByUserId(userId);
+    }
+
+    @Override
+    public long countSurveysByTenantId(Long tenantId) {
+        return surveyRepository.countByTenantId(tenantId);
+    }
+
+    @Override
+    public long getPlatformSurveyCount() {
+        return surveyRepository.count();
+    }
+
+    @Override
+    public long getPlatformResponseCount() {
+        return responseRepository.count();
+    }
+
+    @Override
     public Map<String, Object> getSurveyById(Long surveyId) {
         return surveyRepository.findById(surveyId)
                 .map(survey -> {
@@ -94,6 +124,8 @@ class SurveyApiImpl implements SurveyApi {
                     map.put("name", survey.getName());
                     map.put("type", survey.getType().toString());
                     map.put("status", survey.getStatus().toString());
+                    map.put("userId", survey.getUserId());
+                    map.put("urlCode", survey.getUrlCode());
 
                     // Include questions with scoring metadata
                     List<Map<String, Object>> questionMaps = survey.getQuestions().stream()

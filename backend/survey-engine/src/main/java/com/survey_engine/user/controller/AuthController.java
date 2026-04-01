@@ -3,6 +3,7 @@ package com.survey_engine.user.controller;
 import com.survey_engine.common.auditing.Auditable;
 import com.survey_engine.user.dto.*;
 import com.survey_engine.user.service.AuthService;
+import com.survey_engine.user.service.EmailVerificationService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -14,10 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * HTTP endpoints for registering new users and authenticating existing users.
@@ -32,9 +30,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final EmailVerificationService emailVerificationService;
 
     @Value("${jwt.expiration:15}")
     private long jwtExpirationMinutes;
+
+    @Value("${cookie.secure:false}")
+    private boolean cookieSecure;
 
     @PostMapping("/signup")
     public ResponseEntity<UserResponse> registerUser(@Valid @RequestBody SignUpRequest request) {
@@ -87,6 +89,37 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/verify-email")
+    public ResponseEntity<Void> verifyEmail(@RequestParam String token) {
+        emailVerificationService.verifyEmail(token);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<Void> resendVerification(@RequestParam String email) {
+        emailVerificationService.resendVerification(email);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Initiates forgot-password flow — sends a reset link to the user's email.
+     * Always returns 200 regardless of whether the email exists (prevents enumeration).
+     */
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Void> forgotPassword(@RequestParam String email) {
+        emailVerificationService.sendPasswordResetEmail(email);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Resets the user's password using the one-time token from the reset email.
+     */
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody PasswordResetRequest request) {
+        emailVerificationService.resetPassword(request.token(), request.newPassword());
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/logout")
     @Auditable(action = "USER_LOGOUT")
     public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
@@ -102,8 +135,8 @@ public class AuthController {
     private void setAccessCookie(HttpServletResponse response, String token) {
         Cookie cookie = new Cookie("access_token", token);
         cookie.setHttpOnly(true);
+        cookie.setSecure(cookieSecure);
         cookie.setPath("/");
-        // cookie.setSecure(true); // enable in production
         cookie.setMaxAge((int) (jwtExpirationMinutes * 60));
         response.addCookie(cookie);
     }
@@ -111,8 +144,8 @@ public class AuthController {
     private void setRefreshCookie(HttpServletResponse response, String token) {
         Cookie cookie = new Cookie("refresh_token", token);
         cookie.setHttpOnly(true);
-        cookie.setPath("/api/v1/auth/refresh"); // restrict refresh cookie to the refresh endpoint
-        // cookie.setSecure(true); // enable in production
+        cookie.setSecure(cookieSecure);
+        cookie.setPath("/api/v1/auth/refresh");
         cookie.setMaxAge(7 * 24 * 60 * 60); // 7 days
         response.addCookie(cookie);
     }

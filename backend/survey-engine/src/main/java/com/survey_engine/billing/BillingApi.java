@@ -1,9 +1,12 @@
 package com.survey_engine.billing;
 
 import org.springframework.modulith.NamedInterface;
+import com.survey_engine.common.exception.BusinessRuleException;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Public API for the Billing module, exposing subscription and invoice management functionalities.
@@ -67,7 +70,7 @@ public interface BillingApi {
      * @param userId The ID of the user (nullable for enterprise tenants).
      * @param amount The amount to debit.
      * @param description A description of the transaction.
-     * @throws IllegalStateException if funds are insufficient.
+     * @throws com.survey_engine.common.exception.BusinessRuleException if funds are insufficient.
      */
     void debitWallet(Long tenantId, Long userId, BigDecimal amount, String description);
 
@@ -84,7 +87,7 @@ public interface BillingApi {
      * Validates if the tenant is allowed to create a new survey based on their subscription.
      * @param tenantId The ID of the tenant.
      * @param userId The ID of the user creating the survey.
-     * @throws IllegalStateException if the limit is reached.
+     * @throws BusinessRuleException if the limit is reached.
      */
     void validateSurveyCreationLimit(Long tenantId, Long userId);
 
@@ -92,9 +95,18 @@ public interface BillingApi {
      * Validates if a survey is allowed to accept more responses based on the subscription.
      * @param tenantId The ID of the tenant.
      * @param surveyId The ID of the survey.
-     * @throws IllegalStateException if the limit is reached.
+     * @throws BusinessRuleException if the limit is reached.
      */
     void validateResponseLimit(Long tenantId, Long surveyId);
+
+    /**
+     * Validates if the given channel is allowed by the tenant's subscription plan.
+     * @param tenantId The ID of the tenant.
+     * @param userId The ID of the survey owner.
+     * @param channel The channel to validate (e.g., "WEB", "SMS", "WHATSAPP").
+     * @throws BusinessRuleException if the channel is not allowed on the current plan.
+     */
+    void validateChannelAllowed(Long tenantId, Long userId, String channel);
 
     /**
      * Updates a subscription plan's price and features.
@@ -152,4 +164,23 @@ public interface BillingApi {
      * @param newTenantId The ID of the new tenant.
      */
     void migrateUserWalletToTenant(Long userId, Long newTenantId);
+
+    /**
+     * Retrieves all subscriptions in the system. Admin use only.
+     * @return List of subscription data maps.
+     */
+    List<Map<String, Object>> getAllSubscriptions();
+
+    /**
+     * Updates a subscription's status or plan. Admin use only.
+     * @param subscriptionId The subscription UUID.
+     * @param updates Map of fields to update (e.g., "status", "planId").
+     */
+    void updateSubscription(UUID subscriptionId, Map<String, Object> updates);
+
+    /**
+     * Returns the status of all system wallets.
+     * @return List of wallet status maps with walletType, currentBalance, reservedBalance, availableBalance.
+     */
+    List<Map<String, Object>> getSystemWalletStatus();
 }

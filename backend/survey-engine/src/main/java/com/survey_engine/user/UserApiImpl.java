@@ -7,7 +7,7 @@ import com.survey_engine.user.repository.ParticipantRepository;
 import com.survey_engine.user.repository.UserRepository;
 import com.survey_engine.user.repository.TenantRepository;
 import com.survey_engine.user.service.TenantContext;
-import jakarta.persistence.EntityNotFoundException;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -167,7 +167,7 @@ public class UserApiImpl implements UserApi {
         }
         return userOptional
                 .map(User::getName)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "User not found with id: " + userId));
     }
 
     @Override
@@ -183,7 +183,7 @@ public class UserApiImpl implements UserApi {
     public String getUserDepartmentById(String userId) {
         return userRepository.findById(Long.parseLong(userId))
                 .map(User::getDepartment)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "User not found with id: " + userId));
     }
 
     @Override
@@ -214,7 +214,7 @@ public class UserApiImpl implements UserApi {
     @org.springframework.transaction.annotation.Transactional
     public void updateUserSubscriptionId(Long userId, java.util.UUID subscriptionId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "User not found with id: " + userId));
         user.setSubscriptionId(subscriptionId);
         userRepository.save(user);
     }
@@ -223,7 +223,7 @@ public class UserApiImpl implements UserApi {
     @Transactional
     public void updateTenantSubscriptionId(Long tenantId, UUID subscriptionId) {
         Tenant tenant = tenantRepository.findById(tenantId)
-                .orElseThrow(() -> new EntityNotFoundException("Tenant not found with id: " + tenantId));
+                .orElseThrow(() -> new ResourceNotFoundException("TENANT_NOT_FOUND", "Tenant not found with id: " + tenantId));
         tenant.setSubscriptionId(subscriptionId);
         tenantRepository.save(tenant);
     }
@@ -242,7 +242,7 @@ public class UserApiImpl implements UserApi {
     @Transactional
     public Long upgradeUserToEnterprise(Long userId, String businessName) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "User not found with id: " + userId));
 
         // Create new Tenant
         TenantRequest request = new TenantRequest(businessName, businessName.toLowerCase().replaceAll("\\s+", "-"));

@@ -8,8 +8,8 @@ import com.survey_engine.performance_survey.models.structure.PerformanceSubject;
 import com.survey_engine.performance_survey.models.structure.OrgUnit;
 import com.survey_engine.performance_survey.repository.PerformanceSubjectRepository;
 import com.survey_engine.performance_survey.repository.OrgUnitRepository;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import com.survey_engine.user.UserApi;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,7 +35,7 @@ public class HierarchyService {
         
         if (request.parentId() != null) {
             if (!orgUnitRepository.existsById(request.parentId())) {
-                throw new EntityNotFoundException("Parent OrgUnit not found");
+                throw new ResourceNotFoundException("ORG_UNIT_NOT_FOUND","Parent OrgUnit not found");
             }
             orgUnit.setParentId(request.parentId());
         }
@@ -49,7 +49,7 @@ public class HierarchyService {
     @Transactional
     public PerformanceSubjectResponse addSubject(PerformanceSubjectRequest request) {
         OrgUnit orgUnit = orgUnitRepository.findById(request.orgUnitId())
-                .orElseThrow(() -> new EntityNotFoundException("OrgUnit not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("ORG_UNIT_NOT_FOUND","OrgUnit not found"));
 
         PerformanceSubject subject = new PerformanceSubject();
         subject.setUserId(request.userId());

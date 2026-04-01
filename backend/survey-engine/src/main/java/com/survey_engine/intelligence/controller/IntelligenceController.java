@@ -12,6 +12,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,37 +34,47 @@ public class IntelligenceController {
 
     @PostMapping("/reports")
     public ResponseEntity<Map<String, Object>> requestReport(
-            @RequestParam Long tenantId,
+            @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody GenerateReportRequest request) {
+        Long tenantId = extractTenantId(jwt);
         UUID reportId = insightService.requestReport(tenantId, request);
         return ResponseEntity.status(HttpStatus.ACCEPTED)
                 .body(Map.of("reportId", reportId, "status", "GENERATING"));
     }
 
     @GetMapping("/reports/{reportId}")
-    public ResponseEntity<InsightReport> getReport(@PathVariable UUID reportId) {
-        return ResponseEntity.ok(insightService.getReport(reportId));
+    public ResponseEntity<InsightReport> getReport(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID reportId) {
+        Long tenantId = extractTenantId(jwt);
+        return ResponseEntity.ok(insightService.getReport(reportId, tenantId));
     }
 
     @GetMapping("/reports")
-    public ResponseEntity<List<InsightReport>> getReportsForTenant(@RequestParam Long tenantId) {
+    public ResponseEntity<List<InsightReport>> getReportsForTenant(@AuthenticationPrincipal Jwt jwt) {
+        Long tenantId = extractTenantId(jwt);
         return ResponseEntity.ok(insightService.getReportsForTenant(tenantId));
     }
 
     @GetMapping("/summary")
-    public ResponseEntity<ReportSummary> getSummary(@RequestParam Long tenantId) {
+    public ResponseEntity<ReportSummary> getSummary(@AuthenticationPrincipal Jwt jwt) {
+        Long tenantId = extractTenantId(jwt);
         return ResponseEntity.ok(insightService.getSummary(tenantId));
     }
 
     @GetMapping("/reports/{reportId}/action-plans")
-    public ResponseEntity<List<ActionPlan>> getPlansForReport(@PathVariable UUID reportId) {
-        return ResponseEntity.ok(actionPlanService.getPlansForReport(reportId));
+    public ResponseEntity<List<ActionPlan>> getPlansForReport(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID reportId) {
+        Long tenantId = extractTenantId(jwt);
+        return ResponseEntity.ok(actionPlanService.getPlansForReport(reportId, tenantId));
     }
 
     @GetMapping("/action-plans")
     public ResponseEntity<List<ActionPlan>> getPlansForTenant(
-            @RequestParam Long tenantId,
+            @AuthenticationPrincipal Jwt jwt,
             @RequestParam(required = false) PlanStatus status) {
+        Long tenantId = extractTenantId(jwt);
         if (status != null) {
             return ResponseEntity.ok(actionPlanService.getPlansForTenantByStatus(tenantId, status));
         }
@@ -71,8 +83,14 @@ public class IntelligenceController {
 
     @PatchMapping("/action-plans/{planId}")
     public ResponseEntity<ActionPlan> updatePlan(
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID planId,
             @RequestBody UpdateActionPlanRequest request) {
-        return ResponseEntity.ok(actionPlanService.updatePlan(planId, request));
+        Long tenantId = extractTenantId(jwt);
+        return ResponseEntity.ok(actionPlanService.updatePlan(planId, tenantId, request));
+    }
+
+    private Long extractTenantId(Jwt jwt) {
+        return jwt.getClaim("tenantId");
     }
 }

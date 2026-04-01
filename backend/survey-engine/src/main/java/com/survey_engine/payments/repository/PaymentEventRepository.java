@@ -48,4 +48,12 @@ public interface PaymentEventRepository extends JpaRepository<PaymentEvent, UUID
      * @return An Optional containing the found PaymentEvent or empty if not found.
      */
     Optional<PaymentEvent> findByGatewayTransactionId(String gatewayTransactionId);
+
+    /**
+     * Finds a PaymentEvent by gateway reference with a pessimistic write lock.
+     * Used by webhook processing to prevent duplicate concurrent processing.
+     */
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("SELECT pe FROM PaymentEvent pe WHERE pe.gatewayTransactionId = :ref")
+    Optional<PaymentEvent> findByGatewayTransactionIdForUpdate(@org.springframework.data.repository.query.Param("ref") String gatewayTransactionId);
 }

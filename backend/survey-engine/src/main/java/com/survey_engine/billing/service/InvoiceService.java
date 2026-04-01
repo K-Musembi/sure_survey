@@ -6,7 +6,7 @@ import com.survey_engine.billing.models.enums.InvoiceStatus;
 import com.survey_engine.billing.repository.InvoiceRepository;
 import com.survey_engine.billing.repository.SubscriptionRepository;
 import com.survey_engine.user.UserApi;
-import jakarta.persistence.EntityNotFoundException;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -48,7 +48,7 @@ public class InvoiceService {
     public Invoice findInvoiceById(UUID invoiceId, Long tenantId, Long userId) {
         return invoiceRepository.findById(invoiceId)
                 .filter(invoice -> invoice.getTenantId().equals(tenantId) && (invoice.getUserId() == null || invoice.getUserId().equals(userId)))
-                .orElseThrow(() -> new EntityNotFoundException("Invoice not found with ID: " + invoiceId));
+                .orElseThrow(() -> new ResourceNotFoundException("INVOICE_NOT_FOUND","Invoice not found with ID: " + invoiceId));
     }
 
     /**

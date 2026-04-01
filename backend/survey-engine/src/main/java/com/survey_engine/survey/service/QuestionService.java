@@ -7,7 +7,8 @@ import com.survey_engine.survey.dto.QuestionResponse;
 import com.survey_engine.survey.models.Survey;
 import com.survey_engine.survey.repository.SurveyRepository;
 import com.survey_engine.survey.repository.QuestionRepository;
-import jakarta.persistence.EntityNotFoundException;
+import com.survey_engine.common.exception.BusinessRuleException;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -48,7 +49,7 @@ public class QuestionService {
     @Transactional
     public QuestionResponse createQuestion(Long surveyId, QuestionRequest questionRequest, String userId, List<String> roles) {
         Survey survey = surveyRepository.findById(surveyId)
-                .orElseThrow(() -> new EntityNotFoundException("Survey not found with id: " + surveyId));
+                .orElseThrow(() -> new ResourceNotFoundException("SURVEY_NOT_FOUND", "Survey not found with id: " + surveyId));
 
         // Authorization check: only owner or an admin can add a question
         if (!survey.getUserId().equals(userId) && (roles == null || !roles.contains("ADMIN"))) {
@@ -57,7 +58,7 @@ public class QuestionService {
 
         // Business rule: Questions can only be added to surveys in DRAFT status.
         if (survey.getStatus() != SurveyStatus.DRAFT) {
-            throw new IllegalStateException("Questions can only be added to surveys in DRAFT status.");
+            throw new BusinessRuleException("SURVEY_NOT_DRAFT", "Questions can only be added to surveys in DRAFT status.");
         }
 
         Question question = new Question();
@@ -79,7 +80,7 @@ public class QuestionService {
     @Transactional(readOnly = true)
     public List<QuestionResponse> getQuestionsBySurveyId(Long surveyId) {
         if (!surveyRepository.existsById(surveyId)) {
-            throw new EntityNotFoundException("Survey not found with id: " + surveyId);
+            throw new ResourceNotFoundException("SURVEY_NOT_FOUND", "Survey not found with id: " + surveyId);
         }
         List<Question> questions = questionRepository.findBySurveyId(surveyId);
         return questions.stream()
@@ -95,7 +96,7 @@ public class QuestionService {
     @Transactional(readOnly = true)
     public QuestionResponse getQuestionById(Long questionId) {
         Question question = questionRepository.findById(questionId)
-                .orElseThrow(() -> new EntityNotFoundException("Question not found with id: " + questionId));
+                .orElseThrow(() -> new ResourceNotFoundException("QUESTION_NOT_FOUND", "Question not found with id: " + questionId));
         return mapToQuestionResponse(question);
     }
 
@@ -110,7 +111,7 @@ public class QuestionService {
     @Transactional
     public QuestionResponse updateQuestion(Long questionId, QuestionRequest questionRequest, String userId, List<String> roles) {
         Question question = questionRepository.findById(questionId)
-                .orElseThrow(() -> new EntityNotFoundException("Question not found with id: " + questionId));
+                .orElseThrow(() -> new ResourceNotFoundException("QUESTION_NOT_FOUND", "Question not found with id: " + questionId));
 
         Survey survey = question.getSurvey();
         // Authorization check: only owner or an admin can update
@@ -120,7 +121,7 @@ public class QuestionService {
 
         // Business rule: Questions can only be modified on surveys in DRAFT status.
         if (survey.getStatus() != SurveyStatus.DRAFT) {
-            throw new IllegalStateException("Questions can only be modified on surveys in DRAFT status.");
+            throw new BusinessRuleException("SURVEY_NOT_DRAFT", "Questions can only be modified on surveys in DRAFT status.");
         }
 
         question.setQuestionText(questionRequest.questionText());
@@ -141,7 +142,7 @@ public class QuestionService {
     @Transactional
     public void deleteQuestion(Long questionId, String userId, List<String> roles) {
         Question question = questionRepository.findById(questionId)
-                .orElseThrow(() -> new EntityNotFoundException("Question not found with id: " + questionId));
+                .orElseThrow(() -> new ResourceNotFoundException("QUESTION_NOT_FOUND", "Question not found with id: " + questionId));
 
         Survey survey = question.getSurvey();
         // Authorization check: only owner or an admin can delete
@@ -151,7 +152,7 @@ public class QuestionService {
 
         // Business rule: Questions can only be deleted from surveys in DRAFT status.
         if (survey.getStatus() != SurveyStatus.DRAFT) {
-            throw new IllegalStateException("Questions can only be deleted from surveys in DRAFT status.");
+            throw new BusinessRuleException("SURVEY_NOT_DRAFT", "Questions can only be deleted from surveys in DRAFT status.");
         }
 
         questionRepository.delete(question);

@@ -2,6 +2,8 @@ package com.survey_engine.referral.service;
 
 import com.survey_engine.common.events.SurveyCompletedEvent;
 import com.survey_engine.referral.domain.ReferralCampaign;
+import com.survey_engine.referral.domain.ReferralInvite;
+import com.survey_engine.referral.domain.enums.InviteStatus;
 import com.survey_engine.referral.domain.enums.RewardTrigger;
 import com.survey_engine.referral.repository.ReferralCampaignRepository;
 import com.survey_engine.referral.repository.ReferralInviteRepository;
@@ -31,19 +33,37 @@ public class ReferralSurveyEventListener {
     /**
      * When a survey is completed, check if the respondent has any pending referral invites
      * for this survey's campaign and mark them as completed.
+     * The responderId may be a phone number (SMS responses) or a participantId (web opt-in).
+     * We match against the referredPhone field on OPTED_IN invites for active campaigns.
      */
     @Async
     @EventListener
     public void onSurveyCompleted(SurveyCompletedEvent event) {
         try {
+            if (event.responderId() == null) return;
+
             List<ReferralCampaign> campaigns = referralService.getActiveCampaignsForSurvey(event.surveyId());
             for (ReferralCampaign campaign : campaigns) {
-                if (campaign.getRewardTrigger() == RewardTrigger.SURVEY_COMPLETE) {
-                    // Find OPTED_IN invites for this respondent's phone (via participantId)
-                    // The responderId may be a phone number or a userId — we match on best-effort
-                    // A more precise match would require the SMS gateway to pass the invite UUID
-                    log.debug("Survey completed event: checking referral invites for campaign {} respondent {}",
-                            campaign.getId(), event.responderId());
+                if (campaign.getRewardTrigger() != RewardTrigger.SURVEY_COMPLETE) {
+                    continue;
+                }
+
+                // Find OPTED_IN invites where referredPhone matches the responderId
+                List<ReferralInvite> matchingInvites = inviteRepository.findByReferredPhone(event.responderId());
+                for (ReferralInvite invite : matchingInvites) {
+                    if (invite.getStatus() != InviteStatus.OPTED_IN) {
+                        continue;
+                    }
+
+                    try {
+                        referralService.onActionCompleted(invite.getId());
+                        log.info("Referral action completed for invite {} on survey {} respondent {}",
+                                invite.getId(), event.surveyId(), event.responderId());
+                    } catch (Exception e) {
+                        // Don't fail the entire loop — log and continue
+                        log.warn("Failed to complete referral action for invite {}: {}",
+                                invite.getId(), e.getMessage());
+                    }
                 }
             }
         } catch (Exception e) {

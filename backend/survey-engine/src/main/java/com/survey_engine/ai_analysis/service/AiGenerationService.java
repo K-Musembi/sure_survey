@@ -54,7 +54,7 @@ public class AiGenerationService {
                   {
                     "questionText": "string",
                     "questionType": "FREE_TEXT | MULTIPLE_CHOICE_SINGLE | MULTIPLE_CHOICE_MULTI | NPS_SCALE | RATING_STAR | RATING_LINEAR",
-                    "options": "string (JSON array of options if applicable, else null)",
+                    "options": ["option1", "option2"] or null if not applicable,
                     "position": integer
                   }
                 ]
@@ -75,7 +75,7 @@ public class AiGenerationService {
             String cleanJson = jsonResponse.replace("```json", "").replace("```", "").trim();
             return objectMapper.readValue(cleanJson, new TypeReference<List<AiGeneratedQuestion>>() {});
         } catch (Exception e) {
-            throw new RuntimeException("Failed to parse AI response", e);
+            throw new com.survey_engine.common.exception.ExternalServiceException("AI_RESPONSE_PARSE_FAILED", "Failed to parse AI response: " + e.getMessage());
         }
     }
 }

@@ -39,6 +39,9 @@ public class Wallet extends BaseEntity {
     @Column(nullable = false, length = 3)
     private String currency;
 
+    @Version
+    private Long version;
+
     @Override
     protected void onCreate() {
         super.onCreate();

@@ -19,8 +19,9 @@ public class ActionPlanService {
 
     private final ActionPlanRepository actionPlanRepository;
 
-    public List<ActionPlan> getPlansForReport(UUID reportId) {
-        return actionPlanRepository.findByReportIdOrderByPriorityAsc(reportId);
+    public List<ActionPlan> getPlansForReport(UUID reportId, Long tenantId) {
+        return actionPlanRepository.findByReportIdOrderByPriorityAsc(reportId)
+                .stream().filter(p -> p.getTenantId().equals(tenantId)).toList();
     }
 
     public List<ActionPlan> getPlansForTenant(Long tenantId) {
@@ -32,8 +33,9 @@ public class ActionPlanService {
     }
 
     @Transactional
-    public ActionPlan updatePlan(UUID planId, UpdateActionPlanRequest request) {
+    public ActionPlan updatePlan(UUID planId, Long tenantId, UpdateActionPlanRequest request) {
         ActionPlan plan = actionPlanRepository.findById(planId)
+                .filter(p -> p.getTenantId().equals(tenantId))
                 .orElseThrow(() -> new ResourceNotFoundException("INTELLIGENCE_ACTION_PLAN_NOT_FOUND",
                         "Action plan not found: " + planId));
 

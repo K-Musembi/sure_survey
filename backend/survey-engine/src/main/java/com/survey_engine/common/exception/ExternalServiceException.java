@@ -11,4 +11,8 @@ public class ExternalServiceException extends SurveyPlatformException {
     public ExternalServiceException(String errorCode, String message, Throwable cause) {
         super(errorCode, message, HttpStatus.BAD_GATEWAY, cause);
     }
+
+    public ExternalServiceException(String errorCode, String message) {
+        super(errorCode, message, HttpStatus.BAD_GATEWAY, null);
+    }
 }

@@ -13,6 +13,7 @@ import java.util.List;
  * @param submissionDate The date and time the response was submitted.
  * @param participantId The ID of the user who submitted the response.
  * @param answers The list of answers included in the response.
+ * @param nextQuestionId The ID of the next question (from branch rules). Null = end survey, absent = linear progression.
  */
 public record ResponseResponse(
         Long id,
@@ -20,6 +21,13 @@ public record ResponseResponse(
         ResponseStatus status,
         LocalDateTime submissionDate,
         String participantId,
-        List<AnswerResponse> answers
+        List<AnswerResponse> answers,
+        Long nextQuestionId
 ) {
+    /** Constructor without nextQuestionId for backwards compatibility (listing/retrieval). */
+    public ResponseResponse(Long id, Long surveyId, ResponseStatus status,
+                            LocalDateTime submissionDate, String participantId,
+                            List<AnswerResponse> answers) {
+        this(id, surveyId, status, submissionDate, participantId, answers, null);
+    }
 }

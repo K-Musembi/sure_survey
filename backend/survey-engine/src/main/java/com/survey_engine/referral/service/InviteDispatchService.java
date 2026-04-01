@@ -26,7 +26,7 @@ public class InviteDispatchService {
     private final ApplicationEventPublisher eventPublisher;
     private final SystemSettingRepository settingRepository;
 
-    @Value("${app.base-url:http://localhost:5173}")
+    @Value("${app.frontend.base-url:http://localhost:5173}")
     private String appBaseUrl;
 
     @Async

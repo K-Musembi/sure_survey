@@ -12,7 +12,7 @@ import com.survey_engine.survey.models.Survey;
 import com.survey_engine.survey.repository.DistributionListRepository;
 import com.survey_engine.survey.repository.SurveyRepository;
 import com.survey_engine.user.UserApi;
-import jakarta.persistence.EntityNotFoundException;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -100,7 +100,7 @@ public class DistributionListService {
     public DistributionListResponse getDistributionListById(String userId, UUID id) {
         Long tenantId = userApi.getTenantId();
         DistributionList list = distributionListRepository.findByIdAndTenantIdAndUserId(id, tenantId, userId)
-                .orElseThrow(() -> new EntityNotFoundException("Distribution list not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("DISTRIBUTION_LIST_NOT_FOUND", "Distribution list not found"));
         return mapToResponse(list);
     }
 
@@ -108,7 +108,7 @@ public class DistributionListService {
     public DistributionListResponse addContacts(String userId, UUID id, List<ContactRequest> contactRequests) {
         Long tenantId = userApi.getTenantId();
         DistributionList list = distributionListRepository.findByIdAndTenantIdAndUserId(id, tenantId, userId)
-                .orElseThrow(() -> new EntityNotFoundException("Distribution list not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("DISTRIBUTION_LIST_NOT_FOUND", "Distribution list not found"));
 
         if (contactRequests != null && !contactRequests.isEmpty()) {
             for (ContactRequest req : contactRequests) {
@@ -136,7 +136,7 @@ public class DistributionListService {
     @Transactional
     public void addContactToSurveyList(Long surveyId, String phoneNumber, String firstName, String lastName) {
         Survey survey = surveyRepository.findById(surveyId)
-                .orElseThrow(() -> new EntityNotFoundException("Survey not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("SURVEY_NOT_FOUND", "Survey not found"));
 
         DistributionList list = survey.getDistributionList();
         if (list == null) {
@@ -259,9 +259,9 @@ public class DistributionListService {
                 }
             }
         } catch (IOException e) {
-            throw new RuntimeException("Failed to read CSV file: " + e.getMessage());
+            throw new com.survey_engine.common.exception.BusinessRuleException("CSV_READ_FAILED", "Failed to read CSV file: " + e.getMessage());
         } catch (CsvValidationException e) {
-            throw new RuntimeException("Failed to parse CSV file due to validation error: " + e.getMessage());
+            throw new com.survey_engine.common.exception.BusinessRuleException("CSV_VALIDATION_FAILED", "Failed to parse CSV file due to validation error: " + e.getMessage());
         }
         return contacts;
     }

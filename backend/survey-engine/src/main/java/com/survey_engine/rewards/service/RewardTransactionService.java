@@ -2,8 +2,8 @@ package com.survey_engine.rewards.service;
 
 import com.survey_engine.rewards.dto.RewardTransactionResponse;
 import com.survey_engine.rewards.repository.RewardTransactionRepository;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import com.survey_engine.user.UserApi;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,7 +42,7 @@ public class RewardTransactionService {
     public RewardTransaction createPendingTransaction(UUID rewardId, String participantId, String recipientIdentifier) {
         Long tenantId = userApi.getTenantId();
         Reward reward = rewardRepository.findByIdAndTenantId(rewardId, tenantId)
-                .orElseThrow(() -> new EntityNotFoundException("Reward not found with id: " + rewardId));
+                .orElseThrow(() -> new ResourceNotFoundException("REWARD_NOT_FOUND","Reward not found with id: " + rewardId));
 
         RewardTransaction transaction = new RewardTransaction();
         transaction.setReward(reward);
@@ -63,7 +63,7 @@ public class RewardTransactionService {
     @Transactional
     public void updateTransactionStatus(UUID transactionId, RewardTransactionStatus status, String providerTransactionId, String failureReason) {
         RewardTransaction transaction = rewardTransactionRepository.findById(transactionId)
-                .orElseThrow(() -> new EntityNotFoundException("RewardTransaction not found with id: " + transactionId));
+                .orElseThrow(() -> new ResourceNotFoundException("REWARD_NOT_FOUND","RewardTransaction not found with id: " + transactionId));
 
         transaction.setStatus(status);
         transaction.setProviderTransactionId(providerTransactionId);
@@ -82,7 +82,7 @@ public class RewardTransactionService {
     public RewardTransactionResponse findTransactionById(UUID transactionId) {
         return rewardTransactionRepository.findById(transactionId)
                 .map(this::mapToResponse)
-                .orElseThrow(() -> new EntityNotFoundException("Reward transaction not found with id: " + transactionId));
+                .orElseThrow(() -> new ResourceNotFoundException("REWARD_NOT_FOUND","Reward transaction not found with id: " + transactionId));
     }
 
     /**

@@ -4,7 +4,9 @@ import com.survey_engine.payments.dto.PaymentEventDetails;
 import com.survey_engine.payments.dto.PaymentEventRequest;
 import com.survey_engine.payments.dto.PaymentEventResponse;
 import com.survey_engine.payments.dto.TopUpRequest;
+import com.survey_engine.payments.dto.paystack.PaystackVerifyResponse;
 import com.survey_engine.payments.service.PaymentEventService;
+import com.survey_engine.payments.service.PaystackService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +32,7 @@ import java.util.UUID;
 public class PaymentEventController {
 
     private final PaymentEventService paymentService;
+    private final PaystackService paystackService;
     private final com.survey_engine.user.UserApi userApi;
 
     /**
@@ -76,7 +79,7 @@ public class PaymentEventController {
         );
 
         log.info("Initializing wallet top-up for user {}", userId);
-        return paymentService.createPaymentEvent(internalRequest, userId, userEmail)
+        return paymentService.createPaymentEvent(internalRequest, userId, userEmail, topUpRequest.returnPath())
                 .map(response -> ResponseEntity.status(HttpStatus.CREATED).body(response));
     }
 
@@ -109,15 +112,30 @@ public class PaymentEventController {
 
     /**
      * Retrieves the details of a single payment by its ID.
-     * Note: In a real-world scenario, you would add authorization here to ensure
-     * the user requesting the payment is the one who owns it.
+     * Tenant-scoped via the service layer using the authenticated user's tenant.
      *
-     * @param id The UUID of the payment.
+     * @param jwt The authenticated user's JWT.
+     * @param id  The UUID of the payment.
      * @return The payment details.
      */
+    /**
+     * Verifies a payment's status with Paystack by reference.
+     * Called by the frontend after Paystack redirects back.
+     */
+    @GetMapping("/verify/{reference}")
+    public Mono<ResponseEntity<PaystackVerifyResponse>> verifyPayment(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String reference) {
+        log.info("Verifying payment reference {} for user {}", reference, jwt.getSubject());
+        return paystackService.verifyPayment(reference)
+                .map(ResponseEntity::ok);
+    }
+
     @GetMapping("/{id}")
-    public ResponseEntity<PaymentEventDetails> getPaymentEventById(@PathVariable UUID id) {
-        log.info("Fetching payment details for paymentId {}", id);
+    public ResponseEntity<PaymentEventDetails> getPaymentEventById(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID id) {
+        log.info("Fetching payment details for paymentId {} by user {}", id, jwt.getSubject());
         PaymentEventDetails payment = paymentService.findPaymentEventById(id);
         return ResponseEntity.ok(payment);
     }

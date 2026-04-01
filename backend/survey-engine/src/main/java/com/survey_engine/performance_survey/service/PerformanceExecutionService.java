@@ -49,10 +49,13 @@ public class PerformanceExecutionService {
             return;
         }
 
-        // 2. Fetch answers
-        var responseOpt = surveyApi.getResponseRepository().findById(event.responseId());
+        // 2. Fetch answers via SurveyApi (module boundary safe)
+        var responseOpt = surveyApi.getResponseById(event.responseId());
         if (responseOpt.isEmpty()) return;
-        var response = responseOpt.get();
+        var responseData = responseOpt.get();
+
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> answers = (List<Map<String, Object>>) responseData.get("answers");
 
         // 3. Calculate Score
         List<QuestionScoringRule> rules = configService.findRulesEntity(schema.getId());
@@ -61,10 +64,12 @@ public class PerformanceExecutionService {
 
         double totalScore = 0.0;
 
-        for (var answer : response.getAnswers()) {
-            QuestionScoringRule rule = ruleMap.get(answer.getQuestion().getId());
+        for (var answer : answers) {
+            Long questionId = ((Number) answer.get("questionId")).longValue();
+            String answerValue = (String) answer.get("answerValue");
+            QuestionScoringRule rule = ruleMap.get(questionId);
             if (rule != null) {
-                double questionScore = calculateQuestionScore(rule, answer.getAnswerValue());
+                double questionScore = calculateQuestionScore(rule, answerValue);
                 totalScore += questionScore;
             }
         }
@@ -108,12 +113,15 @@ public class PerformanceExecutionService {
     }
 
     private PerformanceSubject resolveSubject(Long responseId, Long tenantId) {
-        var response = surveyApi.getResponseRepository().findById(responseId).get();
+        var responseOpt = surveyApi.getResponseById(responseId);
+        if (responseOpt.isEmpty()) return null;
+        var responseData = responseOpt.get();
 
         // A. Try metadata attribution
-        if (response.getMetadata() != null) {
+        String metadata = (String) responseData.get("metadata");
+        if (metadata != null) {
             try {
-                Map<String, String> meta = objectMapper.readValue(response.getMetadata(), new TypeReference<>() {});
+                Map<String, String> meta = objectMapper.readValue(metadata, new TypeReference<>() {});
                 String subjectRef = meta.get("subjectRef");
                 if (subjectRef != null) {
                     Optional<PerformanceSubject> subject = performanceSubjectRepository.findByReferenceCodeAndTenantId(subjectRef, tenantId);
@@ -124,9 +132,8 @@ public class PerformanceExecutionService {
             }
         }
 
-
         // B. Fallback: Survey Owner
-        String ownerId = response.getSurvey().getUserId();
+        String ownerId = (String) responseData.get("surveyUserId");
         return performanceSubjectRepository.findByUserId(ownerId).orElse(null);
     }
 

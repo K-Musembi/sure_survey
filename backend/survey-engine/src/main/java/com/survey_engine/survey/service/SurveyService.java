@@ -19,7 +19,7 @@ import com.survey_engine.survey.models.DistributionList;
 
 import com.survey_engine.survey.service.sms.SmsResponseService;
 
-import jakarta.persistence.EntityNotFoundException;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -68,7 +68,7 @@ public class SurveyService {
     public SurveysResponse createSurvey(SurveyRequest surveyRequest, String userId) {
         Long tenantId = userApi.getTenantId();
         if (tenantId == null) {
-            throw new IllegalStateException("Tenant context not found. Cannot create survey without a tenant.");
+            throw new BusinessRuleException("TENANT_CONTEXT_MISSING", "Tenant context not found. Cannot create survey without a tenant.");
         }
         
         // Check subscription limits via Billing API
@@ -95,14 +95,14 @@ public class SurveyService {
      *
      * @param id The ID of the survey to find.
      * @return A {@link SurveysResponse} for the found survey.
-     * @throws EntityNotFoundException if the survey is not found.
+     * @throws ResourceNotFoundException if the survey is not found.
      */
     @Transactional(readOnly = true)
     public SurveysResponse findSurveyById(Long id) {
         Long tenantId = userApi.getTenantId();
         Survey survey = surveyRepository.findById(id)
                 .filter(s -> s.getTenantId().equals(tenantId))
-                .orElseThrow(() -> new EntityNotFoundException("Survey not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("SURVEY_NOT_FOUND", "Survey not found with id: " + id));
 
         String userName = userApi.getUserNameById(survey.getUserId());
         Map<String, String> userIdToNameMap = Collections.singletonMap(survey.getUserId(), userName);
@@ -190,7 +190,7 @@ public class SurveyService {
      * @param userId The ID of the user performing the update.
      * @param roles The roles of the user.
      * @return A {@link SurveysResponse} for the updated survey.
-     * @throws EntityNotFoundException if the survey is not found.
+     * @throws ResourceNotFoundException if the survey is not found.
      * @throws AccessDeniedException if the user does not have permission.
      * @throws IllegalStateException if the survey is not in DRAFT status.
      */
@@ -199,14 +199,14 @@ public class SurveyService {
         Long tenantId = userApi.getTenantId();
         Survey survey = surveyRepository.findById(id)
                 .filter(s -> s.getTenantId().equals(tenantId))
-                .orElseThrow(() -> new EntityNotFoundException("Survey not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("SURVEY_NOT_FOUND", "Survey not found with id: " + id));
 
         if (!survey.getUserId().equals(userId)) {
             throw new AccessDeniedException("You do not have permission to update this survey.");
         }
 
         if (survey.getStatus() != SurveyStatus.DRAFT) {
-            throw new IllegalStateException("Survey can only be updated when in DRAFT status.");
+            throw new BusinessRuleException("SURVEY_NOT_DRAFT", "Survey can only be updated when in DRAFT status.");
         }
         
         Survey savedSurvey = getSurvey(survey, surveyRequest);
@@ -225,7 +225,7 @@ public class SurveyService {
      * @param userId The ID of the user performing the action.
      * @param roles The roles of the user.
      * @return A {@link SurveysResponse} for the activated survey.
-     * @throws EntityNotFoundException if the survey is not found.
+     * @throws ResourceNotFoundException if the survey is not found.
      * @throws AccessDeniedException if the user does not have permission.
      * @throws IllegalStateException if the survey is not in DRAFT status or has no questions.
      */
@@ -234,18 +234,18 @@ public class SurveyService {
         Long tenantId = userApi.getTenantId();
         Survey survey = surveyRepository.findById(surveyId)
                 .filter(s -> s.getTenantId().equals(tenantId))
-                .orElseThrow(() -> new EntityNotFoundException("Survey not found with id: " + surveyId));
+                .orElseThrow(() -> new ResourceNotFoundException("SURVEY_NOT_FOUND", "Survey not found with id: " + surveyId));
 
         if (!survey.getUserId().equals(userId) && (roles == null || !roles.contains("ADMIN"))) {
             throw new AccessDeniedException("You do not have permission to activate this survey.");
         }
 
         if (survey.getStatus() != SurveyStatus.DRAFT) {
-            throw new IllegalStateException("Only surveys in DRAFT status can be activated.");
+            throw new BusinessRuleException("SURVEY_NOT_DRAFT", "Only surveys in DRAFT status can be activated.");
         }
 
         if (survey.getQuestions() == null || survey.getQuestions().isEmpty()) {
-            throw new IllegalStateException("Survey must have at least one question to be activated.");
+            throw new BusinessRuleException("SURVEY_NO_QUESTIONS", "Survey must have at least one question to be activated.");
         }
 
         // Enterprise Logic: If target respondents are set, calculate cost.
@@ -254,7 +254,7 @@ public class SurveyService {
             BigDecimal totalCost = costPerRespondent.multiply(new BigDecimal(survey.getTargetRespondents()));
             
             // Debit Wallet
-            BigDecimal walletBalance = billingApi.getWalletBalance(tenantId, Long.valueOf(survey.getUserId()));
+            BigDecimal walletBalance = billingApi.getWalletBalance(tenantId, parseLongSafe(survey.getUserId()));
             if (walletBalance.compareTo(totalCost) < 0) {
                 throw new BusinessRuleException(
                         "INSUFFICIENT_FUNDS",
@@ -262,7 +262,7 @@ public class SurveyService {
                                 + ", Available: KES " + walletBalance + ". Please top up your wallet."
                 );
             }
-            billingApi.debitWallet(tenantId, Long.valueOf(survey.getUserId()), totalCost, "Activation fee for survey " + surveyId);
+            billingApi.debitWallet(tenantId, parseLongSafe(survey.getUserId()), totalCost, "Activation fee for survey " + surveyId);
             survey.setBudget(totalCost);
         } else {
             // For non-enterprise (or plans where you don't pay per respondent upfront), 
@@ -281,7 +281,7 @@ public class SurveyService {
      * @param userId The ID of the user performing the action.
      * @param roles The roles of the user.
      * @return A {@link SurveysResponse} for the closed survey.
-     * @throws EntityNotFoundException if the survey is not found.
+     * @throws ResourceNotFoundException if the survey is not found.
      * @throws AccessDeniedException if the user does not have permission.
      * @throws IllegalStateException if the survey is not in ACTIVE status.
      */
@@ -290,14 +290,14 @@ public class SurveyService {
         Long tenantId = userApi.getTenantId();
         Survey survey = surveyRepository.findById(surveyId)
                 .filter(s -> s.getTenantId().equals(tenantId))
-                .orElseThrow(() -> new EntityNotFoundException("Survey not found with id: " + surveyId));
+                .orElseThrow(() -> new ResourceNotFoundException("SURVEY_NOT_FOUND", "Survey not found with id: " + surveyId));
 
         if (!survey.getUserId().equals(userId) && (roles == null || !roles.contains("ADMIN"))) {
             throw new AccessDeniedException("You do not have permission to close this survey.");
         }
 
         if (survey.getStatus() != SurveyStatus.ACTIVE) {
-            throw new IllegalStateException("Only surveys in ACTIVE status can be closed.");
+            throw new BusinessRuleException("SURVEY_NOT_ACTIVE", "Only surveys in ACTIVE status can be closed.");
         }
 
         survey.setStatus(SurveyStatus.CLOSED);
@@ -309,14 +309,14 @@ public class SurveyService {
      * This method is typically called by an event listener after a payment event.
      *
      * @param surveyId The ID of the survey to activate.
-     * @throws EntityNotFoundException if the survey is not found.
+     * @throws ResourceNotFoundException if the survey is not found.
      */
     @Transactional
     public void activatePaidSurvey(Long surveyId) {
         Long tenantId = userApi.getTenantId();
         Survey survey = surveyRepository.findById(surveyId)
                 .filter(s -> s.getTenantId().equals(tenantId))
-                .orElseThrow(() -> new EntityNotFoundException("Survey not found with id: " + surveyId));
+                .orElseThrow(() -> new ResourceNotFoundException("SURVEY_NOT_FOUND", "Survey not found with id: " + surveyId));
 
         if (survey.getStatus() != SurveyStatus.DRAFT) {
             logger.warn("Attempted to activate survey {} which is not in DRAFT status. Current status: {}.", surveyId, survey.getStatus());
@@ -344,7 +344,7 @@ public class SurveyService {
      * @param id The ID of the survey to delete.
      * @param userId The ID of the user performing the action.
      * @param roles The roles of the user.
-     * @throws EntityNotFoundException if the survey is not found.
+     * @throws ResourceNotFoundException if the survey is not found.
      * @throws AccessDeniedException if the user does not have permission.
      */
     @Transactional
@@ -352,7 +352,7 @@ public class SurveyService {
         Long tenantId = userApi.getTenantId();
         Survey survey = surveyRepository.findById(id)
                 .filter(s -> s.getTenantId().equals(tenantId))
-                .orElseThrow(() -> new EntityNotFoundException("Survey not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("SURVEY_NOT_FOUND", "Survey not found with id: " + id));
         
         if (!survey.getUserId().equals(userId) && (roles == null || !roles.contains("ADMIN"))) {
             throw new AccessDeniedException("You do not have permission to delete this survey.");
@@ -374,25 +374,25 @@ public class SurveyService {
         Long tenantId = userApi.getTenantId();
         Survey survey = surveyRepository.findById(surveyId)
                 .filter(s -> s.getTenantId().equals(tenantId))
-                .orElseThrow(() -> new EntityNotFoundException("Survey not found with id: " + surveyId));
+                .orElseThrow(() -> new ResourceNotFoundException("SURVEY_NOT_FOUND", "Survey not found with id: " + surveyId));
 
         if (!survey.getUserId().equals(userId) && (roles == null || !roles.contains("ADMIN"))) {
             throw new AccessDeniedException("You do not have permission to send this survey.");
         }
 
         if (survey.getStatus() != SurveyStatus.ACTIVE) {
-            throw new IllegalStateException("Survey must be ACTIVE to send.");
+            throw new BusinessRuleException("SURVEY_NOT_ACTIVE", "Survey must be ACTIVE to send.");
         }
 
         if (distributionListId != null) {
             DistributionList list = distributionListRepository.findByIdAndTenantIdAndUserId(distributionListId, tenantId, userId)
-                    .orElseThrow(() -> new EntityNotFoundException("Distribution list not found or access denied"));
+                    .orElseThrow(() -> new ResourceNotFoundException("DISTRIBUTION_LIST_NOT_FOUND", "Distribution list not found or access denied"));
             survey.setDistributionList(list);
             survey = surveyRepository.save(survey);
         }
 
         if (survey.getDistributionList() == null || survey.getDistributionList().getContacts().isEmpty()) {
-            throw new IllegalStateException("No distribution list linked to this survey or list is empty.");
+            throw new BusinessRuleException("DISTRIBUTION_LIST_EMPTY", "No distribution list linked to this survey or list is empty.");
         }
 
         List<DistributionListContact> contacts = survey.getDistributionList().getContacts();
@@ -537,5 +537,15 @@ public class SurveyService {
                 question.getOptions(),
                 question.getPosition()
         );
+    }
+
+    private Long parseLongSafe(String value) {
+        if (value == null || value.isBlank()) return null;
+        try {
+            return Long.valueOf(value);
+        } catch (NumberFormatException e) {
+            logger.warn("Could not parse userId as Long: {}", value);
+            return null;
+        }
     }
 }

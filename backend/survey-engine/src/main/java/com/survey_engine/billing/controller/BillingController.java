@@ -4,6 +4,7 @@ import com.survey_engine.billing.dto.*;
 import com.survey_engine.billing.models.Invoice;
 import com.survey_engine.billing.models.Subscription;
 import com.survey_engine.billing.service.InvoiceService;
+import com.survey_engine.billing.service.SubscriptionLimitService;
 import com.survey_engine.billing.service.SubscriptionService;
 import com.survey_engine.billing.service.WalletService;
 import jakarta.validation.Valid;
@@ -37,6 +38,7 @@ public class BillingController {
     private final SubscriptionService subscriptionService;
     private final InvoiceService invoiceService;
     private final WalletService walletService;
+    private final SubscriptionLimitService subscriptionLimitService;
 
     /**
      * Retrieves the current wallet balance for the authenticated tenant.
@@ -87,6 +89,21 @@ public class BillingController {
         return subscription.map(this::mapToSubscriptionResponse)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Returns current usage stats and plan feature flags for the authenticated user.
+     * Used by the frontend to render usage banners, upgrade prompts, and feature gates.
+     */
+    @GetMapping("/usage")
+    public ResponseEntity<UsageResponse> getUsage(@AuthenticationPrincipal Jwt jwt) {
+        Long tenantId = jwt.getClaim("tenantId");
+        if (tenantId == null) {
+            return ResponseEntity.ok(new UsageResponse("Free", 0, 3,
+                    java.util.List.of("WEB"), false, false, false, false, false, false));
+        }
+        Long userId = Long.valueOf(jwt.getSubject());
+        return ResponseEntity.ok(subscriptionLimitService.getUsage(tenantId, userId));
     }
 
     /**

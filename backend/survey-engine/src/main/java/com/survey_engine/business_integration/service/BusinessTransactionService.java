@@ -4,7 +4,6 @@ import com.survey_engine.business_integration.dto.BusinessTransactionResponse;
 import com.survey_engine.business_integration.models.BusinessTransaction;
 import com.survey_engine.business_integration.repository.BusinessTransactionRepository;
 import com.survey_engine.user.UserApi;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

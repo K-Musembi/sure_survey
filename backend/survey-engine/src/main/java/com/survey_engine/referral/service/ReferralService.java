@@ -48,6 +48,7 @@ public class ReferralService {
         campaign.setStartDate(request.startDate());
         campaign.setEndDate(request.endDate());
         campaign.setPurposeDescription(request.purposeDescription());
+        campaign.setBusinessIntegrationId(request.businessIntegrationId());
         campaign.setConsentVersion(1);
         campaign.setStatus(CampaignStatus.ACTIVE);
         return campaignRepository.save(campaign);

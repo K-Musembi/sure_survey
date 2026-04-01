@@ -74,8 +74,11 @@ safaricom:
 
 survey:
   web:
-    base-url: http://localhost:4173/s/
+    base-url: ${APP_FRONTEND_URL}/s/
 
+app:
+  frontend:
+    base-url: ${APP_FRONTEND_URL}
 
 jwt:
   keystore:

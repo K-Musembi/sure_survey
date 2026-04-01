@@ -7,7 +7,7 @@ import com.survey_engine.rewards.models.enums.RewardType;
 import com.survey_engine.rewards.repository.RewardRepository;
 import com.survey_engine.rewards.service.reward_provider.RewardProvider;
 import com.survey_engine.user.UserApi;
-import jakarta.persistence.EntityNotFoundException;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -41,7 +41,7 @@ public class RewardFulfillmentListener {
         log.info("Received RewardDistributionEvent for rewardId: {} with responderId: {}", event.rewardId(), event.responderId());
 
         Reward reward = rewardRepository.findById(event.rewardId())
-                .orElseThrow(() -> new EntityNotFoundException("Reward not found with id: " + event.rewardId()));
+                .orElseThrow(() -> new ResourceNotFoundException("REWARD_NOT_FOUND","Reward not found with id: " + event.rewardId()));
 
         // For loyalty points, the responderId is the participantId, which is what the provider needs.
         if (reward.getRewardType() == RewardType.LOYALTY_POINTS) {

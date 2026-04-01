@@ -4,7 +4,7 @@ import com.survey_engine.rewards.dto.LoyaltyAccountResponse;
 import com.survey_engine.rewards.models.LoyaltyAccount;
 import com.survey_engine.rewards.repository.LoyaltyAccountRepository;
 import com.survey_engine.user.UserApi;
-import jakarta.persistence.EntityNotFoundException;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,7 +53,7 @@ public class LoyaltyAccountService {
         Long tenantId = userApi.getTenantId();
         return loyaltyAccountRepository.findByUserIdAndTenantId(userId, tenantId)
                 .map(this::mapToLoyaltyAccountResponse)
-                .orElseThrow(() -> new EntityNotFoundException("Loyalty account not found for user: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("LOYALTY_ACCOUNT_NOT_FOUND","Loyalty account not found for user: " + userId));
     }
 
     /**

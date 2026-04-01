@@ -9,8 +9,10 @@ import com.survey_engine.billing.models.enums.PaymentGatewayType;
 import com.survey_engine.billing.repository.PlanRepository;
 import com.survey_engine.billing.repository.SubscriptionRepository;
 import com.survey_engine.billing.repository.PlanGatewayMappingRepository;
+import com.survey_engine.common.exception.BusinessRuleException;
+import com.survey_engine.common.exception.ExternalServiceException;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import com.survey_engine.user.UserApi;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,10 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Service class for managing {@link Subscription} entities and handling related business logic.
@@ -50,16 +49,16 @@ public class SubscriptionService {
      * @param userId The ID of the user creating the subscription.
      * @param planId The ID of the plan to subscribe to.
      * @return The newly created {@link Subscription} entity.
-     * @throws EntityNotFoundException if the plan or user is not found.
+     * @throws ResourceNotFoundException if the plan or user is not found.
      * @throws IllegalStateException if an active subscription already exists where one is not allowed.
      */
     @Transactional
     public Subscription createSubscription(Long tenantId, Long userId, Long planId) {
         Plan plan = planRepository.findById(planId)
-                .orElseThrow(() -> new EntityNotFoundException("Plan not found with ID: " + planId));
+                .orElseThrow(() -> new ResourceNotFoundException("PLAN_NOT_FOUND", "Plan not found with ID: " + planId));
 
         String tenantName = userApi.findTenantNameById(tenantId)
-                .orElseThrow(() -> new EntityNotFoundException("Tenant not found with ID: " + tenantId));
+                .orElseThrow(() -> new ResourceNotFoundException("TENANT_NOT_FOUND", "Tenant not found with ID: " + tenantId));
         
         boolean isEnterprise = !tenantName.equals("Main Tenant");
         
@@ -68,21 +67,21 @@ public class SubscriptionService {
             userApi.getTenantSubscriptionId(tenantId).ifPresent(subId -> {
                  Subscription existing = subscriptionRepository.findById(subId).orElse(null);
                  if (existing != null && existing.getStatus() == SubscriptionStatus.ACTIVE) {
-                     throw new IllegalStateException("Tenant already has an active subscription.");
+                     throw new BusinessRuleException("DUPLICATE_SUBSCRIPTION", "Tenant already has an active subscription.");
                  }
             });
         } else {
              userApi.getUserSubscriptionId(userId).ifPresent(subId -> {
                  Subscription existing = subscriptionRepository.findById(subId).orElse(null);
                  if (existing != null && existing.getStatus() == SubscriptionStatus.ACTIVE) {
-                     throw new IllegalStateException("User already has an active subscription.");
+                     throw new BusinessRuleException("DUPLICATE_SUBSCRIPTION", "User already has an active subscription.");
                  }
              });
         }
 
         Map<String, String> userDetails = userApi.findUserDetailsMapById(String.valueOf(userId));
         if (userDetails.isEmpty()) {
-            throw new EntityNotFoundException("User not found for ID: " + userId);
+            throw new ResourceNotFoundException("USER_NOT_FOUND", "User not found for ID: " + userId);
         }
 
         String gatewaySubscriptionId = null;
@@ -105,7 +104,7 @@ public class SubscriptionService {
             var paystackSubscriptionData = paystackSubscriptionService.createSubscription(customerCode, gatewayMapping.get().getGatewayPlanCode());
 
             if (paystackSubscriptionData == null) {
-                throw new IllegalStateException("Failed to create subscription on Paystack, response was null.");
+                throw new ExternalServiceException("PAYSTACK_SUBSCRIPTION_FAILED", "Failed to create subscription on Paystack, response was null.", null);
             }
             gatewaySubscriptionId = paystackSubscriptionData.subscriptionCode();
             gatewayEmailToken = paystackSubscriptionData.emailToken();
@@ -113,7 +112,7 @@ public class SubscriptionService {
         } else {
             // No Paystack mapping. If price > 0, we can't process it (unless we support other gateways).
             if (plan.getPrice().compareTo(BigDecimal.ZERO) > 0) {
-                 throw new IllegalStateException("This paid plan is not configured for online payment. Please contact support.");
+                 throw new BusinessRuleException("PLAN_NOT_CONFIGURED", "This paid plan is not configured for online payment. Please contact support.");
             }
         }
 
@@ -151,10 +150,10 @@ public class SubscriptionService {
     @Transactional
     public Subscription cancelSubscription(UUID subscriptionId, Long tenantId, Long userId) {
         Subscription subscription = subscriptionRepository.findById(subscriptionId)
-                .orElseThrow(() -> new EntityNotFoundException("Subscription not found with ID: " + subscriptionId));
+                .orElseThrow(() -> new ResourceNotFoundException("SUBSCRIPTION_NOT_FOUND", "Subscription not found with ID: " + subscriptionId));
 
         String tenantName = userApi.findTenantNameById(tenantId)
-                .orElseThrow(() -> new EntityNotFoundException("Tenant not found with ID: " + tenantId));
+                .orElseThrow(() -> new ResourceNotFoundException("TENANT_NOT_FOUND", "Tenant not found with ID: " + tenantId));
         
         boolean isEnterprise = !tenantName.equals("Main Tenant");
         boolean hasPermission = isEnterprise ? subscription.getTenantId().equals(tenantId)
@@ -215,10 +214,10 @@ public class SubscriptionService {
     @Transactional
     public Subscription changePlan(Long tenantId, Long userId, Long newPlanId) {
         Subscription subscription = getActiveSubscriptionForUser(tenantId, userId)
-                .orElseThrow(() -> new IllegalStateException("No active subscription found to change."));
+                .orElseThrow(() -> new ResourceNotFoundException("SUBSCRIPTION_NOT_FOUND", "No active subscription found to change."));
 
         Plan newPlan = planRepository.findById(newPlanId)
-                .orElseThrow(() -> new EntityNotFoundException("Plan not found with ID: " + newPlanId));
+                .orElseThrow(() -> new ResourceNotFoundException("PLAN_NOT_FOUND", "Plan not found with ID: " + newPlanId));
 
         // Logic to handle gateway update would go here if we were fully integrated.
         // For now, we update the local record.
@@ -261,6 +260,58 @@ public class SubscriptionService {
     }
 
     /**
+     * Returns all subscriptions in the system for admin viewing.
+     */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getAllSubscriptions() {
+        return subscriptionRepository.findAll().stream()
+                .map(sub -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("id", sub.getId());
+                    map.put("tenantId", sub.getTenantId());
+                    map.put("userId", sub.getUserId());
+                    map.put("planName", sub.getPlan().getName());
+                    map.put("planId", sub.getPlan().getId());
+                    map.put("status", sub.getStatus().name());
+                    map.put("currentPeriodStart", sub.getCurrentPeriodStart());
+                    map.put("currentPeriodEnd", sub.getCurrentPeriodEnd());
+                    map.put("gatewayType", sub.getGatewayType() != null ? sub.getGatewayType().name() : null);
+                    map.put("createdAt", sub.getCreatedAt());
+                    return map;
+                })
+                .toList();
+    }
+
+    /**
+     * Admin-level subscription update: change status or plan.
+     */
+    @Transactional
+    public void adminUpdateSubscription(UUID subscriptionId, Map<String, Object> updates) {
+        Subscription subscription = subscriptionRepository.findById(subscriptionId)
+                .orElseThrow(() -> new ResourceNotFoundException("SUBSCRIPTION_NOT_FOUND",
+                        "Subscription not found: " + subscriptionId));
+
+        if (updates.containsKey("status")) {
+            SubscriptionStatus newStatus = SubscriptionStatus.valueOf((String) updates.get("status"));
+            subscription.setStatus(newStatus);
+        }
+        if (updates.containsKey("planId")) {
+            Long newPlanId = ((Number) updates.get("planId")).longValue();
+            Plan newPlan = planRepository.findById(newPlanId)
+                    .orElseThrow(() -> new ResourceNotFoundException("PLAN_NOT_FOUND",
+                            "Plan not found: " + newPlanId));
+            subscription.setPlan(newPlan);
+        }
+        if (updates.containsKey("currentPeriodEnd")) {
+            subscription.setCurrentPeriodEnd(
+                    LocalDateTime.parse((String) updates.get("currentPeriodEnd")));
+        }
+
+        subscriptionRepository.save(subscription);
+        log.info("Admin updated subscription {} with {}", subscriptionId, updates.keySet());
+    }
+
+    /**
      * Processes Paystack subscription-related webhook events.
      *
      * @param eventType The type of the Paystack subscription event.
@@ -284,7 +335,7 @@ public class SubscriptionService {
                     
                     // Resolve Plan via Mapping
                     PlanGatewayMapping mapping = planGatewayMappingRepository.findByGatewayPlanCodeAndGatewayType(planCode, PaymentGatewayType.PAYSTACK)
-                            .orElseThrow(() -> new EntityNotFoundException("Plan mapping not found for Paystack code: " + planCode));
+                            .orElseThrow(() -> new ResourceNotFoundException("PLAN_MAPPING_NOT_FOUND", "Plan mapping not found for Paystack code: " + planCode));
                     
                     newSubscription.setPlan(mapping.getPlan());
                     return newSubscription;

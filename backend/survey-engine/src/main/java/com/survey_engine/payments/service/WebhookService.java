@@ -11,7 +11,7 @@ import com.survey_engine.payments.models.enums.PaymentStatus;
 import com.survey_engine.payments.models.enums.TransactionType;
 import com.survey_engine.payments.repository.PaymentEventRepository;
 import com.survey_engine.payments.repository.TransactionRepository;
-import jakarta.persistence.EntityNotFoundException;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -70,8 +70,8 @@ public class WebhookService {
      */
     private void handleChargeSuccess(PaystackWebhookData data) {
         String reference = data.reference();
-        PaymentEvent paymentEvent = paymentRepository.findByGatewayTransactionId(reference)
-                .orElseThrow(() -> new EntityNotFoundException("PaymentEvent with reference " + reference + " not found."));
+        PaymentEvent paymentEvent = paymentRepository.findByGatewayTransactionIdForUpdate(reference)
+                .orElseThrow(() -> new ResourceNotFoundException("PAYMENT_EVENT_NOT_FOUND", "PaymentEvent with reference " + reference + " not found."));
 
         // Idempotency Check: Ensure we haven't already processed this.
         if (paymentEvent.getStatus() == PaymentStatus.SUCCEEDED) {
@@ -95,7 +95,7 @@ public class WebhookService {
 
         // Credit Wallet if this is a top-up
         if ("WALLET_TOPUP".equals(paymentEvent.getSurveyId())) {
-            billingApi.creditWallet(paymentEvent.getTenantId(), Long.valueOf(paymentEvent.getUserId()), paymentEvent.getAmount(), reference, "Wallet Top Up via Paystack");
+            billingApi.creditWallet(paymentEvent.getTenantId(), parseLongSafe(paymentEvent.getUserId()), paymentEvent.getAmount(), reference, "Wallet Top Up via Paystack");
         }
     }
 
@@ -118,5 +118,15 @@ public class WebhookService {
         transaction.setCreatedAt(LocalDateTime.now());
         transactionRepository.save(transaction);
         return transaction;
+    }
+
+    private Long parseLongSafe(String value) {
+        if (value == null || value.isBlank()) return null;
+        try {
+            return Long.valueOf(value);
+        } catch (NumberFormatException e) {
+            log.warn("Could not parse userId as Long: {}", value);
+            return null;
+        }
     }
 }

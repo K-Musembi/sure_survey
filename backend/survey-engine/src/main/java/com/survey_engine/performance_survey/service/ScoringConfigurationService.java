@@ -12,7 +12,7 @@ import com.survey_engine.performance_survey.models.scoring.SurveyScoringSchema;
 import com.survey_engine.performance_survey.repository.QuestionScoringRuleRepository;
 import com.survey_engine.performance_survey.repository.SurveyScoringSchemaRepository;
 import com.survey_engine.user.UserApi;
-import jakarta.persistence.EntityNotFoundException;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -63,7 +63,7 @@ public class ScoringConfigurationService {
     @Transactional(readOnly = true)
     public SurveyScoringSchemaResponse getSchema(Long surveyId) {
         SurveyScoringSchema schema = schemaRepository.findBySurveyId(surveyId)
-                .orElseThrow(() -> new EntityNotFoundException("Scoring schema not found for survey " + surveyId));
+                .orElseThrow(() -> new ResourceNotFoundException("SCORING_SCHEMA_NOT_FOUND","Scoring schema not found for survey " + surveyId));
         
         List<QuestionScoringRule> rules = ruleRepository.findBySchemaId(schema.getId());
         return mapToResponse(schema, rules);
@@ -92,7 +92,7 @@ public class ScoringConfigurationService {
             try {
                 rule.setOptionScoreMap(objectMapper.writeValueAsString(req.optionScoreMap()));
             } catch (JsonProcessingException e) {
-                throw new RuntimeException("Failed to serialize option score map", e);
+                throw new com.survey_engine.common.exception.BusinessRuleException("SERIALIZATION_FAILED", "Failed to serialize option score map: " + e.getMessage());
             }
         }
         return rule;

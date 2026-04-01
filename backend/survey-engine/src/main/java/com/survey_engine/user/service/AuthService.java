@@ -8,7 +8,7 @@ import com.survey_engine.user.models.Tenant;
 import com.survey_engine.user.repository.TenantRepository;
 import com.survey_engine.user.repository.UserRepository;
 import com.survey_engine.user.models.User;
-import jakarta.persistence.EntityNotFoundException;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -43,6 +43,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
     private final org.springframework.context.ApplicationEventPublisher eventPublisher;
+    private final EmailVerificationService emailVerificationService;
 
     /**
      * Registers new user and generates token
@@ -72,8 +73,10 @@ public class AuthService {
         User savedUser = userRepository.save(user);
 
         // Publish event for billing module to handle subscription creation
-        // The listener will determine if a new subscription is needed based on tenant type and existing subs
         eventPublisher.publishEvent(new UserRegisteredEvent(savedUser.getId(), tenant.getId()));
+
+        // Send email verification
+        emailVerificationService.sendVerificationEmail(savedUser);
 
         return new UserResponse(
                 savedUser.getId(),
@@ -98,6 +101,11 @@ public class AuthService {
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new BadCredentialsException("Invalid credentials");
+        }
+
+        if (!user.isEmailVerified()) {
+            throw new com.survey_engine.common.exception.BusinessRuleException(
+                    "EMAIL_NOT_VERIFIED", "Please verify your email before logging in.");
         }
 
         Authentication authentication = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
@@ -161,7 +169,7 @@ public class AuthService {
         if (organization == null) {
             // For individual sign-up, assume 'www' tenant exists and find it.
             return tenantRepository.findBySlug("www")
-                    .orElseThrow(() -> new EntityNotFoundException("Default 'www' tenant not found. Please ensure it is initialized."));
+                    .orElseThrow(() -> new ResourceNotFoundException("TENANT_NOT_FOUND","Default 'www' tenant not found. Please ensure it is initialized."));
         }
 
         return tenantService.findOrCreateTenant(organization);

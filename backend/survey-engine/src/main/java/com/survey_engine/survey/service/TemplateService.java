@@ -7,7 +7,7 @@ import com.survey_engine.survey.dto.TemplateRequest;
 import com.survey_engine.survey.dto.TemplateResponse;
 import com.survey_engine.survey.models.TemplateQuestion;
 import com.survey_engine.survey.dto.TemplateQuestionResponse;
-import jakarta.persistence.EntityNotFoundException;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
@@ -61,13 +61,13 @@ public class TemplateService {
      * @param roles The roles of the user making the request.
      * @return A DTO for the updated template.
      * @throws AccessDeniedException if the user is not a SUPER_ADMIN.
-     * @throws EntityNotFoundException if the template is not found.
+     * @throws ResourceNotFoundException if the template is not found.
      */
     @Transactional
     public TemplateResponse updateTemplate(Long id, TemplateRequest request, List<String> roles) {
         authorizeSuperAdmin(roles, "update");
         Template template = templateRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Template not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("TEMPLATE_NOT_FOUND", "Template not found with id: " + id));
 
         Template savedTemplate = getTemplate(template, request);
         return mapToResponse(savedTemplate);
@@ -79,13 +79,13 @@ public class TemplateService {
      * @param id The ID of the template to delete.
      * @param roles The roles of the user making the request.
      * @throws AccessDeniedException if the user is not a SUPER_ADMIN.
-     * @throws EntityNotFoundException if the template is not found.
+     * @throws ResourceNotFoundException if the template is not found.
      */
     @Transactional
     public void deleteTemplate(Long id, List<String> roles) {
         authorizeSuperAdmin(roles, "delete");
         if (!templateRepository.existsById(id)) {
-            throw new EntityNotFoundException("Template not found with id: " + id);
+            throw new ResourceNotFoundException("TEMPLATE_NOT_FOUND", "Template not found with id: " + id);
         }
         templateRepository.deleteById(id);
     }
@@ -101,7 +101,7 @@ public class TemplateService {
     public TemplateResponse getTemplateById(Long id) {
         return templateRepository.findById(id)
                 .map(this::mapToResponse)
-                .orElseThrow(() -> new EntityNotFoundException("Template not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("TEMPLATE_NOT_FOUND", "Template not found with id: " + id));
     }
 
     @Transactional(readOnly = true)

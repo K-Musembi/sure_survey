@@ -3,8 +3,8 @@ package com.survey_engine.payments.service;
 import com.survey_engine.payments.dto.TransactionResponse;
 import com.survey_engine.payments.models.Transaction;
 import com.survey_engine.payments.repository.TransactionRepository;
+import com.survey_engine.common.exception.ResourceNotFoundException;
 import com.survey_engine.user.UserApi;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,7 +37,7 @@ public class TransactionService {
         return transactionRepository.findById(id)
                 .filter(t -> t.getTenantId().equals(tenantId))
                 .map(this::mapToTransactionResponse)
-                .orElseThrow(() -> new EntityNotFoundException("Transaction with ID " + id + " not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("TRANSACTION_NOT_FOUND", "Transaction with ID " + id + " not found."));
     }
 
     /**
